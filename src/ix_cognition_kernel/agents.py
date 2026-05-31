@@ -262,9 +262,7 @@ AGENT_ROLES: tuple[AgentRole, ...] = (
         activation_rule="Active before any tool or external action handoff.",
         required_inputs=(ArtifactKind.MISSION_BOUNDARY, ArtifactKind.PLAN_GRAPH),
         required_outputs=(ArtifactKind.TOOL_SAFETY_REVIEW,),
-        authority_limits=(
-            "May deny unsafe tool use; may not execute tools directly.",
-        ),
+        authority_limits=("May deny unsafe tool use; may not execute tools directly.",),
         paired_engines=("blackfox-handoff", "non-attached-purpose"),
     ),
     AgentRole(
