@@ -77,7 +77,9 @@ def test_ix_governance_layer_binds_cognition_to_authority_and_handoff() -> None:
 
 
 def test_unknown_layer_number_is_rejected() -> None:
-    with pytest.raises(ValueError, match="Unknown IX-CognitionKernel cognitive BOM layer"):
+    with pytest.raises(
+        ValueError, match="Unknown IX-CognitionKernel cognitive BOM layer"
+    ):
         layer_by_number(11)
 
 
