@@ -291,7 +291,7 @@ def test_blocked_outcome_learning_requires_blocked_pressure() -> None:
             belief_revision_ids=("revision-001",),
             causal_revision_ids=(),
             prediction_comparison_ids=(),
-            evidence_ids=("ev-outcome"),
+            evidence_ids=("ev-outcome",),
             learning_summary="Blocked status cannot use confirmed pressure.",
             reasons=("Blocked pressure mismatch should fail.",),
         )
