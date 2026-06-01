@@ -198,6 +198,128 @@ class UpdateLedger:
         return UpdateLedger(events=(*self.events, event))
 
 
+class ConflictSeverity(StrEnum):
+    """Severity assigned to an evidence conflict."""
+
+    LOW = "low"
+    MODERATE = "moderate"
+    HIGH = "high"
+    BLOCKING = "blocking"
+
+
+@dataclass(frozen=True, slots=True)
+class ContradictionPolicy:
+    """Thresholds for explicit contradiction detection."""
+
+    moderate_threshold: float = 0.35
+    high_threshold: float = 0.6
+    blocking_threshold: float = 0.75
+
+    def __post_init__(self) -> None:
+        """Validate contradiction severity thresholds."""
+
+        for field_name, value in (
+            ("moderate_threshold", self.moderate_threshold),
+            ("high_threshold", self.high_threshold),
+            ("blocking_threshold", self.blocking_threshold),
+        ):
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(f"{field_name} must be between 0.0 and 1.0.")
+        if not (
+            self.moderate_threshold <= self.high_threshold <= self.blocking_threshold
+        ):
+            raise ValueError(
+                "Contradiction thresholds must be ordered from moderate to blocking."
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceConflictRecord:
+    """Explicit conflict record produced from contradictory evidence pressure."""
+
+    conflict_id: str
+    claim_id: str
+    contradicting_event_id: str
+    prior_event_ids: tuple[str, ...]
+    severity: ConflictSeverity
+    strength: float
+    reasons: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        """Validate conflict identity, linkage, strength, and reasons."""
+
+        if not self.conflict_id.strip():
+            raise ValueError(
+                "Evidence conflict records require a non-empty conflict_id."
+            )
+        if not self.claim_id.strip():
+            raise ValueError("Evidence conflict records require a non-empty claim_id.")
+        if not self.contradicting_event_id.strip():
+            raise ValueError(
+                "Evidence conflict records require a non-empty contradicting_event_id."
+            )
+        if self.contradicting_event_id in self.prior_event_ids:
+            raise ValueError("Contradicting events cannot be listed as prior events.")
+        _unique_ids(self.prior_event_ids, label="prior_event_id")
+        if not 0.0 <= self.strength <= 1.0:
+            raise ValueError("Evidence conflict strength must be between 0.0 and 1.0.")
+        if not self.reasons:
+            raise ValueError("Evidence conflict records require reasons.")
+        if any(not reason.strip() for reason in self.reasons):
+            raise ValueError("Evidence conflict reasons cannot be empty.")
+
+    @property
+    def blocks_claim(self) -> bool:
+        """Return whether this conflict blocks the target claim."""
+
+        return self.severity is ConflictSeverity.BLOCKING
+
+
+@dataclass(frozen=True, slots=True)
+class ContradictionAssessment:
+    """Detected contradictions for an update ledger."""
+
+    conflicts: tuple[EvidenceConflictRecord, ...]
+
+    def __post_init__(self) -> None:
+        """Reject duplicate conflict ids."""
+
+        _unique_ids(
+            (conflict.conflict_id for conflict in self.conflicts),
+            label="conflict_id",
+        )
+
+    @property
+    def blocking_conflicts(self) -> tuple[EvidenceConflictRecord, ...]:
+        """Return conflicts that block target claims."""
+
+        return tuple(conflict for conflict in self.conflicts if conflict.blocks_claim)
+
+    @property
+    def has_blocking_conflicts(self) -> bool:
+        """Return whether the assessment contains blocking conflicts."""
+
+        return bool(self.blocking_conflicts)
+
+    @property
+    def claim_ids_with_blocking_conflicts(self) -> tuple[str, ...]:
+        """Return claim ids affected by blocking conflicts."""
+
+        return tuple(
+            dict.fromkeys(conflict.claim_id for conflict in self.blocking_conflicts)
+        )
+
+    def conflicts_for_claim(self, claim_id: str) -> tuple[EvidenceConflictRecord, ...]:
+        """Return conflicts for one claim id."""
+
+        return tuple(
+            conflict for conflict in self.conflicts if conflict.claim_id == claim_id
+        )
+
+
+DEFAULT_CONTRADICTION_POLICY = ContradictionPolicy()
+
+
 class BeliefUpdateAction(StrEnum):
     """Computed action taken during evidence-driven belief revision."""
 
@@ -301,6 +423,7 @@ class BeliefUpdateResult:
     after_state: BeliefState
     ledger: UpdateLedger
     updates: tuple[BeliefUpdateRecord, ...]
+    contradiction_assessment: ContradictionAssessment
 
     @property
     def changed_belief_ids(self) -> tuple[str, ...]:
@@ -318,6 +441,12 @@ class BeliefUpdateResult:
             if update.action is BeliefUpdateAction.BLOCKED
         )
 
+    @property
+    def blocking_conflicts(self) -> tuple[EvidenceConflictRecord, ...]:
+        """Return explicit conflicts that blocked beliefs."""
+
+        return self.contradiction_assessment.blocking_conflicts
+
 
 DEFAULT_BELIEF_UPDATE_POLICY = BeliefUpdatePolicy()
 
@@ -328,11 +457,57 @@ def empty_update_ledger() -> UpdateLedger:
     return UpdateLedger(events=())
 
 
+def detect_evidence_conflicts(
+    ledger: UpdateLedger,
+    *,
+    policy: ContradictionPolicy = DEFAULT_CONTRADICTION_POLICY,
+) -> ContradictionAssessment:
+    """Detect explicit contradictions from an update ledger."""
+
+    prior_events_by_claim: dict[str, list[EvidenceEvent]] = {}
+    conflicts: list[EvidenceConflictRecord] = []
+    for event in ledger.ordered_events:
+        if event.polarity is EvidenceEventPolarity.CONTRADICTS:
+            for claim_id in event.target_claim_ids:
+                prior_event_ids = tuple(
+                    prior.event_id
+                    for prior in prior_events_by_claim.get(claim_id, [])
+                    if prior.polarity
+                    in {
+                        EvidenceEventPolarity.SUPPORTS,
+                        EvidenceEventPolarity.SUPERSEDES,
+                    }
+                )
+                severity = _conflict_severity(event.strength, policy)
+                conflicts.append(
+                    EvidenceConflictRecord(
+                        conflict_id=f"conflict-{len(conflicts):03d}",
+                        claim_id=claim_id,
+                        contradicting_event_id=event.event_id,
+                        prior_event_ids=prior_event_ids,
+                        severity=severity,
+                        strength=event.strength,
+                        reasons=(
+                            _conflict_reason(
+                                claim_id=claim_id,
+                                event=event,
+                                prior_event_ids=prior_event_ids,
+                                severity=severity,
+                            ),
+                        ),
+                    )
+                )
+        for claim_id in event.target_claim_ids:
+            prior_events_by_claim.setdefault(claim_id, []).append(event)
+    return ContradictionAssessment(conflicts=tuple(conflicts))
+
+
 def apply_belief_updates(
     belief_state: BeliefState,
     ledger: UpdateLedger,
     *,
     policy: BeliefUpdatePolicy = DEFAULT_BELIEF_UPDATE_POLICY,
+    contradiction_policy: ContradictionPolicy = DEFAULT_CONTRADICTION_POLICY,
 ) -> BeliefUpdateResult:
     """Compute a revised belief state from evidence events.
 
@@ -341,6 +516,10 @@ def apply_belief_updates(
     """
 
     _reject_unknown_claim_targets(belief_state, ledger)
+    contradiction_assessment = detect_evidence_conflicts(
+        ledger,
+        policy=contradiction_policy,
+    )
 
     updated_beliefs: list[BeliefRecord] = []
     update_records: list[BeliefUpdateRecord] = []
@@ -354,6 +533,7 @@ def apply_belief_updates(
             belief,
             events,
             policy,
+            contradiction_assessment,
             update_index=len(update_records),
         )
         updated_beliefs.append(updated_belief)
@@ -368,6 +548,7 @@ def apply_belief_updates(
         ),
         ledger=ledger,
         updates=tuple(update_records),
+        contradiction_assessment=contradiction_assessment,
     )
 
 
@@ -375,6 +556,7 @@ def _apply_events_to_belief(
     belief: BeliefRecord,
     events: tuple[EvidenceEvent, ...],
     policy: BeliefUpdatePolicy,
+    contradiction_assessment: ContradictionAssessment,
     *,
     update_index: int,
 ) -> tuple[BeliefRecord, BeliefUpdateRecord]:
@@ -386,7 +568,8 @@ def _apply_events_to_belief(
     evidence_ids = list(before_claim.evidence_ids)
     contradicted_by = list(before_claim.contradicted_by)
     reasons: list[str] = []
-    contradiction_seen = False
+    blocking_conflicts = contradiction_assessment.conflicts_for_claim(belief.claim_id)
+    contradiction_seen = bool(blocking_conflicts)
 
     for event in events:
         event_ids.append(event.event_id)
@@ -406,10 +589,15 @@ def _apply_events_to_belief(
                 after_confidence - event.strength * policy.contradiction_weight
             )
             contradicted_by = _append_unique(contradicted_by, (event.event_id,))
-            contradiction_seen = True
             reasons.append(f"{event.event_id} contradicted the claim.")
         elif event.polarity is EvidenceEventPolarity.SUPERSEDES:
             reasons.append(f"{event.event_id} superseded earlier evidence context.")
+
+    for conflict in blocking_conflicts:
+        reasons.append(
+            f"{conflict.conflict_id} recorded "
+            f"{conflict.severity.value} contradiction pressure."
+        )
 
     after_uncertainty = _next_uncertainty(
         before_claim.uncertainty,
@@ -556,6 +744,41 @@ def _reject_unknown_claim_targets(
                     f"Evidence event {event.event_id} targets unknown claim_id: "
                     f"{claim_id}"
                 )
+
+
+def _conflict_severity(
+    strength: float,
+    policy: ContradictionPolicy,
+) -> ConflictSeverity:
+    """Return conflict severity from contradiction strength."""
+
+    if strength >= policy.blocking_threshold:
+        return ConflictSeverity.BLOCKING
+    if strength >= policy.high_threshold:
+        return ConflictSeverity.HIGH
+    if strength >= policy.moderate_threshold:
+        return ConflictSeverity.MODERATE
+    return ConflictSeverity.LOW
+
+
+def _conflict_reason(
+    *,
+    claim_id: str,
+    event: EvidenceEvent,
+    prior_event_ids: tuple[str, ...],
+    severity: ConflictSeverity,
+) -> str:
+    """Return a deterministic conflict explanation."""
+
+    if prior_event_ids:
+        return (
+            f"{event.event_id} contradicts claim {claim_id} after prior support "
+            f"from {', '.join(prior_event_ids)}; severity={severity.value}."
+        )
+    return (
+        f"{event.event_id} contradicts claim {claim_id} without prior supporting "
+        f"event context; severity={severity.value}."
+    )
 
 
 def _clamp_confidence(value: float) -> float:
