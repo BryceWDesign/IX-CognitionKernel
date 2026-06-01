@@ -1,4 +1,4 @@
-"""Locked doctrine for the IX-CognitionKernel Wave 1 research prototype."""
+"""Locked doctrine for the IX-CognitionKernel Wave 2 learning core."""
 
 from __future__ import annotations
 
@@ -154,9 +154,9 @@ def wave_by_number(number: int) -> WaveDefinition:
 
 
 def current_wave() -> WaveDefinition:
-    """Return the current research-prototype wave for this repository state."""
+    """Return the current learnable-causal-cognition wave."""
 
-    return wave_by_number(1)
+    return wave_by_number(2)
 
 
 def final_wave() -> WaveDefinition:
