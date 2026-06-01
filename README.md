@@ -1,18 +1,15 @@
 # IX-CognitionKernel
 
-**Wave 1 research prototype: a source-available governed causal cognition kernel
-for representing beliefs, evidence, uncertainty, causal assumptions, bounded plan
-graphs, evaluation records, non-attached purpose checks, bounded agent roles, and
-maturity state as reviewable structured code.**
+**Wave 2 learnable causal cognition core: a source-available governed causal
+cognition kernel for evidence-bound agentic AI research.**
 
 IX-CognitionKernel is a source-available research repository originated and
 created by Bryce Lovell.
 
-The project is intentionally ambitious, but it is deliberately evidence-bound.
-It is designed to explore whether a governed causal cognition substrate can move
-from a structured research prototype toward stronger cognitive capability only
-through evidence, uncertainty honesty, human authority, and independent
-validation.
+The project explores whether a governed cognition substrate can move from static
+representation toward evidence-driven learning while preserving uncertainty,
+human authority, auditability, anti-overclaim discipline, and strict evidence
+boundaries.
 
 IX-CognitionKernel does **not** claim to be AGI.
 
@@ -25,40 +22,36 @@ and overwhelming independent evidence justifies that claim.
 
 ## Current Status
 
-Current maturity state: **Wave 1 — Research Prototype**
+Current maturity state: **Wave 2 — Learnable Causal Cognition Core**
 
-Wave 1 upgrades the repository from a tested foundation into structured cognition
-state that can represent the core pieces of the IX-CognitionKernel architecture:
+Wave 2 moves IX-CognitionKernel beyond static Wave 1 representation. The repo can
+now represent and test a bounded learning cycle:
 
-- first-class belief records
-- evidence records
-- confidence and uncertainty state
-- causal assumptions
-- causal constraints
-- expected observations
-- counterfactual notes
-- simple causal models
-- simple plan graphs
-- evidence requirements
-- rollback metadata
-- stop conditions
-- evaluation records
-- acceptance criteria
-- evaluation ledgers
-- executable non-attached purpose checks
-- bounded agent-role participation
-- integrated Wave 1 research prototype snapshots
-- maturity-state enforcement
-- no AGI overclaim
+- evidence events enter an update ledger
+- belief state is revised from evidence pressure
+- confidence changes are computed instead of manually declared
+- contradictions are detected and recorded
+- stale and superseded beliefs are marked fail-closed
+- belief timelines preserve before/after revision history
+- causal assumptions generate testable predictions
+- observations are compared against predictions
+- causal assumptions are strengthened, weakened, disputed, blocked, or retired
+- outcome learning records link belief revisions, prediction comparisons, and
+  causal revisions
+- raw memory candidates are quarantined before durable use
+- reusable skill candidates require accepted memory, accepted outcomes, and
+  successful reuse evidence
+- an integrated learnable cognition cycle ties the Wave 2 artifacts together
+- Wave 2 readiness is checked through a fail-closed readiness snapshot
+- AGI claims remain blocked
 
-Wave 1 is a research prototype. It represents cognition state as code. It does
-not yet learn from outcomes, update durable memory, run self-play curricula,
-produce BlackFox handoff packages, execute plans, or prove general intelligence.
+Wave 2 is still a research prototype. It is not an autonomous agent, not an AGI
+system, not a production runtime, and not an independently validated cognitive
+system.
 
 ## Verified Quality Gates
 
-The Wave 1 repository is designed to stay green under the same quality gates used
-by CI:
+The repository is designed to stay green under these gates:
 
 ```
 python -m ruff format --check .
@@ -66,11 +59,34 @@ python -m ruff check .
 python -m mypy src tests
 python -m pytest
 ```
-The Wave 1 test suite covers doctrine, package identity, cognitive BOM,
-engine registry, bounded agent roles, evidence state, belief state, causal model
-state, plan graph state, evaluation records, non-attached purpose checks, and the
-integrated research prototype snapshot.
+The Wave 2 test suite is intended to cover:
 
+package identity
+doctrine and anti-overclaim boundaries
+cognitive BOM
+engine registry
+bounded agent roles
+belief state
+causal model state
+plan graph state
+evaluation records
+non-attached purpose checks
+Wave 1 research prototype snapshot
+evidence event ledger
+belief update engine
+contradiction detection
+staleness and supersession handling
+belief timeline/history records
+causal prediction records
+observation records
+prediction-vs-observation comparison
+causal assumption revision
+outcome learning records
+memory quarantine
+validated skill records
+integrated learnable cognition cycle
+adversarial/failure scenarios
+Wave 2 readiness snapshot
 Core Doctrine
 
 The useful version of AI Nirvana is architectural, not mystical.
@@ -99,8 +115,8 @@ A serious AI exposes uncertainty.
 
 A dangerous AI treats reward as the goal.
 
-A serious AI treats reward as a training artifact, then acts through governed
-purpose.
+A serious AI treats reward as a training artifact, then acts only through
+governed purpose.
 
 Maturity Ladder
 
@@ -278,7 +294,8 @@ Recovery / Rollback Planner
 Adversarial Prompt / Deception Monitor
 Wave 1 Structured State
 
-Wave 1 adds typed, tested records for the first working research prototype layer.
+Wave 1 added typed, tested records for the first working research prototype
+layer.
 
 Belief State
 
@@ -290,8 +307,8 @@ Causal Model State
 
 Causal model records represent assumptions, relations, constraints, expected
 observations, and counterfactual notes. They do not prove reality. They provide a
-bounded structure for stating what the system currently thinks may cause,
-enable, constrain, inhibit, require, or risk another represented state.
+bounded structure for stating what the system currently thinks may cause, enable,
+constrain, inhibit, require, or risk another represented state.
 
 Plan Graph State
 
@@ -335,11 +352,260 @@ non-attached purpose assessment
 bounded agent roles
 maturity state
 
-The snapshot reports readiness gaps instead of hiding them. It can report gaps
-for missing evidence, blocked beliefs, blocked assumptions, unmet plan evidence,
-blocked plan nodes, blocking evaluation records, purpose violations, missing
-required agent roles, missing artifact evaluation coverage, or improper AGI
-claim permission.
+The snapshot reports readiness gaps instead of hiding them.
+
+Wave 2 Learning State
+
+Wave 2 adds the first learnable causal cognition core. The key upgrade is that
+state is no longer only represented. It is revised from evidence through bounded,
+auditable mechanisms.
+
+Evidence Event Ledger
+
+Evidence events are structured inputs with:
+
+event IDs
+source and provenance
+target claim IDs
+polarity: supports, weakens, contradicts, or supersedes
+strength
+deterministic audit index
+evidence IDs
+supersession references
+
+The update ledger preserves deterministic ordering and rejects duplicate event
+IDs, duplicate audit slots, and invalid supersession references.
+
+Belief Update Engine
+
+The belief update engine computes revised belief state from evidence events. It
+does not mutate the original belief state.
+
+It can:
+
+strengthen beliefs from supporting evidence
+weaken beliefs from negative evidence
+mark beliefs as needing evidence
+block beliefs under contradiction, stale state, or unsafe uncertainty
+update confidence deterministically
+preserve event IDs and reasons for each update
+Contradiction Detection
+
+Contradiction detection produces explicit conflict records instead of relying on
+manual flags.
+
+Conflict records preserve:
+
+conflict ID
+claim ID
+contradicting event ID
+prior event IDs
+severity
+strength
+reasons
+
+Blocking contradictions mark the affected belief as disputed and blocked.
+
+Staleness and Supersession
+
+Wave 2 prevents old beliefs from pretending to remain current forever.
+
+Staleness records can be produced by:
+
+logical audit gaps
+superseding evidence events
+
+Stale claims become blocked. Superseded evidence context is preserved with
+trigger event IDs and superseded event IDs.
+
+Belief History
+
+Belief history records preserve revision timelines across update results.
+
+A belief revision records:
+
+revision ID
+revision index
+belief ID
+claim ID
+update ID
+revision kind
+event IDs
+staleness IDs
+before/after confidence
+before/after uncertainty
+before/after disposition
+reasons
+
+This gives the repo a durable “why did the belief change?” trail.
+
+Causal Predictions
+
+Causal assumptions can generate prediction records with:
+
+prediction ID
+source assumption ID
+expected observation ID
+expected direction
+confidence
+uncertainty
+testability status
+evaluation criteria
+evidence IDs
+source belief IDs
+
+Blocked or evidence-starved causal assumptions do not become testable
+predictions.
+
+Observations and Prediction Comparison
+
+Observation records capture what was actually observed.
+
+Prediction comparison records classify results as:
+
+matched
+diverged
+inconclusive
+blocked
+
+These records preserve expected direction, observed direction, prediction
+confidence, observation confidence, evidence IDs, and reasons.
+
+Causal Revision Engine
+
+Causal assumptions are revised from prediction comparisons.
+
+The revision engine can:
+
+strengthen assumptions when predictions match observations
+weaken assumptions when observations diverge
+dispute assumptions under strong divergence
+block assumptions when comparison evidence is blocked
+retire assumptions under repeated low-confidence divergence
+
+The original causal model is not mutated. A revised model and revision records
+are produced.
+
+Outcome Learning Records
+
+Outcome learning records bind together:
+
+belief revision IDs
+causal revision IDs
+prediction comparison IDs
+evidence IDs
+learning summary
+outcome pressure
+acceptance status
+reasons
+
+Outcome learning can be accepted, blocked, or marked as needing evidence. It is
+not accepted merely because the system says it learned.
+
+Memory Quarantine
+
+Raw memory candidates do not become durable memory automatically.
+
+Memory candidates must pass quarantine gates for:
+
+provenance
+evidence IDs
+accepted outcome linkage
+confidence threshold
+unresolved contradiction checks
+unsafe-to-store checks
+expiry rules
+
+Candidates may be quarantined, accepted, rejected, or expired.
+
+Skill Validation
+
+Accepted memory is not automatically reusable skill.
+
+Skill candidates must include:
+
+procedure steps
+applicability conditions
+failure modes
+source memory IDs
+source outcome IDs
+confidence
+provenance
+successful reuse evidence
+
+Skill validation can produce candidate, validated, needs-reuse-evidence,
+rejected, or blocked status. A skill is validated only when accepted memory,
+accepted outcome linkage, and successful reuse evidence are present.
+
+Integrated Learnable Cognition Cycle
+
+The integrated cycle ties the Wave 2 artifacts together.
+
+A cycle input includes:
+
+belief state
+causal model
+update ledger
+prediction set
+observation ledger
+memory candidates
+skill candidates
+skill reuse records
+outcome ID
+outcome evidence IDs
+current audit index
+
+A cycle result includes:
+
+revised belief state
+belief history
+prediction comparison ledger
+revised causal model
+outcome learning record
+outcome learning ledger
+memory quarantine ledger
+skill validation ledger
+readiness gaps
+
+The cycle is complete only when the learning artifacts back the claim.
+
+Wave 2 Readiness Snapshot
+
+The Wave 2 readiness snapshot is the maturity gate.
+
+It requires coverage for:
+
+evidence-event ledger
+belief-update engine
+contradiction detection
+staleness/supersession handling
+belief history
+causal predictions
+prediction-observation comparison
+causal revision engine
+outcome learning records
+memory quarantine engine
+validated skill records
+integrated learnable cognition cycle
+adversarial/failure scenarios
+
+It reports readiness gaps instead of hiding them.
+
+Failure Scenarios
+
+Wave 2 includes adversarial/failure pressure tests for:
+
+contradictory evidence
+stale beliefs
+false predictions
+unsupported memory candidates
+skill candidates without reuse evidence
+high-confidence claims without evidence
+AGI overclaim attempts
+memory expiry
+confidence bounds
+
+These tests exist to prevent Wave 2 from becoming decorative architecture.
 
 Repository Layout
 ```
@@ -353,27 +619,51 @@ Repository Layout
 │       ├── agents.py
 │       ├── causal.py
 │       ├── cognitive_bom.py
+│       ├── cycle.py
 │       ├── doctrine.py
 │       ├── engines.py
 │       ├── evaluation.py
+│       ├── history.py
+│       ├── learning.py
+│       ├── memory.py
+│       ├── observations.py
+│       ├── outcome.py
 │       ├── planning.py
+│       ├── prediction.py
 │       ├── prototype.py
 │       ├── purpose.py
 │       ├── py.typed
-│       └── state.py
+│       ├── revision.py
+│       ├── skills.py
+│       ├── state.py
+│       └── wave2.py
 ├── tests/
 │   ├── test_agents.py
+│   ├── test_belief_history.py
 │   ├── test_belief_state.py
+│   ├── test_belief_updates.py
 │   ├── test_causal_model.py
+│   ├── test_causal_predictions.py
+│   ├── test_causal_revisions.py
 │   ├── test_cognitive_bom.py
+│   ├── test_contradiction_detection.py
 │   ├── test_doctrine.py
 │   ├── test_engines.py
 │   ├── test_evaluation_records.py
+│   ├── test_learning_cycle.py
+│   ├── test_learning_ledger.py
+│   ├── test_memory_quarantine.py
+│   ├── test_outcome_learning.py
 │   ├── test_package_identity.py
 │   ├── test_plan_graph.py
+│   ├── test_prediction_observations.py
 │   ├── test_purpose_checks.py
 │   ├── test_research_prototype_snapshot.py
-│   └── test_state.py
+│   ├── test_skill_validation.py
+│   ├── test_staleness_supersession.py
+│   ├── test_state.py
+│   ├── test_wave2_failure_scenarios.py
+│   └── test_wave2_readiness.py
 ├── COMMERCIAL.md
 ├── LICENSE
 ├── NOTICE.md
@@ -435,23 +725,47 @@ procurement-ready software
 a replacement for human judgment
 a system for unsupervised operational decision-making
 an open-source project
-Wave 2 Direction
+Wave 3 Direction
 
-Wave 2 should move from representation to learnable causal cognition. That means
-future work should add tested mechanisms for:
+Wave 3 should move from a learnable causal cognition core to a governed
+AGI-emulation substrate.
 
-belief updates from evidence
-confidence updates over time
-contradiction and staleness handling
-causal prediction records
-prediction-versus-observation comparison
-outcome learning records
-memory quarantine
-validated reusable skills
+That does not mean claiming AGI. It means coordinating the required engines
+and bounded agent roles under strict governance.
 
-Wave 2 should not begin by adding hype, autonomy claims, or execution authority.
-It should begin by proving the kernel can update its represented beliefs and
-future behavior from evidence while preserving uncertainty and human authority.
+Future Wave 3 work should focus on:
+
+multi-engine coordination
+25-agent structured tribunal flow
+reward auditing
+memory quarantine integration across agent roles
+skill genome updates under governance
+self-play and curriculum task records
+evaluator-driven discovery
+BlackFox handoff package compatibility
+WorldTwin scenario reasoning
+assurance-style evidence records
+human authority preservation
+
+Wave 3 should not begin by adding hype, autonomous authority, hidden execution,
+or vague “agent” folders. It should begin by proving that the Wave 2 learning
+artifacts can coordinate across engines without bypassing governance.
+
+No Wave Theater Rule
+
+IX-CognitionKernel must not advance waves by adding empty folders, decorative
+classes, fake scaffolding, or README claims unsupported by tested code.
+
+Every wave must be earned with:
+
+serious implementation
+evidence records
+failure cases
+validation artifacts
+green CI
+strict anti-overclaim discipline
+
+If a wave does not close the credibility gap from the prior wave, it is not done.
 
 Authorship
 
