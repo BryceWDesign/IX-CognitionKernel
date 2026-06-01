@@ -19,13 +19,13 @@ def test_wave_ladder_is_locked_from_zero_to_six() -> None:
     assert WAVE_LADDER[6].name == "AGI, Only If Overwhelming Evidence Justifies It"
 
 
-def test_current_wave_is_research_prototype() -> None:
+def test_current_wave_is_learnable_causal_cognition_core() -> None:
     wave = current_wave()
 
-    assert wave.number == 1
-    assert wave.claim_boundary is ClaimBoundary.PROTOTYPE
-    assert "structured code" in wave.final_form
-    assert "bounded agent roles" in wave.final_form
+    assert wave.number == 2
+    assert wave.claim_boundary is ClaimBoundary.CORE
+    assert "updates beliefs" in wave.final_form
+    assert "stores validated skills" in wave.final_form
 
 
 def test_final_wave_is_evidence_gated() -> None:
