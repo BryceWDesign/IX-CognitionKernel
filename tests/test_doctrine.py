@@ -19,12 +19,13 @@ def test_wave_ladder_is_locked_from_zero_to_six() -> None:
     assert WAVE_LADDER[6].name == "AGI, Only If Overwhelming Evidence Justifies It"
 
 
-def test_current_wave_is_repository_foundation() -> None:
+def test_current_wave_is_research_prototype() -> None:
     wave = current_wave()
 
-    assert wave.number == 0
-    assert wave.claim_boundary is ClaimBoundary.FOUNDATION
-    assert "no AGI overclaim" in wave.final_form
+    assert wave.number == 1
+    assert wave.claim_boundary is ClaimBoundary.PROTOTYPE
+    assert "structured code" in wave.final_form
+    assert "bounded agent roles" in wave.final_form
 
 
 def test_final_wave_is_evidence_gated() -> None:
