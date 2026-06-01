@@ -157,7 +157,7 @@ def test_verified_known_claim_with_authority_is_ready_for_handoff() -> None:
     assert report.reasons == ("Verified evidence and human authority are present.",)
 
 
-def test_foundation_snapshot_remains_wave_zero_and_blocks_agi_claim() -> None:
+def test_foundation_snapshot_uses_current_wave_and_blocks_agi_claim() -> None:
     snapshot = foundation_snapshot(
         claims=(known_claim(),),
         evidence=(verified_evidence(),),
@@ -165,7 +165,7 @@ def test_foundation_snapshot_remains_wave_zero_and_blocks_agi_claim() -> None:
     )
 
     assert snapshot.project_name == "IX-CognitionKernel"
-    assert snapshot.wave_number == 0
-    assert snapshot.wave_label == "Wave 0 — Repository Foundation"
+    assert snapshot.wave_number == 1
+    assert snapshot.wave_label == "Wave 1 — Research Prototype"
     assert snapshot.permits_agi_claim is False
     assert snapshot.readiness_reports[0].readiness is ActionReadiness.READY_FOR_HANDOFF
