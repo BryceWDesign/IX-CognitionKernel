@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "ix-cognition-kernel"
-version = "0.1.0"
-description = "Wave 1 research prototype for IX-CognitionKernel, a source-available governed causal cognition kernel research project."
+version = "0.2.0"
+description = "Wave 2 learnable causal cognition core for IX-CognitionKernel, a source-available governed causal cognition kernel research project."
 authors = [{ name = "Bryce Lovell" }]
 requires-python = ">=3.11"
 license = { text = "Source-available evaluation license" }
