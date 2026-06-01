@@ -54,6 +54,15 @@ class ActionReadiness(StrEnum):
     READY_FOR_HANDOFF = "ready-for-handoff"
 
 
+class BeliefDisposition(StrEnum):
+    """Governed disposition for a belief held by the cognition layer."""
+
+    ACTIVE = "active"
+    NEEDS_EVIDENCE = "needs-evidence"
+    BLOCKED = "blocked"
+    RETIRED = "retired"
+
+
 @dataclass(frozen=True, slots=True)
 class EvidenceRecord:
     """Evidence attached to one or more claims."""
@@ -123,6 +132,136 @@ class ClaimRecord:
             or self.stale
             or bool(self.contradicted_by)
         )
+
+
+@dataclass(frozen=True, slots=True)
+class BeliefRecord:
+    """A first-class belief record grounded in a claim and provenance."""
+
+    belief_id: str
+    claim: ClaimRecord
+    provenance: tuple[str, ...]
+    rationale: str
+    disposition: BeliefDisposition
+
+    def __post_init__(self) -> None:
+        """Validate belief identity, provenance, rationale, and disposition."""
+
+        if not self.belief_id.strip():
+            raise ValueError("Belief records require a non-empty belief_id.")
+        if not self.provenance:
+            raise ValueError("Belief records require at least one provenance entry.")
+        if not self.rationale.strip():
+            raise ValueError("Belief records require a non-empty rationale.")
+        if (
+            self.disposition is BeliefDisposition.ACTIVE
+            and self.claim.has_blocking_uncertainty
+        ):
+            raise ValueError("Active beliefs cannot contain blocking uncertainty.")
+
+    @property
+    def claim_id(self) -> str:
+        """Return the claim id represented by this belief."""
+
+        return self.claim.claim_id
+
+    @property
+    def confidence(self) -> float:
+        """Return the current confidence assigned to the belief claim."""
+
+        return self.claim.confidence
+
+    @property
+    def uncertainty(self) -> UncertaintyStatus:
+        """Return the belief claim's uncertainty state."""
+
+        return self.claim.uncertainty
+
+    @property
+    def evidence_ids(self) -> tuple[str, ...]:
+        """Return evidence ids attached to the belief claim."""
+
+        return self.claim.evidence_ids
+
+    @property
+    def requires_evidence(self) -> bool:
+        """Return whether the belief is still blocked by missing evidence."""
+
+        return self.disposition is BeliefDisposition.NEEDS_EVIDENCE or (
+            self.uncertainty in {UncertaintyStatus.UNKNOWN, UncertaintyStatus.ASSUMED}
+            or not self.evidence_ids
+        )
+
+    @property
+    def is_blocked(self) -> bool:
+        """Return whether this belief is blocked from actionability."""
+
+        return (
+            self.disposition is BeliefDisposition.BLOCKED
+            or self.claim.has_blocking_uncertainty
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class BeliefState:
+    """Wave 1-ready container for beliefs and their supporting evidence."""
+
+    beliefs: tuple[BeliefRecord, ...]
+    evidence: tuple[EvidenceRecord, ...]
+
+    def __post_init__(self) -> None:
+        """Reject duplicate beliefs, duplicate claims, and duplicate evidence."""
+
+        seen_belief_ids: set[str] = set()
+        seen_claim_ids: set[str] = set()
+        for belief in self.beliefs:
+            if belief.belief_id in seen_belief_ids:
+                raise ValueError(f"Duplicate belief_id detected: {belief.belief_id}")
+            if belief.claim_id in seen_claim_ids:
+                raise ValueError(
+                    f"Duplicate belief claim_id detected: {belief.claim_id}"
+                )
+            seen_belief_ids.add(belief.belief_id)
+            seen_claim_ids.add(belief.claim_id)
+        evidence_index(self.evidence)
+
+    @property
+    def evidence_by_id(self) -> dict[str, EvidenceRecord]:
+        """Return an evidence index for this belief state."""
+
+        return evidence_index(self.evidence)
+
+    @property
+    def actionable_claims(self) -> tuple[ClaimRecord, ...]:
+        """Return belief claims with active disposition and no missing evidence."""
+
+        return tuple(
+            belief.claim
+            for belief in self.beliefs
+            if belief.disposition is BeliefDisposition.ACTIVE
+            and not belief.requires_evidence
+            and not belief.is_blocked
+        )
+
+    @property
+    def beliefs_requiring_evidence(self) -> tuple[BeliefRecord, ...]:
+        """Return beliefs that still need evidence before actionability."""
+
+        return tuple(belief for belief in self.beliefs if belief.requires_evidence)
+
+    @property
+    def blocked_beliefs(self) -> tuple[BeliefRecord, ...]:
+        """Return beliefs blocked by contradiction, staleness, or unsafe uncertainty."""
+
+        return tuple(belief for belief in self.beliefs if belief.is_blocked)
+
+    def belief_by_id(self, belief_id: str) -> BeliefRecord:
+        """Return a belief record by id."""
+
+        for belief in self.beliefs:
+            if belief.belief_id == belief_id:
+                return belief
+        raise ValueError(f"Unknown belief_id: {belief_id}")
 
 
 @dataclass(frozen=True, slots=True)
