@@ -4,8 +4,8 @@ Wave 2 starts when IX-CognitionKernel can receive evidence events as structured
 inputs, preserve a deterministic audit trail, and compute revised belief state
 from evidence pressure. This module still does not execute actions, persist
 memory, or claim full learning. It performs bounded evidence-driven belief
-revision while leaving deeper contradiction detection, staleness handling, and
-belief timelines for later Wave 2 commits.
+revision while leaving belief timelines, prediction comparison, memory
+quarantine, and skill validation for later Wave 2 commits.
 """
 
 from __future__ import annotations
@@ -320,6 +320,129 @@ class ContradictionAssessment:
 DEFAULT_CONTRADICTION_POLICY = ContradictionPolicy()
 
 
+class StalenessReason(StrEnum):
+    """Why a represented belief became stale."""
+
+    AUDIT_GAP = "audit-gap"
+    SUPERSEDED = "superseded"
+
+
+@dataclass(frozen=True, slots=True)
+class StalenessPolicy:
+    """Deterministic staleness and supersession thresholds."""
+
+    stale_after_audit_gap: int = 3
+    supersession_strength_threshold: float = 0.5
+
+    def __post_init__(self) -> None:
+        """Validate staleness policy thresholds."""
+
+        if self.stale_after_audit_gap < 0:
+            raise ValueError("stale_after_audit_gap cannot be negative.")
+        if not 0.0 <= self.supersession_strength_threshold <= 1.0:
+            raise ValueError(
+                "supersession_strength_threshold must be between 0.0 and 1.0."
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class StalenessRecord:
+    """Audit record proving why a claim is stale."""
+
+    staleness_id: str
+    claim_id: str
+    reason: StalenessReason
+    audit_index: int
+    last_relevant_audit_index: int | None
+    trigger_event_id: str | None
+    superseded_event_ids: tuple[str, ...]
+    reasons: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        """Validate staleness identity, audit order, and traceability."""
+
+        if not self.staleness_id.strip():
+            raise ValueError("Staleness records require a non-empty staleness_id.")
+        if not self.claim_id.strip():
+            raise ValueError("Staleness records require a non-empty claim_id.")
+        if self.audit_index < 0:
+            raise ValueError("Staleness record audit_index cannot be negative.")
+        if (
+            self.last_relevant_audit_index is not None
+            and self.last_relevant_audit_index < 0
+        ):
+            raise ValueError(
+                "Staleness record last_relevant_audit_index cannot be negative."
+            )
+        if self.last_relevant_audit_index is not None and (
+            self.last_relevant_audit_index > self.audit_index
+        ):
+            raise ValueError(
+                "Staleness record last_relevant_audit_index cannot exceed audit_index."
+            )
+        if self.trigger_event_id is not None and not self.trigger_event_id.strip():
+            raise ValueError("Staleness record trigger_event_id cannot be empty.")
+        if self.reason is StalenessReason.SUPERSEDED:
+            if self.trigger_event_id is None:
+                raise ValueError(
+                    "Superseded staleness records require trigger_event_id."
+                )
+            if not self.superseded_event_ids:
+                raise ValueError(
+                    "Superseded staleness records require superseded_event_ids."
+                )
+        _unique_ids(self.superseded_event_ids, label="superseded_event_id")
+        if not self.reasons:
+            raise ValueError("Staleness records require reasons.")
+        if any(not reason.strip() for reason in self.reasons):
+            raise ValueError("Staleness record reasons cannot be empty.")
+
+
+@dataclass(frozen=True, slots=True)
+class StalenessAssessment:
+    """Detected staleness records for represented beliefs."""
+
+    records: tuple[StalenessRecord, ...]
+
+    def __post_init__(self) -> None:
+        """Reject duplicate staleness ids."""
+
+        _unique_ids(
+            (record.staleness_id for record in self.records),
+            label="staleness_id",
+        )
+
+    @property
+    def has_stale_claims(self) -> bool:
+        """Return whether any claims were marked stale."""
+
+        return bool(self.records)
+
+    @property
+    def stale_claim_ids(self) -> tuple[str, ...]:
+        """Return claim ids marked stale."""
+
+        return tuple(dict.fromkeys(record.claim_id for record in self.records))
+
+    @property
+    def supersession_records(self) -> tuple[StalenessRecord, ...]:
+        """Return staleness records caused by superseding evidence."""
+
+        return tuple(
+            record
+            for record in self.records
+            if record.reason is StalenessReason.SUPERSEDED
+        )
+
+    def records_for_claim(self, claim_id: str) -> tuple[StalenessRecord, ...]:
+        """Return staleness records for one claim id."""
+
+        return tuple(record for record in self.records if record.claim_id == claim_id)
+
+
+DEFAULT_STALENESS_POLICY = StalenessPolicy()
+
+
 class BeliefUpdateAction(StrEnum):
     """Computed action taken during evidence-driven belief revision."""
 
@@ -372,6 +495,7 @@ class BeliefUpdateRecord:
     before_disposition: BeliefDisposition
     after_disposition: BeliefDisposition
     reasons: tuple[str, ...]
+    staleness_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         """Validate update record identity and traceability."""
@@ -382,9 +506,12 @@ class BeliefUpdateRecord:
             raise ValueError("Belief update records require a non-empty belief_id.")
         if not self.claim_id.strip():
             raise ValueError("Belief update records require a non-empty claim_id.")
-        if not self.event_ids:
-            raise ValueError("Belief update records require event_ids.")
+        if not self.event_ids and not self.staleness_ids:
+            raise ValueError(
+                "Belief update records require event_ids or staleness_ids."
+            )
         _unique_ids(self.event_ids, label="belief update event_id")
+        _unique_ids(self.staleness_ids, label="belief update staleness_id")
         if not self.reasons:
             raise ValueError("Belief update records require reasons.")
         if any(not reason.strip() for reason in self.reasons):
@@ -424,6 +551,7 @@ class BeliefUpdateResult:
     ledger: UpdateLedger
     updates: tuple[BeliefUpdateRecord, ...]
     contradiction_assessment: ContradictionAssessment
+    staleness_assessment: StalenessAssessment
 
     @property
     def changed_belief_ids(self) -> tuple[str, ...]:
@@ -446,6 +574,12 @@ class BeliefUpdateResult:
         """Return explicit conflicts that blocked beliefs."""
 
         return self.contradiction_assessment.blocking_conflicts
+
+    @property
+    def stale_update_records(self) -> tuple[BeliefUpdateRecord, ...]:
+        """Return update records that marked beliefs stale."""
+
+        return tuple(update for update in self.updates if update.staleness_ids)
 
 
 DEFAULT_BELIEF_UPDATE_POLICY = BeliefUpdatePolicy()
@@ -502,17 +636,82 @@ def detect_evidence_conflicts(
     return ContradictionAssessment(conflicts=tuple(conflicts))
 
 
+def detect_staleness(
+    belief_state: BeliefState,
+    ledger: UpdateLedger,
+    *,
+    current_audit_index: int | None = None,
+    policy: StalenessPolicy = DEFAULT_STALENESS_POLICY,
+) -> StalenessAssessment:
+    """Detect stale claims from logical audit gaps and supersession events."""
+
+    current_index = _current_audit_index(ledger, current_audit_index)
+    records: list[StalenessRecord] = []
+    for belief in belief_state.beliefs:
+        events = ledger.events_for_claim(belief.claim_id)
+        if events:
+            last_event = max(events, key=lambda event: event.audit_index)
+            if _audit_gap_is_stale(
+                current_index=current_index,
+                last_event_index=last_event.audit_index,
+                policy=policy,
+            ):
+                records.append(
+                    StalenessRecord(
+                        staleness_id=f"stale-{len(records):03d}",
+                        claim_id=belief.claim_id,
+                        reason=StalenessReason.AUDIT_GAP,
+                        audit_index=current_index,
+                        last_relevant_audit_index=last_event.audit_index,
+                        trigger_event_id=None,
+                        superseded_event_ids=(),
+                        reasons=(
+                            f"Claim {belief.claim_id} has audit gap "
+                            f"{current_index - last_event.audit_index} since last "
+                            "targeted evidence event.",
+                        ),
+                    )
+                )
+        for event in events:
+            if (
+                event.polarity is EvidenceEventPolarity.SUPERSEDES
+                and event.strength >= policy.supersession_strength_threshold
+            ):
+                records.append(
+                    StalenessRecord(
+                        staleness_id=f"stale-{len(records):03d}",
+                        claim_id=belief.claim_id,
+                        reason=StalenessReason.SUPERSEDED,
+                        audit_index=event.audit_index,
+                        last_relevant_audit_index=_last_superseded_audit_index(
+                            ledger,
+                            event.supersedes_event_ids,
+                        ),
+                        trigger_event_id=event.event_id,
+                        superseded_event_ids=event.supersedes_event_ids,
+                        reasons=(
+                            f"{event.event_id} superseded prior evidence context "
+                            f"for claim {belief.claim_id}.",
+                        ),
+                    )
+                )
+    return StalenessAssessment(records=tuple(records))
+
+
 def apply_belief_updates(
     belief_state: BeliefState,
     ledger: UpdateLedger,
     *,
     policy: BeliefUpdatePolicy = DEFAULT_BELIEF_UPDATE_POLICY,
     contradiction_policy: ContradictionPolicy = DEFAULT_CONTRADICTION_POLICY,
+    staleness_policy: StalenessPolicy = DEFAULT_STALENESS_POLICY,
+    current_audit_index: int | None = None,
 ) -> BeliefUpdateResult:
     """Compute a revised belief state from evidence events.
 
     The original belief state is not mutated. Every changed belief receives a
-    BeliefUpdateRecord explaining which events caused the revision.
+    BeliefUpdateRecord explaining which events or staleness checks caused the
+    revision.
     """
 
     _reject_unknown_claim_targets(belief_state, ledger)
@@ -520,12 +719,19 @@ def apply_belief_updates(
         ledger,
         policy=contradiction_policy,
     )
+    staleness_assessment = detect_staleness(
+        belief_state,
+        ledger,
+        current_audit_index=current_audit_index,
+        policy=staleness_policy,
+    )
 
     updated_beliefs: list[BeliefRecord] = []
     update_records: list[BeliefUpdateRecord] = []
     for belief in belief_state.beliefs:
         events = ledger.events_for_claim(belief.claim_id)
-        if not events:
+        staleness_records = staleness_assessment.records_for_claim(belief.claim_id)
+        if not events and not staleness_records:
             updated_beliefs.append(belief)
             continue
 
@@ -534,6 +740,7 @@ def apply_belief_updates(
             events,
             policy,
             contradiction_assessment,
+            staleness_records,
             update_index=len(update_records),
         )
         updated_beliefs.append(updated_belief)
@@ -549,6 +756,7 @@ def apply_belief_updates(
         ledger=ledger,
         updates=tuple(update_records),
         contradiction_assessment=contradiction_assessment,
+        staleness_assessment=staleness_assessment,
     )
 
 
@@ -557,10 +765,11 @@ def _apply_events_to_belief(
     events: tuple[EvidenceEvent, ...],
     policy: BeliefUpdatePolicy,
     contradiction_assessment: ContradictionAssessment,
+    staleness_records: tuple[StalenessRecord, ...],
     *,
     update_index: int,
 ) -> tuple[BeliefRecord, BeliefUpdateRecord]:
-    """Apply evidence events to a single belief."""
+    """Apply evidence events and staleness records to a single belief."""
 
     before_claim = belief.claim
     after_confidence = before_claim.confidence
@@ -570,6 +779,7 @@ def _apply_events_to_belief(
     reasons: list[str] = []
     blocking_conflicts = contradiction_assessment.conflicts_for_claim(belief.claim_id)
     contradiction_seen = bool(blocking_conflicts)
+    stale_seen = bool(staleness_records)
 
     for event in events:
         event_ids.append(event.event_id)
@@ -598,12 +808,18 @@ def _apply_events_to_belief(
             f"{conflict.conflict_id} recorded "
             f"{conflict.severity.value} contradiction pressure."
         )
+    for stale_record in staleness_records:
+        reasons.append(
+            f"{stale_record.staleness_id} marked claim stale via "
+            f"{stale_record.reason.value}."
+        )
 
     after_uncertainty = _next_uncertainty(
         before_claim.uncertainty,
         after_confidence=after_confidence,
         has_evidence=bool(evidence_ids),
         contradiction_seen=contradiction_seen,
+        stale_seen=stale_seen,
         policy=policy,
     )
     after_disposition = _next_disposition(
@@ -621,7 +837,7 @@ def _apply_events_to_belief(
         uncertainty=after_uncertainty,
         evidence_ids=tuple(evidence_ids),
         contradicted_by=tuple(contradicted_by),
-        stale=before_claim.stale,
+        stale=before_claim.stale or stale_seen,
     )
     after_belief = BeliefRecord(
         belief_id=belief.belief_id,
@@ -651,6 +867,7 @@ def _apply_events_to_belief(
         before_disposition=belief.disposition,
         after_disposition=after_disposition,
         reasons=tuple(reasons),
+        staleness_ids=tuple(record.staleness_id for record in staleness_records),
     )
     return after_belief, update_record
 
@@ -661,12 +878,15 @@ def _next_uncertainty(
     after_confidence: float,
     has_evidence: bool,
     contradiction_seen: bool,
+    stale_seen: bool,
     policy: BeliefUpdatePolicy,
 ) -> UncertaintyStatus:
     """Compute uncertainty after evidence pressure."""
 
     if contradiction_seen:
         return UncertaintyStatus.DISPUTED
+    if stale_seen:
+        return UncertaintyStatus.STALE
     if current is UncertaintyStatus.UNSAFE_TO_ACT:
         return current
     if after_confidence <= policy.needs_evidence_threshold:
@@ -725,6 +945,7 @@ def _update_action(
         after_claim.uncertainty is before_claim.uncertainty
         and after_disposition is before_disposition
         and after_claim.evidence_ids == before_claim.evidence_ids
+        and after_claim.stale == before_claim.stale
     ):
         return BeliefUpdateAction.UNCHANGED
     return BeliefUpdateAction.STRENGTHENED
@@ -779,6 +1000,51 @@ def _conflict_reason(
         f"{event.event_id} contradicts claim {claim_id} without prior supporting "
         f"event context; severity={severity.value}."
     )
+
+
+def _current_audit_index(
+    ledger: UpdateLedger,
+    current_audit_index: int | None,
+) -> int:
+    """Return and validate the logical current audit index."""
+
+    latest = ledger.latest_audit_index
+    if current_audit_index is None:
+        if latest is None:
+            return 0
+        return latest
+    if current_audit_index < 0:
+        raise ValueError("current_audit_index cannot be negative.")
+    if latest is not None and current_audit_index < latest:
+        raise ValueError("current_audit_index cannot be earlier than ledger latest.")
+    return current_audit_index
+
+
+def _audit_gap_is_stale(
+    *,
+    current_index: int,
+    last_event_index: int,
+    policy: StalenessPolicy,
+) -> bool:
+    """Return whether a logical audit gap marks a claim stale."""
+
+    if policy.stale_after_audit_gap == 0:
+        return False
+    return current_index - last_event_index >= policy.stale_after_audit_gap
+
+
+def _last_superseded_audit_index(
+    ledger: UpdateLedger,
+    supersedes_event_ids: tuple[str, ...],
+) -> int | None:
+    """Return the latest audit index among superseded events."""
+
+    audit_indices = tuple(
+        ledger.event_by_id(event_id).audit_index for event_id in supersedes_event_ids
+    )
+    if not audit_indices:
+        return None
+    return max(audit_indices)
 
 
 def _clamp_confidence(value: float) -> float:
