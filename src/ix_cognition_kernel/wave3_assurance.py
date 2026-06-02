@@ -612,7 +612,9 @@ class AssuranceRecordBundle:
         if not self.records:
             raise ValueError("Assurance record bundles require at least one record.")
         records = tuple(sorted(self.records, key=lambda record: record.assurance_id))
-        _unique_values((record.assurance_id for record in records), label="assurance_id")
+        _unique_values(
+            (record.assurance_id for record in records), label="assurance_id"
+        )
         object.__setattr__(self, "records", records)
         object.__setattr__(
             self, "notes", _unique_text(self.notes, label="assurance bundle note")
@@ -632,7 +634,9 @@ class AssuranceRecordBundle:
         """Return assurance record ids ready for human review."""
 
         return tuple(
-            record.assurance_id for record in self.records if record.ready_for_human_review
+            record.assurance_id
+            for record in self.records
+            if record.ready_for_human_review
         )
 
     @property
