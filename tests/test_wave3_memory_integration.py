@@ -188,7 +188,7 @@ def test_quarantined_memory_needs_evidence_before_review() -> None:
         decision_id="memory-decision-001",
         memory_ledger=memory_ledger(memory_candidate(evidence_ids=())),
         role_artifact_bundle=role_bundle(),
-        evidence_ids=("decision-evidence"),
+        evidence_ids=("decision-evidence",),
     )
 
     assert decision.status is MemoryRoleDecisionStatus.NEEDS_EVIDENCE
