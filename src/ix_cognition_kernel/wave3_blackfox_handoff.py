@@ -440,7 +440,9 @@ class BlackFoxHandoffPackage:
         return required_order + extra_order
 
     @property
-    def missing_required_boundary_kinds(self) -> tuple[BlackFoxHandoffBoundaryKind, ...]:
+    def missing_required_boundary_kinds(
+        self,
+    ) -> tuple[BlackFoxHandoffBoundaryKind, ...]:
         """Return required BlackFox boundary kinds not represented."""
 
         present = {boundary.kind for boundary in self.execution_boundaries}
@@ -563,7 +565,8 @@ class BlackFoxHandoffPackage:
             gaps.append(
                 "missing BlackFox review requirement kinds: "
                 + ", ".join(
-                    kind.value for kind in self.missing_required_review_requirement_kinds
+                    kind.value
+                    for kind in self.missing_required_review_requirement_kinds
                 )
             )
         if self.unsatisfied_requirement_ids:
@@ -738,7 +741,9 @@ class BlackFoxHandoffBundle:
         _unique_values((package.handoff_id for package in packages), label="handoff_id")
         object.__setattr__(self, "packages", packages)
         object.__setattr__(
-            self, "notes", _unique_text(self.notes, label="BlackFox handoff bundle note")
+            self,
+            "notes",
+            _unique_text(self.notes, label="BlackFox handoff bundle note"),
         )
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
