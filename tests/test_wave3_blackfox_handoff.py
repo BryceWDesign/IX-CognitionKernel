@@ -106,7 +106,9 @@ def test_ready_blackfox_handoff_is_reviewable_not_executable() -> None:
     assert package.status is BlackFoxHandoffStatus.READY_FOR_HUMAN_REVIEW
     assert package.ready_for_human_review is True
     assert package.permits_automatic_execution is False
-    assert package.human_authority_state is WaveThreeAuthorityState.HUMAN_REVIEW_REQUIRED
+    assert (
+        package.human_authority_state is WaveThreeAuthorityState.HUMAN_REVIEW_REQUIRED
+    )
     assert package.missing_required_boundary_kinds == ()
     assert package.missing_required_review_requirement_kinds == ()
     assert package.readiness_gaps == ()
