@@ -489,7 +489,9 @@ def required_wave_three_adversarial_probes() -> tuple[WaveThreeAdversarialProbe,
             attack_description="Install a reusable skill without reuse evidence.",
             expected_denial="skills cannot install without reuse evidence and review",
             evidence_id="adversarial-evidence:skill-bypass",
-            residual_risks=("Future skill import paths require reuse-evidence probes.",),
+            residual_risks=(
+                "Future skill import paths require reuse-evidence probes.",
+            ),
         ),
         passed_adversarial_probe(
             probe_id="probe-handoff-bypass",
