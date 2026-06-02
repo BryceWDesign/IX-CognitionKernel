@@ -76,7 +76,8 @@ def accepted_memory(candidate_id: str = "memory-candidate-001") -> MemoryCandida
 
 
 def memory_ledger(
-    *, status: MemoryValidationStatus = MemoryValidationStatus.ACCEPTED,
+    *,
+    status: MemoryValidationStatus = MemoryValidationStatus.ACCEPTED,
 ) -> MemoryQuarantineLedger:
     evidence_ids = (
         ("ev-memory-001",) if status is MemoryValidationStatus.ACCEPTED else ()
@@ -111,9 +112,7 @@ def skill_candidate(skill_id: str = "skill-001") -> SkillCandidate:
         applicability_conditions=(
             "Use only when evaluating evidence visibility in governance records.",
         ),
-        failure_modes=(
-            "Fails if hidden failed checks can raise the review score.",
-        ),
+        failure_modes=("Fails if hidden failed checks can raise the review score.",),
         source_memory_candidate_ids=("memory-candidate-001",),
         source_outcome_ids=("outcome-001",),
         confidence=0.86,
@@ -351,7 +350,9 @@ def test_validated_skill_requires_transfer_limits_and_reuse_limits() -> None:
 
     assert update.status is SkillGenomeUpdateStatus.NEEDS_EVIDENCE
     assert "validated skills require allowed transfer domains" in update.readiness_gaps
-    assert "validated skills require explicit reuse limitations" in update.readiness_gaps
+    assert (
+        "validated skills require explicit reuse limitations" in update.readiness_gaps
+    )
 
 
 def test_incomplete_learning_archivist_role_blocks_update_review() -> None:
@@ -395,7 +396,10 @@ def test_blocked_required_role_blocks_skill_genome_update() -> None:
     blocked_learning_role = RoleArtifactRecord(
         role_id="learning-archivist",
         produced_output_artifacts=(ArtifactKind.OUTCOME_DELTA,),
-        consumed_input_artifacts=(ArtifactKind.WORLD_MODEL, ArtifactKind.EVIDENCE_CHECK),
+        consumed_input_artifacts=(
+            ArtifactKind.WORLD_MODEL,
+            ArtifactKind.EVIDENCE_CHECK,
+        ),
         evidence_ids=("role-evidence:learning",),
         rationale="Learning role blocks because reuse evidence is contradictory.",
         status=RoleArtifactStatus.BLOCKED,
