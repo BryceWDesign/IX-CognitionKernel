@@ -1,12 +1,11 @@
 import pytest
 from test_learning_cycle import cycle_input, memory_candidate, skill_candidate
 
-from ix_cognition_kernel import PROJECT_NAME, WAVE, __version__
 from ix_cognition_kernel.cycle import (
     LearnableCognitionCycleResult,
     run_learnable_cognition_cycle,
 )
-from ix_cognition_kernel.doctrine import ClaimBoundary, current_wave
+from ix_cognition_kernel.doctrine import ClaimBoundary, wave_by_number
 from ix_cognition_kernel.wave2 import (
     WAVE_TWO_REQUIRED_VALIDATION_ARTIFACT_IDS,
     WaveTwoReadinessSnapshot,
@@ -18,14 +17,8 @@ def ready_cycle() -> LearnableCognitionCycleResult:
     return run_learnable_cognition_cycle(cycle_input())
 
 
-def test_package_identity_is_wave_two() -> None:
-    assert PROJECT_NAME == "IX-CognitionKernel"
-    assert WAVE == "Wave 2"
-    assert __version__ == "0.2.0"
-
-
-def test_current_wave_is_learnable_causal_cognition_core() -> None:
-    wave = current_wave()
+def test_wave_two_definition_remains_learnable_causal_cognition_core() -> None:
+    wave = wave_by_number(2)
 
     assert wave.number == 2
     assert wave.claim_boundary is ClaimBoundary.CORE
@@ -116,7 +109,7 @@ def test_wave_two_readiness_snapshot_reports_memory_and_skill_gaps() -> None:
 
 def test_wave_two_snapshot_rejects_wrong_project_or_wave() -> None:
     cycle = ready_cycle()
-    wave = current_wave()
+    wave = wave_by_number(2)
 
     with pytest.raises(ValueError, match="IX-CognitionKernel"):
         WaveTwoReadinessSnapshot(
