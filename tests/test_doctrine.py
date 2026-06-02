@@ -19,8 +19,18 @@ def test_wave_ladder_is_locked_from_zero_to_six() -> None:
     assert WAVE_LADDER[6].name == "AGI, Only If Overwhelming Evidence Justifies It"
 
 
-def test_current_wave_is_learnable_causal_cognition_core() -> None:
+def test_current_wave_is_governed_agi_emulation_substrate() -> None:
     wave = current_wave()
+
+    assert wave.number == 3
+    assert wave.claim_boundary is ClaimBoundary.EMULATION
+    assert "coordinates required engines" in wave.final_form
+    assert "assurance-style evidence records" in wave.final_form
+    assert wave.permitted_claim == "Governed AGI-emulation substrate, not AGI."
+
+
+def test_wave_two_learnable_causal_core_remains_available() -> None:
+    wave = wave_by_number(2)
 
     assert wave.number == 2
     assert wave.claim_boundary is ClaimBoundary.CORE
