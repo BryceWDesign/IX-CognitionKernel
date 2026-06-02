@@ -317,7 +317,9 @@ class RoleArtifactBundle:
             (record.role_id for record in sorted_records), label="role_id"
         )
         object.__setattr__(
-            self, "required_role_ids", _normalize_required_role_ids(self.required_role_ids)
+            self,
+            "required_role_ids",
+            _normalize_required_role_ids(self.required_role_ids),
         )
         for role_id in record_ids:
             if role_id not in self.required_role_ids:
@@ -328,9 +330,7 @@ class RoleArtifactBundle:
         object.__setattr__(
             self,
             "notes",
-            _normalize_unique_text_tuple(
-                self.notes, label="role artifact bundle note"
-            ),
+            _normalize_unique_text_tuple(self.notes, label="role artifact bundle note"),
         )
         object.__setattr__(
             self,
@@ -354,20 +354,26 @@ class RoleArtifactBundle:
     def blocked_role_ids(self) -> tuple[str, ...]:
         """Return role ids whose artifacts block progress."""
 
-        return tuple(record.role_id for record in self.records if record.blocks_progress)
+        return tuple(
+            record.role_id for record in self.records if record.blocks_progress
+        )
 
     @property
     def missing_required_role_ids(self) -> tuple[str, ...]:
         """Return required roles not represented in the bundle."""
 
         present = set(self.record_role_ids)
-        return tuple(role_id for role_id in self.required_role_ids if role_id not in present)
+        return tuple(
+            role_id for role_id in self.required_role_ids if role_id not in present
+        )
 
     @property
     def incomplete_role_ids(self) -> tuple[str, ...]:
         """Return represented role ids lacking complete coverage."""
 
-        return tuple(record.role_id for record in self.records if not record.is_complete)
+        return tuple(
+            record.role_id for record in self.records if not record.is_complete
+        )
 
     @property
     def readiness_gaps(self) -> tuple[str, ...]:
@@ -421,7 +427,9 @@ class RoleArtifactBundle:
             artifacts=artifacts,
             evidence_links=evidence_links,
             required_kinds=(WaveThreeArtifactKind.ROLE_ARTIFACT,),
-            notes=("Agent-role artifacts are review records, not autonomous authority.",),
+            notes=(
+                "Agent-role artifacts are review records, not autonomous authority.",
+            ),
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -533,7 +541,9 @@ def _require_non_empty(value: str, label: str) -> str:
     return normalized
 
 
-def _normalize_unique_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+def _normalize_unique_text_tuple(
+    values: Iterable[str], *, label: str
+) -> tuple[str, ...]:
     """Normalize text tuples while rejecting blanks and duplicates."""
 
     normalized: list[str] = []
