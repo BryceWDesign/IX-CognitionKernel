@@ -152,7 +152,8 @@ class MemoryRoleDecisionRecord:
         """Return expired memory candidate ids."""
 
         return tuple(
-            candidate.candidate_id for candidate in self.memory_ledger.expired_candidates
+            candidate.candidate_id
+            for candidate in self.memory_ledger.expired_candidates
         )
 
     @property
@@ -217,7 +218,9 @@ class MemoryRoleDecisionRecord:
         """Return required roles whose role artifacts block progress."""
 
         blocked = set(self.role_artifact_bundle.blocked_role_ids)
-        return tuple(role_id for role_id in self.required_role_ids if role_id in blocked)
+        return tuple(
+            role_id for role_id in self.required_role_ids if role_id in blocked
+        )
 
     @property
     def permits_automatic_memory_write(self) -> bool:
