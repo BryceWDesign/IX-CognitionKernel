@@ -28,9 +28,9 @@ from ix_cognition_kernel.wave3_agent_artifacts import (
     complete_role_artifact_record,
 )
 from ix_cognition_kernel.wave3_assurance import (
+    REQUIRED_ASSURANCE_CLAIM_KINDS,
     AssuranceRecord,
     AssuranceRecordBundle,
-    REQUIRED_ASSURANCE_CLAIM_KINDS,
     supported_assurance_claim,
 )
 from ix_cognition_kernel.wave3_blackfox_handoff import (
@@ -69,7 +69,10 @@ from ix_cognition_kernel.wave3_memory_integration import (
     MemoryRoleDecisionBundle,
     MemoryRoleDecisionRecord,
 )
-from ix_cognition_kernel.wave3_reward_audit import RewardAuditRecord, clean_reward_audit_record
+from ix_cognition_kernel.wave3_reward_audit import (
+    RewardAuditRecord,
+    clean_reward_audit_record,
+)
 from ix_cognition_kernel.wave3_skill_governance import (
     DEFAULT_SKILL_GENOME_REVIEW_SCOPE,
     SkillGenomeUpdateBundle,
@@ -97,7 +100,6 @@ from ix_cognition_kernel.wave3_worldtwin import (
     WorldTwinScenarioBundle,
     WorldTwinScenarioRecord,
 )
-
 
 TRIBUNAL_ROLE_IDS = (
     "planner",
@@ -550,7 +552,9 @@ def blackfox_handoff_bundle() -> BlackFoxHandoffBundle:
     )
 
 
-def assurance_bundle(component_bundles) -> AssuranceRecordBundle:  # type: ignore[no-untyped-def]
+def assurance_bundle(  # type: ignore[no-untyped-def]
+    component_bundles,
+) -> AssuranceRecordBundle:
     artifacts = tuple(
         artifact for bundle in component_bundles for artifact in bundle.artifacts
     )
@@ -627,7 +631,7 @@ def ready_substrate() -> WaveThreeSubstrateResult:
     )
 
 
-def test_core_wave_three_artifact_kinds_exclude_readiness_snapshot_until_next_gate() -> None:
+def test_core_artifacts_exclude_readiness_snapshot_until_next_gate() -> None:
     assert CORE_WAVE_THREE_ARTIFACT_KINDS == (
         WaveThreeArtifactKind.ENGINE_COORDINATION,
         WaveThreeArtifactKind.ROLE_ARTIFACT,
@@ -781,8 +785,7 @@ def test_substrate_blocks_when_component_bundle_blocks() -> None:
     assert substrate.status is WaveThreeSubstrateStatus.BLOCKED
     assert substrate.ready_for_readiness_snapshot is False
     assert any(
-        "worldtwin-scenario:worldtwin-blocked" in gap
-        for gap in substrate.blocking_gaps
+        "worldtwin-scenario:worldtwin-blocked" in gap for gap in substrate.blocking_gaps
     )
 
 
