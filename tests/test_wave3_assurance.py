@@ -21,7 +21,6 @@ from ix_cognition_kernel.wave3_contracts import (
     WaveThreeSourceSystem,
 )
 
-
 REQUIRED_ARTIFACT_IDS = {
     WaveThreeArtifactKind.ENGINE_COORDINATION: "engine-coordination:belief",
     WaveThreeArtifactKind.ROLE_ARTIFACT: "role-artifact:verifier",
