@@ -1,4 +1,4 @@
-"""Locked doctrine for the IX-CognitionKernel Wave 2 learning core."""
+"""Locked doctrine for the IX-CognitionKernel maturity ladder."""
 
 from __future__ import annotations
 
@@ -154,9 +154,9 @@ def wave_by_number(number: int) -> WaveDefinition:
 
 
 def current_wave() -> WaveDefinition:
-    """Return the current learnable-causal-cognition wave."""
+    """Return the current governed AGI-emulation substrate wave."""
 
-    return wave_by_number(2)
+    return wave_by_number(3)
 
 
 def final_wave() -> WaveDefinition:
