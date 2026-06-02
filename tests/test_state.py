@@ -165,7 +165,7 @@ def test_foundation_snapshot_uses_current_wave_and_blocks_agi_claim() -> None:
     )
 
     assert snapshot.project_name == "IX-CognitionKernel"
-    assert snapshot.wave_number == 2
-    assert snapshot.wave_label == "Wave 2 — Learnable Causal Cognition Core"
+    assert snapshot.wave_number == 3
+    assert snapshot.wave_label == "Wave 3 — Governed AGI-Emulation Substrate"
     assert snapshot.permits_agi_claim is False
     assert snapshot.readiness_reports[0].readiness is ActionReadiness.READY_FOR_HANDOFF
