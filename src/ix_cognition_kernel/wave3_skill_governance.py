@@ -353,9 +353,13 @@ class SkillGenomeUpdateRecord:
     def _has_complete_skill_reviewer_role(self) -> bool:
         """Return whether learning-archivist is complete in the role bundle."""
 
-        return SKILL_GENOME_REVIEWER_ROLE_ID in self.role_artifact_bundle.complete_role_ids
+        return (
+            SKILL_GENOME_REVIEWER_ROLE_ID in self.role_artifact_bundle.complete_role_ids
+        )
 
-    def reuse_records_for_validated_skills(self) -> tuple[SkillReuseEvidenceRecord, ...]:
+    def reuse_records_for_validated_skills(
+        self,
+    ) -> tuple[SkillReuseEvidenceRecord, ...]:
         """Return reuse evidence records cited by validated skill validations."""
 
         validated_reuse_ids = set(self.validation_reuse_record_ids)
