@@ -36,9 +36,7 @@ from ix_cognition_kernel.wave4_trials import WaveFourTrialStatus
 
 T = TypeVar("T")
 
-WAVE_FOUR_SCORECARD_GATE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-scorecard-gate-v1"
-)
+WAVE_FOUR_SCORECARD_GATE_SCHEMA_VERSION = "ix-cognition-kernel-wave4-scorecard-gate-v1"
 WAVE_FOUR_PROTO_SCORECARD_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-proto-candidate-scorecard-v1"
 )
@@ -335,8 +333,7 @@ class WaveFourProtoCandidateScorecard:
         """Return hard blocks for this scorecard."""
 
         gaps = [
-            f"{self.scorecard_id} blocked: {reason}"
-            for reason in self.blocked_reasons
+            f"{self.scorecard_id} blocked: {reason}" for reason in self.blocked_reasons
         ]
         gaps.extend(
             f"blocking scorecard gate failed: {gate_id}"
@@ -748,8 +745,7 @@ def _has_no_agi_or_independent_validation_claim(
         and not bundle.independently_validated
         and all(not artifact.claims_agi for artifact in bundle.artifact_refs)
         and all(
-            not artifact.independently_validated
-            for artifact in bundle.artifact_refs
+            not artifact.independently_validated for artifact in bundle.artifact_refs
         )
     )
 
@@ -826,7 +822,5 @@ def _unique_items(values: Iterable[T], label: str) -> tuple[T, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
