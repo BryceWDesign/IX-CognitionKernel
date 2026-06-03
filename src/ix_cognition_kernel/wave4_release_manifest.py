@@ -92,9 +92,7 @@ class WaveFourReleaseManifestDecision(StrEnum):
     BLOCK_CLOSEOUT = "block-closeout"
 
 
-REQUIRED_WAVE_FOUR_RELEASE_COMPONENT_KINDS: tuple[
-    WaveFourReleaseComponentKind, ...
-] = (
+REQUIRED_WAVE_FOUR_RELEASE_COMPONENT_KINDS: tuple[WaveFourReleaseComponentKind, ...] = (
     WaveFourReleaseComponentKind.SOURCE_MODULE,
     WaveFourReleaseComponentKind.TEST_MODULE,
     WaveFourReleaseComponentKind.VALIDATION_COMMAND,
@@ -157,20 +155,55 @@ WAVE_FOUR_CLOSEOUT_TEST_PATHS: tuple[str, ...] = (
 
 
 class WaveFourCompletionReceiptLike(Protocol):
-    """Structural protocol for completion receipt fields used by the manifest."""
+    """Read-only structural protocol for receipt fields used by the manifest."""
 
-    receipt_id: str
-    artifact_id: str
-    status: WaveFourCompletionReceiptStatus
-    receipt_digest: str
-    all_evidence_ids: tuple[str, ...]
-    readiness_gaps: tuple[str, ...]
-    blocking_gaps: tuple[str, ...]
-    permits_automatic_execution: bool
-    permits_automatic_promotion: bool
-    claims_agi: bool
-    independently_validated: bool
-    production_ready: bool
+    @property
+    def receipt_id(self) -> str:
+        """Return the completion receipt identifier."""
+
+    @property
+    def artifact_id(self) -> str:
+        """Return the completion receipt artifact identifier."""
+
+    @property
+    def status(self) -> WaveFourCompletionReceiptStatus:
+        """Return the completion receipt status."""
+
+    @property
+    def receipt_digest(self) -> str:
+        """Return the completion receipt digest."""
+
+    @property
+    def all_evidence_ids(self) -> tuple[str, ...]:
+        """Return all evidence identifiers visible to the receipt."""
+
+    @property
+    def readiness_gaps(self) -> tuple[str, ...]:
+        """Return non-blocking readiness gaps."""
+
+    @property
+    def blocking_gaps(self) -> tuple[str, ...]:
+        """Return blocking gaps."""
+
+    @property
+    def permits_automatic_execution(self) -> bool:
+        """Return whether automatic execution is permitted."""
+
+    @property
+    def permits_automatic_promotion(self) -> bool:
+        """Return whether automatic maturity promotion is permitted."""
+
+    @property
+    def claims_agi(self) -> bool:
+        """Return whether the receipt claims AGI."""
+
+    @property
+    def independently_validated(self) -> bool:
+        """Return whether the receipt claims independent validation."""
+
+    @property
+    def production_ready(self) -> bool:
+        """Return whether the receipt claims production readiness."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,7 +234,7 @@ class WaveFourReleaseComponent:
             _unique_text(self.evidence_ids, label="component evidence_id"),
         )
         if self.required and not self.evidence_ids:
-            raise ValueError("Required Wave 4 release components require evidence ids.")
+            raise ValueError("required Wave 4 release components require evidence ids.")
         object.__setattr__(
             self,
             "schema_version",
@@ -343,9 +376,7 @@ class WaveFourReleaseManifest:
         object.__setattr__(self, "manifest_id", _text(self.manifest_id, "manifest_id"))
         if not self.components:
             raise ValueError("Wave 4 release manifests require components.")
-        components = tuple(
-            sorted(self.components, key=lambda item: item.component_key)
-        )
+        components = tuple(sorted(self.components, key=lambda item: item.component_key))
         _unique_items((item.component_id for item in components), "component_id")
         object.__setattr__(self, "components", components)
         if not self.validation_commands:
@@ -519,9 +550,7 @@ class WaveFourReleaseManifest:
                 "completion_receipt_digest": self.completion_receipt.receipt_digest,
                 "components": [item.fingerprint() for item in self.components],
                 "manifest_id": self.manifest_id,
-                "validation": [
-                    item.fingerprint() for item in self.validation_commands
-                ],
+                "validation": [item.fingerprint() for item in self.validation_commands],
             }
         )
 
@@ -558,8 +587,7 @@ class WaveFourReleaseManifest:
         """Return hard blocks for this release manifest."""
 
         gaps = [
-            f"{self.manifest_id} blocked: {reason}"
-            for reason in self.blocked_reasons
+            f"{self.manifest_id} blocked: {reason}" for reason in self.blocked_reasons
         ]
         gaps.extend(self.completion_receipt.blocking_gaps)
         return tuple(gaps)
@@ -694,8 +722,7 @@ class WaveFourReleaseManifest:
                 kind.value for kind in self.missing_required_component_kinds
             ],
             "missing_required_validation_command_kinds": [
-                kind.value
-                for kind in self.missing_required_validation_command_kinds
+                kind.value for kind in self.missing_required_validation_command_kinds
             ],
             "not_run_command_ids": list(self.not_run_command_ids),
             "permits_automatic_execution": self.permits_automatic_execution,
@@ -870,7 +897,5 @@ def _unique_items(values: Iterable[T], label: str) -> tuple[T, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
