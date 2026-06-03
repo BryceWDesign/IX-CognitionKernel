@@ -26,6 +26,7 @@ from ix_cognition_kernel.wave4_review_packet import (
     build_wave_four_human_review_packet,
 )
 from ix_cognition_kernel.wave4_scorecard import (
+    WaveFourProtoCandidateScorecard,
     WaveFourScorecardGateSeverity,
     build_wave_four_proto_candidate_scorecard,
 )
@@ -36,7 +37,6 @@ from ix_cognition_kernel.wave4_trials import (
     WaveFourTrialProtocol,
     WaveFourTrialTaskKind,
 )
-
 
 KIND_TO_CAPABILITY: dict[WaveFourArtifactKind, WaveFourCapabilityArea] = {
     WaveFourArtifactKind.CONTROLLED_TRIAL: WaveFourCapabilityArea.AUDIT_TRAIL,
@@ -200,7 +200,7 @@ def proto_bundle(
     )
 
 
-def ready_scorecard():
+def ready_scorecard() -> WaveFourProtoCandidateScorecard:
     return build_wave_four_proto_candidate_scorecard(
         scorecard_id="scorecard-review-packet-001",
         proto_candidate_bundle=proto_bundle(),
