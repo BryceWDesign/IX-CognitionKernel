@@ -208,7 +208,7 @@ class WaveFourFailureRepairSuite:
             self, "reviewer_role_id", _text(self.reviewer_role_id, "reviewer_role_id")
         )
         object.__setattr__(
-                    self,
+            self,
             "generated_by_engine_id",
             _text(self.generated_by_engine_id, "generated_by_engine_id"),
         )
@@ -417,7 +417,8 @@ class WaveFourFailureRepairSuite:
 
     def cycle_by_id(self, cycle_id: str) -> WaveFourFailureRepairCycle:
         """Return one cycle by id."""
-                for cycle in self.cycles:
+
+        for cycle in self.cycles:
             if cycle.cycle_id == cycle_id:
                 return cycle
         raise ValueError(f"Unknown Wave 4 repair cycle_id: {cycle_id}")
