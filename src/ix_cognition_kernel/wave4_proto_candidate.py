@@ -147,11 +147,9 @@ class WaveFourProtoCandidateTrialBundle:
         object.__setattr__(
             self,
             "required_capability_areas",
-            _unique_items(
-                self.required_capability_areas, "required capability area"
-            ),
+            _unique_items(self.required_capability_areas, "required capability area"),
         )
-        object.__setattr__(
+                object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
         if self.permits_automatic_execution:
@@ -307,8 +305,7 @@ class WaveFourProtoCandidateTrialBundle:
             for artifact in self.artifact_refs
             if artifact.artifact_id not in ready
         )
-
-    @property
+            @property
     def all_evidence_ids(self) -> tuple[str, ...]:
         """Return sorted evidence ids from tasks, artifacts, and links."""
 
@@ -332,9 +329,7 @@ class WaveFourProtoCandidateTrialBundle:
         ):
             gaps.extend(self.trial_protocol.readiness_gaps)
         if self.missing_required_task_kinds:
-            missing = ", ".join(
-                kind.value for kind in self.missing_required_task_kinds
-            )
+            missing = ", ".join(kind.value for kind in self.missing_required_task_kinds)
             gaps.append(f"missing proto-candidate task coverage: {missing}")
         if self.missing_required_artifact_kinds:
             missing = ", ".join(
@@ -360,8 +355,7 @@ class WaveFourProtoCandidateTrialBundle:
         """Return hard blocks for this proto-candidate bundle."""
 
         gaps = [
-            f"{self.bundle_id} blocked: {reason}"
-            for reason in self.blocked_reasons
+            f"{self.bundle_id} blocked: {reason}" for reason in self.blocked_reasons
         ]
         gaps.extend(f"blocked task: {task_id}" for task_id in self.blocked_task_ids)
         gaps.extend(
@@ -456,8 +450,7 @@ class WaveFourProtoCandidateTrialBundle:
             )
             for evidence_id in self.all_evidence_ids
         )
-
-    def to_artifact_bundle(self) -> WaveFourArtifactBundle:
+            def to_artifact_bundle(self) -> WaveFourArtifactBundle:
         """Convert this integration bundle into a shared Wave 4 artifact bundle."""
 
         return WaveFourArtifactBundle(
@@ -572,7 +565,5 @@ def _unique_items(values: Iterable[T], label: str) -> tuple[T, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
