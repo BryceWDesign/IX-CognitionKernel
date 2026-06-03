@@ -245,9 +245,7 @@ def test_repair_suite_rejects_negative_control_for_unknown_cycle() -> None:
         WaveFourFailureRepairSuite(
             suite_id="invalid-suite",
             cycles=(repair_cycle(),),
-            negative_controls=(
-                negative_control(cycle_id="cycle-missing-from-suite"),
-            ),
+            negative_controls=(negative_control(cycle_id="cycle-missing-from-suite"),),
             required_failure_modes=(WaveFourFailureMode.HIDDEN_UNCERTAINTY,),
         )
 
@@ -441,9 +439,7 @@ def test_repair_suite_converts_to_trial_protocol() -> None:
         "failure-repair:cycle-hidden-uncertainty",
         "failure-repair:cycle-missing-evidence",
     )
-    assert protocol.required_task_kinds == (
-        WaveFourTrialTaskKind.FAILURE_REPAIR_PROBE,
-    )
+    assert protocol.required_task_kinds == (WaveFourTrialTaskKind.FAILURE_REPAIR_PROBE,)
 
 
 def test_repair_suite_converts_to_shared_artifact_bundle() -> None:
