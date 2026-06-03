@@ -1,9 +1,10 @@
 """Wave 4 completion receipt records.
 
-This module turns a ready human-review docket into a bounded Wave 4 record
-receipt. The receipt is evidence-bound and deterministic, but it is not a
-certification, not production approval, not independent validation, not AGI, and
-not execution authority.
+A Wave 4 completion receipt records that the controlled proto-candidate review
+package is ready to be stored as a human-review record. It is not deployment
+approval, production readiness, independent validation, automatic promotion, or
+an AGI claim. The receipt exists to close the evidence chain with deterministic
+checks, a digest, and explicit human-authority boundaries.
 """
 
 from __future__ import annotations
@@ -26,20 +27,20 @@ from ix_cognition_kernel.wave4_contracts import (
     WaveFourEvidenceRelation,
     WaveFourSourceSystem,
 )
-from ix_cognition_kernel.wave4_review_docket import (
-    WaveFourReviewDocketStatus,
-)
+from ix_cognition_kernel.wave4_review_docket import WaveFourReviewDocketStatus
 
 T = TypeVar("T")
 
-WAVE_FOUR_RECORD_CHECK_SCHEMA_VERSION = "ix-cognition-kernel-wave4-record-check-v1"
+WAVE_FOUR_RECORD_CHECK_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave4-record-check-v1"
+)
 WAVE_FOUR_COMPLETION_RECEIPT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-completion-receipt-v1"
 )
 
 
 class WaveFourRecordCheckKind(StrEnum):
-    """Checks required before recording Wave 4 as review-ready."""
+    """Checks required before recording the Wave 4 review package."""
 
     DOCKET_READY = "docket-ready"
     DOCKET_DIGEST_PRESENT = "docket-digest-present"
@@ -56,7 +57,7 @@ class WaveFourRecordCheckKind(StrEnum):
 
 
 class WaveFourRecordCheckSeverity(StrEnum):
-    """Failure severity for a Wave 4 record check."""
+    """Severity classes for Wave 4 completion receipt checks."""
 
     EVIDENCE = "evidence"
     REPAIR = "repair"
@@ -64,7 +65,7 @@ class WaveFourRecordCheckSeverity(StrEnum):
 
 
 class WaveFourCompletionReceiptStatus(StrEnum):
-    """Fail-closed completion receipt status."""
+    """Fail-closed status for a Wave 4 completion receipt."""
 
     READY_FOR_WAVE_FOUR_RECORD = "ready-for-wave-four-record"
     NEEDS_EVIDENCE = "needs-evidence"
@@ -73,7 +74,7 @@ class WaveFourCompletionReceiptStatus(StrEnum):
 
 
 class WaveFourCompletionReceiptDecision(StrEnum):
-    """Bounded completion receipt decision."""
+    """Decision produced by a completion receipt gate."""
 
     RECORD_WAVE_FOUR_REVIEW_PACKAGE = "record-wave-four-review-package"
     HOLD_FOR_EVIDENCE = "hold-for-evidence"
@@ -98,35 +99,35 @@ REQUIRED_WAVE_FOUR_RECORD_CHECK_KINDS: tuple[WaveFourRecordCheckKind, ...] = (
 
 
 class WaveFourReviewDocketLike(Protocol):
-    """Read-only structural protocol for docket fields consumed by this receipt."""
+    """Read-only structural protocol for completion-receipt docket fields."""
 
     @property
     def docket_id(self) -> str:
-        """Return the review docket identifier."""
+        """Return the docket id."""
 
     @property
     def status(self) -> WaveFourReviewDocketStatus:
-        """Return the review docket status."""
+        """Return the docket status."""
 
     @property
     def human_authority_state(self) -> WaveFourAuthorityState:
-        """Return the preserved human-authority state."""
+        """Return the docket human-authority state."""
 
     @property
     def final_digest(self) -> str:
-        """Return the final docket digest."""
+        """Return the docket digest."""
 
     @property
     def all_evidence_ids(self) -> tuple[str, ...]:
-        """Return all evidence identifiers visible to the docket."""
+        """Return evidence ids visible to the docket."""
 
     @property
     def scenario_ids(self) -> tuple[str, ...]:
-        """Return attached WorldTwin scenario identifiers."""
+        """Return WorldTwin scenario ids."""
 
     @property
     def blackfox_receipt_ids(self) -> tuple[str, ...]:
-        """Return attached BlackFox receipt identifiers."""
+        """Return BlackFox receipt ids."""
 
     @property
     def reviewer_assignments(self) -> tuple[Any, ...]:
@@ -134,19 +135,19 @@ class WaveFourReviewDocketLike(Protocol):
 
     @property
     def readiness_gaps(self) -> tuple[str, ...]:
-        """Return non-blocking readiness gaps."""
+        """Return docket readiness gaps."""
 
     @property
     def blocking_gaps(self) -> tuple[str, ...]:
-        """Return blocking gaps."""
+        """Return docket blocking gaps."""
 
     @property
     def permits_automatic_execution(self) -> bool:
-        """Return whether automatic execution is permitted."""
+        """Return whether the docket permits execution."""
 
     @property
     def permits_automatic_promotion(self) -> bool:
-        """Return whether automatic maturity promotion is permitted."""
+        """Return whether the docket permits promotion."""
 
     @property
     def claims_agi(self) -> bool:
@@ -163,7 +164,7 @@ class WaveFourReviewDocketLike(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class WaveFourRecordCheck:
-    """One deterministic check in a Wave 4 completion receipt."""
+    """One deterministic check for a Wave 4 completion receipt."""
 
     check_id: str
     check_kind: WaveFourRecordCheckKind
@@ -172,6 +173,7 @@ class WaveFourRecordCheck:
     summary: str
     evidence_ids: tuple[str, ...] = ()
     failure_summary: str = ""
+    source_system: WaveFourSourceSystem = WaveFourSourceSystem.IX_COGNITION_KERNEL
     schema_version: str = WAVE_FOUR_RECORD_CHECK_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
@@ -182,7 +184,7 @@ class WaveFourRecordCheck:
         object.__setattr__(
             self,
             "evidence_ids",
-            _unique_text(self.evidence_ids, label="record-check evidence_id"),
+            _unique_text(self.evidence_ids, label="completion-check evidence_id"),
         )
         object.__setattr__(self, "failure_summary", self.failure_summary.strip())
         object.__setattr__(
@@ -191,13 +193,23 @@ class WaveFourRecordCheck:
             _text(self.schema_version, "schema_version"),
         )
         if self.passed and self.failure_summary:
-            raise ValueError("Passed Wave 4 record checks cannot carry failure text.")
+            raise ValueError(
+                "Passed Wave 4 completion receipt checks cannot carry failure text."
+            )
         if not self.passed and not self.failure_summary:
-            raise ValueError("Failed Wave 4 record checks require failure text.")
+            raise ValueError(
+                "Failed Wave 4 completion receipt checks require failure text."
+            )
+
+    @property
+    def check_key(self) -> str:
+        """Return deterministic uniqueness key."""
+
+        return self.check_id
 
     @property
     def readiness_gap(self) -> str:
-        """Return gap text when this check fails."""
+        """Return fail-closed gap text when this check failed."""
 
         if self.passed:
             return ""
@@ -215,6 +227,7 @@ class WaveFourRecordCheck:
             "readiness_gap": self.readiness_gap,
             "schema_version": self.schema_version,
             "severity": self.severity.value,
+            "source_system": self.source_system.value,
             "summary": self.summary,
         }
 
@@ -226,14 +239,14 @@ class WaveFourRecordCheck:
 
 @dataclass(frozen=True, slots=True)
 class WaveFourCompletionReceipt:
-    """Bounded final record receipt for Wave 4 human-review readiness."""
+    """Deterministic completion receipt for a bounded Wave 4 review record."""
 
     receipt_id: str
     review_docket: WaveFourReviewDocketLike
     record_checks: tuple[WaveFourRecordCheck, ...]
-    release_notes: tuple[str, ...] = ()
     generated_by_engine_id: str = "wave4-completion-receipt-engine"
-    reviewer_role_id: str = "wave4-completion-receipt-reviewer"
+    reviewer_role_id: str = "wave4-completion-record-reviewer"
+    notes: tuple[str, ...] = ()
     blocked_reasons: tuple[str, ...] = ()
     required_check_kinds: tuple[WaveFourRecordCheckKind, ...] = (
         REQUIRED_WAVE_FOUR_RECORD_CHECK_KINDS
@@ -246,29 +259,14 @@ class WaveFourCompletionReceipt:
     schema_version: str = WAVE_FOUR_COMPLETION_RECEIPT_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate receipt coverage and anti-overclaim boundaries."""
+        """Validate receipt coverage, docket binding, and hard boundaries."""
 
         object.__setattr__(self, "receipt_id", _text(self.receipt_id, "receipt_id"))
         if not self.record_checks:
             raise ValueError("Wave 4 completion receipts require record checks.")
-        checks = tuple(sorted(self.record_checks, key=lambda item: item.check_id))
+        checks = tuple(sorted(self.record_checks, key=lambda item: item.check_key))
         _unique_items((item.check_id for item in checks), "record check_id")
         object.__setattr__(self, "record_checks", checks)
-        object.__setattr__(
-            self,
-            "release_notes",
-            _unique_text(self.release_notes, label="completion receipt note"),
-        )
-        object.__setattr__(
-            self,
-            "blocked_reasons",
-            _unique_text(self.blocked_reasons, label="blocked reason"),
-        )
-        object.__setattr__(
-            self,
-            "required_check_kinds",
-            _unique_items(self.required_check_kinds, "required check kind"),
-        )
         object.__setattr__(
             self,
             "generated_by_engine_id",
@@ -279,6 +277,23 @@ class WaveFourCompletionReceipt:
             "reviewer_role_id",
             _text(self.reviewer_role_id, "reviewer_role_id"),
         )
+        object.__setattr__(
+            self,
+            "notes",
+            _unique_text(self.notes, label="completion receipt note"),
+        )
+        object.__setattr__(
+            self,
+            "blocked_reasons",
+            _unique_text(self.blocked_reasons, label="blocked reason"),
+        )
+        object.__setattr__(
+            self,
+            "required_check_kinds",
+            _unique_items(self.required_check_kinds, "required record check kind"),
+        )
+        if not self.required_check_kinds:
+            raise ValueError("Wave 4 completion receipts require check coverage.")
         object.__setattr__(
             self,
             "schema_version",
@@ -307,7 +322,7 @@ class WaveFourCompletionReceipt:
 
     @property
     def check_kinds_present(self) -> tuple[WaveFourRecordCheckKind, ...]:
-        """Return check kinds present in the receipt."""
+        """Return check kinds represented by the receipt."""
 
         return tuple(
             sorted(
@@ -318,10 +333,16 @@ class WaveFourCompletionReceipt:
 
     @property
     def missing_required_check_kinds(self) -> tuple[WaveFourRecordCheckKind, ...]:
-        """Return required check kinds not represented."""
+        """Return required check kinds missing from this receipt."""
 
         present = set(self.check_kinds_present)
         return tuple(kind for kind in self.required_check_kinds if kind not in present)
+
+    @property
+    def passed_check_ids(self) -> tuple[str, ...]:
+        """Return passed check ids."""
+
+        return tuple(check.check_id for check in self.record_checks if check.passed)
 
     @property
     def failed_check_ids(self) -> tuple[str, ...]:
@@ -331,25 +352,25 @@ class WaveFourCompletionReceipt:
 
     @property
     def failed_evidence_check_ids(self) -> tuple[str, ...]:
-        """Return failed checks requiring evidence."""
+        """Return failed evidence-severity check ids."""
 
-        return self._failed_by_severity(WaveFourRecordCheckSeverity.EVIDENCE)
+        return self._failed_check_ids_by_severity(WaveFourRecordCheckSeverity.EVIDENCE)
 
     @property
     def failed_repair_check_ids(self) -> tuple[str, ...]:
-        """Return failed checks requiring repair."""
+        """Return failed repair-severity check ids."""
 
-        return self._failed_by_severity(WaveFourRecordCheckSeverity.REPAIR)
+        return self._failed_check_ids_by_severity(WaveFourRecordCheckSeverity.REPAIR)
 
     @property
     def failed_blocking_check_ids(self) -> tuple[str, ...]:
-        """Return failed checks that block recording."""
+        """Return failed blocking-severity check ids."""
 
-        return self._failed_by_severity(WaveFourRecordCheckSeverity.BLOCKING)
+        return self._failed_check_ids_by_severity(WaveFourRecordCheckSeverity.BLOCKING)
 
     @property
     def all_evidence_ids(self) -> tuple[str, ...]:
-        """Return sorted evidence ids from docket and checks."""
+        """Return sorted evidence ids from docket and receipt checks."""
 
         evidence_ids = set(self.review_docket.all_evidence_ids)
         for check in self.record_checks:
@@ -358,44 +379,35 @@ class WaveFourCompletionReceipt:
 
     @property
     def receipt_digest(self) -> str:
-        """Return deterministic receipt digest."""
+        """Return deterministic digest of the receipt record."""
 
         return _stable_sha256(
             {
                 "docket_digest": self.review_docket.final_digest,
                 "receipt_id": self.receipt_id,
-                "checks": [check.fingerprint() for check in self.record_checks],
+                "record_check_fingerprints": [
+                    check.fingerprint() for check in self.record_checks
+                ],
+                "schema_version": self.schema_version,
             }
         )
 
     @property
     def readiness_gaps(self) -> tuple[str, ...]:
-        """Return fail-closed evidence and repair gaps."""
+        """Return fail-closed gaps preventing Wave 4 record completion."""
 
         gaps: list[str] = []
-        if self.review_docket.status is not (
-            WaveFourReviewDocketStatus.READY_FOR_HUMAN_REVIEW
-        ):
-            gaps.extend(self.review_docket.readiness_gaps)
         if self.missing_required_check_kinds:
-            missing = ", ".join(
-                kind.value for kind in self.missing_required_check_kinds
-            )
+            missing = ", ".join(kind.value for kind in self.missing_required_check_kinds)
             gaps.append(f"missing completion receipt check coverage: {missing}")
-        gaps.extend(
-            check.readiness_gap for check in self.record_checks if check.readiness_gap
-        )
-        if not self.review_docket.all_evidence_ids:
-            gaps.append(f"{self.receipt_id} has no docket evidence ids")
-        if not self.review_docket.scenario_ids:
-            gaps.append(f"{self.receipt_id} has no WorldTwin scenario ids")
-        if not self.review_docket.blackfox_receipt_ids:
-            gaps.append(f"{self.receipt_id} has no BlackFox receipt ids")
+        if self.review_docket.status is not WaveFourReviewDocketStatus.READY_FOR_HUMAN_REVIEW:
+            gaps.extend(self.review_docket.readiness_gaps)
+        gaps.extend(check.readiness_gap for check in self.record_checks if check.readiness_gap)
         return tuple(gaps)
 
     @property
     def blocking_gaps(self) -> tuple[str, ...]:
-        """Return hard blocks for this receipt."""
+        """Return hard blocks for this completion receipt."""
 
         gaps = [
             f"{self.receipt_id} blocked: {reason}" for reason in self.blocked_reasons
@@ -409,7 +421,7 @@ class WaveFourCompletionReceipt:
 
     @property
     def status(self) -> WaveFourCompletionReceiptStatus:
-        """Return fail-closed receipt status."""
+        """Return fail-closed completion receipt status."""
 
         if self.blocking_gaps:
             return WaveFourCompletionReceiptStatus.BLOCKED
@@ -423,7 +435,7 @@ class WaveFourCompletionReceipt:
 
     @property
     def decision(self) -> WaveFourCompletionReceiptDecision:
-        """Return bounded receipt decision."""
+        """Return completion receipt decision."""
 
         if self.status is WaveFourCompletionReceiptStatus.BLOCKED:
             return WaveFourCompletionReceiptDecision.BLOCK_RECORD
@@ -435,7 +447,7 @@ class WaveFourCompletionReceipt:
 
     @property
     def ready_for_wave_four_record(self) -> bool:
-        """Return whether this receipt may be recorded as Wave 4 review-ready."""
+        """Return whether this receipt may be recorded as the Wave 4 package."""
 
         return self.status is WaveFourCompletionReceiptStatus.READY_FOR_WAVE_FOUR_RECORD
 
@@ -449,16 +461,15 @@ class WaveFourCompletionReceipt:
 
     @property
     def review_summary(self) -> str:
-        """Return concise receipt summary."""
+        """Return concise completion receipt summary."""
 
         return (
             f"{self.receipt_id}: {len(self.record_checks)} record checks; "
-            f"{self.status.value}; digest {self.receipt_digest[:12]}; "
-            "human review record only; no AGI claim."
+            f"{self.status.value}; human review record only; no AGI claim."
         )
 
     def to_artifact_ref(self) -> WaveFourArtifactRef:
-        """Convert this receipt into a shared Wave 4 readiness artifact."""
+        """Convert receipt into a shared Wave 4 readiness artifact."""
 
         if self.status is WaveFourCompletionReceiptStatus.READY_FOR_WAVE_FOUR_RECORD:
             decision = WaveFourArtifactDecision.READY_FOR_CONTROLLED_REVIEW
@@ -505,42 +516,48 @@ class WaveFourCompletionReceipt:
             evidence_links=self.evidence_links(),
             required_kinds=(WaveFourArtifactKind.READINESS_SNAPSHOT,),
             required_capability_areas=(WaveFourCapabilityArea.AUDIT_TRAIL,),
-            notes=(self.review_summary, *self.release_notes),
+            notes=(self.review_summary, *self.notes),
         )
 
     def canonical_payload(self) -> dict[str, Any]:
-        """Return deterministic receipt payload."""
+        """Return deterministic completion-receipt payload."""
 
         return {
             "all_evidence_ids": list(self.all_evidence_ids),
             "artifact_id": self.artifact_id,
             "blocking_gaps": list(self.blocking_gaps),
             "blocked_reasons": list(self.blocked_reasons),
-            "check_kinds_present": [kind.value for kind in self.check_kinds_present],
             "claims_agi": self.claims_agi,
             "decision": self.decision.value,
+            "docket_id": self.review_docket.docket_id,
+            "docket_status": self.review_docket.status.value,
             "failed_blocking_check_ids": list(self.failed_blocking_check_ids),
             "failed_check_ids": list(self.failed_check_ids),
             "failed_evidence_check_ids": list(self.failed_evidence_check_ids),
             "failed_repair_check_ids": list(self.failed_repair_check_ids),
+            "generated_by_engine_id": self.generated_by_engine_id,
             "human_authority_state": self.human_authority_state.value,
             "independently_validated": self.independently_validated,
             "missing_required_check_kinds": [
                 kind.value for kind in self.missing_required_check_kinds
             ],
+            "notes": list(self.notes),
+            "passed_check_ids": list(self.passed_check_ids),
             "permits_automatic_execution": self.permits_automatic_execution,
             "permits_automatic_promotion": self.permits_automatic_promotion,
             "production_ready": self.production_ready,
             "readiness_gaps": list(self.readiness_gaps),
+            "ready_for_wave_four_record": self.ready_for_wave_four_record,
             "receipt_digest": self.receipt_digest,
             "receipt_id": self.receipt_id,
             "record_checks": [
                 check.canonical_payload() for check in self.record_checks
             ],
-            "release_notes": list(self.release_notes),
-            "review_docket_final_digest": self.review_docket.final_digest,
-            "review_docket_id": self.review_docket.docket_id,
+            "required_check_kinds": [
+                kind.value for kind in self.required_check_kinds
+            ],
             "review_summary": self.review_summary,
+            "reviewer_role_id": self.reviewer_role_id,
             "schema_version": self.schema_version,
             "status": self.status.value,
         }
@@ -550,7 +567,7 @@ class WaveFourCompletionReceipt:
 
         return _stable_sha256(self.canonical_payload())
 
-    def _failed_by_severity(
+    def _failed_check_ids_by_severity(
         self,
         severity: WaveFourRecordCheckSeverity,
     ) -> tuple[str, ...]:
@@ -568,17 +585,17 @@ def build_wave_four_completion_receipt(
     receipt_id: str,
     review_docket: WaveFourReviewDocketLike,
 ) -> WaveFourCompletionReceipt:
-    """Build the standard bounded Wave 4 completion receipt."""
+    """Build the standard Wave 4 completion receipt from a review docket."""
 
     evidence_ids = review_docket.all_evidence_ids
     checks = (
         _check(
             check_id="check:docket-ready",
             check_kind=WaveFourRecordCheckKind.DOCKET_READY,
-            severity=_docket_status_severity(review_docket),
+            severity=_docket_status_severity(review_docket.status),
             passed=review_docket.status
             is WaveFourReviewDocketStatus.READY_FOR_HUMAN_REVIEW,
-            summary="Human-review docket is ready for bounded review record.",
+            summary="Review docket is ready for human-review record.",
             evidence_ids=evidence_ids,
             failure_summary="; ".join(
                 (*review_docket.blocking_gaps, *review_docket.readiness_gaps)
@@ -588,17 +605,17 @@ def build_wave_four_completion_receipt(
             check_id="check:docket-digest-present",
             check_kind=WaveFourRecordCheckKind.DOCKET_DIGEST_PRESENT,
             severity=WaveFourRecordCheckSeverity.EVIDENCE,
-            passed=len(review_docket.final_digest) == 64,
-            summary="Review docket exposes a deterministic digest.",
+            passed=_looks_like_sha256(review_docket.final_digest),
+            summary="Review docket final digest is present and well-formed.",
             evidence_ids=evidence_ids,
-            failure_summary="review docket digest is missing or malformed",
+            failure_summary="docket digest is missing or malformed",
         ),
         _check(
             check_id="check:evidence-present",
             check_kind=WaveFourRecordCheckKind.EVIDENCE_PRESENT,
             severity=WaveFourRecordCheckSeverity.EVIDENCE,
             passed=bool(review_docket.all_evidence_ids),
-            summary="Review docket carries evidence ids for the Wave 4 record.",
+            summary="Review docket evidence ids are present.",
             evidence_ids=evidence_ids,
             failure_summary="review docket has no evidence ids",
         ),
@@ -607,7 +624,7 @@ def build_wave_four_completion_receipt(
             check_kind=WaveFourRecordCheckKind.REVIEWERS_PRESENT,
             severity=WaveFourRecordCheckSeverity.EVIDENCE,
             passed=bool(review_docket.reviewer_assignments),
-            summary="Reviewer assignments remain attached to the docket.",
+            summary="Reviewer assignments are present.",
             evidence_ids=evidence_ids,
             failure_summary="review docket has no reviewer assignments",
         ),
@@ -616,16 +633,16 @@ def build_wave_four_completion_receipt(
             check_kind=WaveFourRecordCheckKind.SCENARIOS_PRESENT,
             severity=WaveFourRecordCheckSeverity.EVIDENCE,
             passed=bool(review_docket.scenario_ids),
-            summary="WorldTwin-style scenario context remains attached.",
+            summary="WorldTwin scenario ids are present.",
             evidence_ids=evidence_ids,
-            failure_summary="review docket has no scenario ids",
+            failure_summary="review docket has no WorldTwin scenario ids",
         ),
         _check(
             check_id="check:blackfox-receipts-present",
             check_kind=WaveFourRecordCheckKind.BLACKFOX_RECEIPTS_PRESENT,
             severity=WaveFourRecordCheckSeverity.EVIDENCE,
             passed=bool(review_docket.blackfox_receipt_ids),
-            summary="BlackFox-style review receipts remain attached.",
+            summary="BlackFox receipt ids are present.",
             evidence_ids=evidence_ids,
             failure_summary="review docket has no BlackFox receipt ids",
         ),
@@ -635,9 +652,9 @@ def build_wave_four_completion_receipt(
             severity=WaveFourRecordCheckSeverity.BLOCKING,
             passed=review_docket.human_authority_state
             is WaveFourAuthorityState.HUMAN_REVIEW_REQUIRED,
-            summary="Human authority remains required for the record.",
+            summary="Human authority remains required.",
             evidence_ids=evidence_ids,
-            failure_summary="human authority was not preserved as review-required",
+            failure_summary="human authority is not review-required",
         ),
         _check(
             check_id="check:no-automatic-execution",
@@ -653,7 +670,7 @@ def build_wave_four_completion_receipt(
             check_kind=WaveFourRecordCheckKind.NO_AUTOMATIC_PROMOTION,
             severity=WaveFourRecordCheckSeverity.BLOCKING,
             passed=not review_docket.permits_automatic_promotion,
-            summary="Completion receipt grants no automatic maturity promotion.",
+            summary="Completion receipt grants no automatic promotion.",
             evidence_ids=evidence_ids,
             failure_summary="automatic promotion was permitted",
         ),
@@ -702,7 +719,7 @@ def _check(
     evidence_ids: tuple[str, ...],
     failure_summary: str,
 ) -> WaveFourRecordCheck:
-    """Build a completion check while adding failure text only when needed."""
+    """Build a record check while adding failure text only when needed."""
 
     return WaveFourRecordCheck(
         check_id=check_id,
@@ -716,15 +733,27 @@ def _check(
 
 
 def _docket_status_severity(
-    docket: WaveFourReviewDocketLike,
+    status: WaveFourReviewDocketStatus,
 ) -> WaveFourRecordCheckSeverity:
-    """Return check severity from review-docket status."""
+    """Return completion-check severity from docket status."""
 
-    if docket.status is WaveFourReviewDocketStatus.BLOCKED:
+    if status is WaveFourReviewDocketStatus.BLOCKED:
         return WaveFourRecordCheckSeverity.BLOCKING
-    if docket.status is WaveFourReviewDocketStatus.NEEDS_REPAIR:
+    if status is WaveFourReviewDocketStatus.NEEDS_REPAIR:
         return WaveFourRecordCheckSeverity.REPAIR
     return WaveFourRecordCheckSeverity.EVIDENCE
+
+
+def _looks_like_sha256(value: str) -> bool:
+    """Return whether text is a lowercase or uppercase SHA-256 hex digest."""
+
+    if len(value) != 64:
+        return False
+    try:
+        int(value, 16)
+    except ValueError:
+        return False
+    return True
 
 
 def _text(value: str, label: str) -> str:
