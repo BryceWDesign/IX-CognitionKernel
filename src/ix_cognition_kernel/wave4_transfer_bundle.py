@@ -479,7 +479,9 @@ class WaveFourCrossDomainTransferBundle:
 
         return WaveFourTrialProtocol(
             protocol_id=f"transfer-bundle:{self.bundle_id}",
-            tasks=tuple(evaluation.to_controlled_task() for evaluation in self.evaluations),
+            tasks=tuple(
+                evaluation.to_controlled_task() for evaluation in self.evaluations
+            ),
             required_task_kinds=(WaveFourTrialTaskKind.CROSS_DOMAIN_TRANSFER_PROBE,),
             notes=(self.review_summary, *self.notes),
         )
@@ -538,8 +540,7 @@ class WaveFourCrossDomainTransferBundle:
             ],
             "evidence_gap_evaluation_ids": list(self.evidence_gap_evaluation_ids),
             "failure_cases": [
-                failure_case.canonical_payload()
-                for failure_case in self.failure_cases
+                failure_case.canonical_payload() for failure_case in self.failure_cases
             ],
             "generated_by_engine_id": self.generated_by_engine_id,
             "independently_validated": self.independently_validated,
