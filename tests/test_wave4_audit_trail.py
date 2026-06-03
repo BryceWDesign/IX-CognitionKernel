@@ -26,7 +26,6 @@ from ix_cognition_kernel.wave4_trials import (
     WaveFourTrialTaskKind,
 )
 
-
 ARTIFACT_ID = "artifact:controlled-trial"
 
 
@@ -296,7 +295,7 @@ def test_trail_rejects_unknown_artifact_references_and_duplicates() -> None:
             replay_checks=replay_checks(entries[-1].digest),
             artifact_refs=(),
             scenario_ids=("worldtwin:audit-replay",),
-            blackfox_receipt_ids=("blackfox:audit-replay-receipt"),
+            blackfox_receipt_ids=("blackfox:audit-replay-receipt",),
         )
 
     with pytest.raises(ValueError, match="Duplicate entry_id"):
