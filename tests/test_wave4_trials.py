@@ -124,9 +124,7 @@ def test_required_trial_task_kinds_are_locked_to_wave_four_behavior() -> None:
 
 def test_task_kind_to_capability_area_mapping_is_explicit() -> None:
     assert (
-        TASK_KIND_TO_CAPABILITY_AREA[
-            WaveFourTrialTaskKind.CROSS_DOMAIN_TRANSFER_PROBE
-        ]
+        TASK_KIND_TO_CAPABILITY_AREA[WaveFourTrialTaskKind.CROSS_DOMAIN_TRANSFER_PROBE]
         is WaveFourCapabilityArea.CROSS_DOMAIN_TRANSFER
     )
     assert (
@@ -134,9 +132,7 @@ def test_task_kind_to_capability_area_mapping_is_explicit() -> None:
         is WaveFourCapabilityArea.REWARD_HACKING_DETECTION
     )
     assert (
-        TASK_KIND_TO_CAPABILITY_AREA[
-            WaveFourTrialTaskKind.ADVERSARIAL_ROBUSTNESS_PROBE
-        ]
+        TASK_KIND_TO_CAPABILITY_AREA[WaveFourTrialTaskKind.ADVERSARIAL_ROBUSTNESS_PROBE]
         is WaveFourCapabilityArea.ADVERSARIAL_ROBUSTNESS
     )
 
