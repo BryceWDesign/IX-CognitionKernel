@@ -37,9 +37,7 @@ WAVE_FOUR_TRIAL_MEASUREMENT_SCHEMA_VERSION = (
 WAVE_FOUR_CONTROLLED_TASK_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-controlled-task-v1"
 )
-WAVE_FOUR_TRIAL_PROTOCOL_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-trial-protocol-v1"
-)
+WAVE_FOUR_TRIAL_PROTOCOL_SCHEMA_VERSION = "ix-cognition-kernel-wave4-trial-protocol-v1"
 
 
 class WaveFourTrialTaskKind(StrEnum):
@@ -73,9 +71,7 @@ class WaveFourTrialStatus(StrEnum):
     BLOCKED = "blocked"
 
 
-TASK_KIND_TO_CAPABILITY_AREA: Mapping[
-    WaveFourTrialTaskKind, WaveFourCapabilityArea
-] = {
+TASK_KIND_TO_CAPABILITY_AREA: Mapping[WaveFourTrialTaskKind, WaveFourCapabilityArea] = {
     WaveFourTrialTaskKind.BASELINE_CAPABILITY: WaveFourCapabilityArea.AUDIT_TRAIL,
     WaveFourTrialTaskKind.CROSS_DOMAIN_TRANSFER_PROBE: (
         WaveFourCapabilityArea.CROSS_DOMAIN_TRANSFER
@@ -130,9 +126,7 @@ class WaveFourTrialMeasurement:
             "measurement_id",
             _text(self.measurement_id, "measurement_id"),
         )
-        object.__setattr__(
-            self, "metric_name", _text(self.metric_name, "metric_name")
-        )
+        object.__setattr__(self, "metric_name", _text(self.metric_name, "metric_name"))
         object.__setattr__(self, "target", _text(self.target, "target"))
         object.__setattr__(self, "observed", _text(self.observed, "observed"))
         object.__setattr__(
@@ -264,7 +258,7 @@ class WaveFourControlledTask:
             self,
             "generated_by_engine_id",
             _text(self.generated_by_engine_id, "generated_by_engine_id"),
-        )
+                )
         object.__setattr__(
             self, "reviewer_role_id", _text(self.reviewer_role_id, "reviewer_role_id")
         )
@@ -361,8 +355,7 @@ class WaveFourControlledTask:
         if self.outcome is not WaveFourTrialOutcome.BLOCKED:
             return ()
         return tuple(
-            f"{self.task_id} blocked: {reason}"
-            for reason in self.blocked_reasons
+            f"{self.task_id} blocked: {reason}" for reason in self.blocked_reasons
         )
 
     @property
@@ -524,8 +517,7 @@ class WaveFourTrialProtocol:
     @property
     def missing_required_task_kinds(self) -> tuple[WaveFourTrialTaskKind, ...]:
         """Return required task kinds not represented in the protocol."""
-
-        present = {task.task_kind for task in self.tasks}
+                present = {task.task_kind for task in self.tasks}
         return tuple(kind for kind in self.required_task_kinds if kind not in present)
 
     @property
@@ -626,8 +618,7 @@ class WaveFourTrialProtocol:
             ),
             required_kinds=(WaveFourArtifactKind.CONTROLLED_TRIAL,),
             required_capability_areas=tuple(
-                TASK_KIND_TO_CAPABILITY_AREA[kind]
-                for kind in self.required_task_kinds
+                TASK_KIND_TO_CAPABILITY_AREA[kind] for kind in self.required_task_kinds
             ),
             notes=(self.review_summary, *self.notes),
         )
