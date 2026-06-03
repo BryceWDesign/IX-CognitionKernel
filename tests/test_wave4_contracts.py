@@ -74,8 +74,7 @@ def test_required_wave_four_artifact_kinds_are_locked() -> None:
     assert len(WAVE_FOUR_REQUIRED_ARTIFACT_KINDS) == 10
     assert WaveFourArtifactKind.CONTROLLED_TRIAL in WAVE_FOUR_REQUIRED_ARTIFACT_KINDS
     assert (
-        WaveFourArtifactKind.REWARD_HACKING_AUDIT
-        in WAVE_FOUR_REQUIRED_ARTIFACT_KINDS
+        WaveFourArtifactKind.REWARD_HACKING_AUDIT in WAVE_FOUR_REQUIRED_ARTIFACT_KINDS
     )
     assert (
         WaveFourArtifactKind.REPRODUCIBLE_AUDIT_TRAIL
