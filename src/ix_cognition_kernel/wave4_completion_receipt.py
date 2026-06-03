@@ -32,9 +32,7 @@ from ix_cognition_kernel.wave4_review_docket import (
 
 T = TypeVar("T")
 
-WAVE_FOUR_RECORD_CHECK_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-record-check-v1"
-)
+WAVE_FOUR_RECORD_CHECK_SCHEMA_VERSION = "ix-cognition-kernel-wave4-record-check-v1"
 WAVE_FOUR_COMPLETION_RECEIPT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-completion-receipt-v1"
 )
@@ -100,23 +98,67 @@ REQUIRED_WAVE_FOUR_RECORD_CHECK_KINDS: tuple[WaveFourRecordCheckKind, ...] = (
 
 
 class WaveFourReviewDocketLike(Protocol):
-    """Structural protocol for docket fields consumed by this receipt."""
+    """Read-only structural protocol for docket fields consumed by this receipt."""
 
-    docket_id: str
-    status: WaveFourReviewDocketStatus
-    human_authority_state: WaveFourAuthorityState
-    final_digest: str
-    all_evidence_ids: tuple[str, ...]
-    scenario_ids: tuple[str, ...]
-    blackfox_receipt_ids: tuple[str, ...]
-    reviewer_assignments: tuple[Any, ...]
-    readiness_gaps: tuple[str, ...]
-    blocking_gaps: tuple[str, ...]
-    permits_automatic_execution: bool
-    permits_automatic_promotion: bool
-    claims_agi: bool
-    independently_validated: bool
-    production_ready: bool
+    @property
+    def docket_id(self) -> str:
+        """Return the review docket identifier."""
+
+    @property
+    def status(self) -> WaveFourReviewDocketStatus:
+        """Return the review docket status."""
+
+    @property
+    def human_authority_state(self) -> WaveFourAuthorityState:
+        """Return the preserved human-authority state."""
+
+    @property
+    def final_digest(self) -> str:
+        """Return the final docket digest."""
+
+    @property
+    def all_evidence_ids(self) -> tuple[str, ...]:
+        """Return all evidence identifiers visible to the docket."""
+
+    @property
+    def scenario_ids(self) -> tuple[str, ...]:
+        """Return attached WorldTwin scenario identifiers."""
+
+    @property
+    def blackfox_receipt_ids(self) -> tuple[str, ...]:
+        """Return attached BlackFox receipt identifiers."""
+
+    @property
+    def reviewer_assignments(self) -> tuple[Any, ...]:
+        """Return reviewer assignments."""
+
+    @property
+    def readiness_gaps(self) -> tuple[str, ...]:
+        """Return non-blocking readiness gaps."""
+
+    @property
+    def blocking_gaps(self) -> tuple[str, ...]:
+        """Return blocking gaps."""
+
+    @property
+    def permits_automatic_execution(self) -> bool:
+        """Return whether automatic execution is permitted."""
+
+    @property
+    def permits_automatic_promotion(self) -> bool:
+        """Return whether automatic maturity promotion is permitted."""
+
+    @property
+    def claims_agi(self) -> bool:
+        """Return whether the docket claims AGI."""
+
+    @property
+    def independently_validated(self) -> bool:
+        """Return whether the docket claims independent validation."""
+
+    @property
+    def production_ready(self) -> bool:
+        """Return whether the docket claims production readiness."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -356,8 +398,7 @@ class WaveFourCompletionReceipt:
         """Return hard blocks for this receipt."""
 
         gaps = [
-            f"{self.receipt_id} blocked: {reason}"
-            for reason in self.blocked_reasons
+            f"{self.receipt_id} blocked: {reason}" for reason in self.blocked_reasons
         ]
         gaps.extend(
             f"blocking completion receipt check failed: {check_id}"
@@ -725,7 +766,5 @@ def _unique_items(values: Iterable[T], label: str) -> tuple[T, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
