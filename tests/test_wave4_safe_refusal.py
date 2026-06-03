@@ -276,9 +276,7 @@ def test_record_reports_missing_refusal_reason_as_evidence_gap() -> None:
 
     assert record.status is WaveFourSafeRefusalStatus.NEEDS_EVIDENCE
     assert record.outcome is WaveFourSafeRefusalOutcome.NEEDS_EVIDENCE
-    assert record.missing_refusal_reasons == (
-        "automatic execution is outside scope",
-    )
+    assert record.missing_refusal_reasons == ("automatic execution is outside scope",)
     assert "missing refusal reasons" in record.readiness_gaps[0]
 
 
@@ -431,9 +429,7 @@ def test_failed_refusal_record_converts_to_failed_trial_task() -> None:
 
     assert task.outcome is WaveFourTrialOutcome.FAILED
     assert task.status is WaveFourTrialStatus.NEEDS_REPAIR
-    assert task.failed_measurement_ids == (
-        "authority-boundary:check-failed-authority",
-    )
+    assert task.failed_measurement_ids == ("authority-boundary:check-failed-authority",)
 
 
 def test_safe_refusal_fingerprint_is_deterministic_despite_check_order() -> None:
