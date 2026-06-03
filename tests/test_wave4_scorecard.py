@@ -35,7 +35,6 @@ from ix_cognition_kernel.wave4_trials import (
     WaveFourTrialTaskKind,
 )
 
-
 KIND_TO_CAPABILITY: dict[WaveFourArtifactKind, WaveFourCapabilityArea] = {
     WaveFourArtifactKind.CONTROLLED_TRIAL: WaveFourCapabilityArea.AUDIT_TRAIL,
     WaveFourArtifactKind.TRANSFER_EVALUATION: (
@@ -271,9 +270,10 @@ def test_scorecard_holds_for_evidence_when_task_coverage_is_missing() -> None:
     assert scorecard.status is WaveFourScorecardStatus.NEEDS_EVIDENCE
     assert scorecard.decision is WaveFourScorecardDecision.HOLD_FOR_EVIDENCE
     assert "gate:task-coverage" in scorecard.failed_evidence_gate_ids
-    assert "missing task kinds" in scorecard.gate_by_id(
-        "gate:task-coverage"
-    ).failure_summary
+    assert (
+        "missing task kinds"
+        in scorecard.gate_by_id("gate:task-coverage").failure_summary
+    )
 
 
 def test_scorecard_holds_for_repair_when_protocol_task_fails() -> None:
