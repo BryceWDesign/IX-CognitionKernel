@@ -258,7 +258,7 @@ class WaveFourControlledTask:
             self,
             "generated_by_engine_id",
             _text(self.generated_by_engine_id, "generated_by_engine_id"),
-                )
+        )
         object.__setattr__(
             self, "reviewer_role_id", _text(self.reviewer_role_id, "reviewer_role_id")
         )
@@ -517,7 +517,8 @@ class WaveFourTrialProtocol:
     @property
     def missing_required_task_kinds(self) -> tuple[WaveFourTrialTaskKind, ...]:
         """Return required task kinds not represented in the protocol."""
-                present = {task.task_kind for task in self.tasks}
+
+        present = {task.task_kind for task in self.tasks}
         return tuple(kind for kind in self.required_task_kinds if kind not in present)
 
     @property
