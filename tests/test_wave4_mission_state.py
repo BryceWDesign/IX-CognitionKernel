@@ -241,8 +241,7 @@ def test_mission_trace_reports_phase_count_and_receipt_gaps() -> None:
     assert "mission trace phase count below minimum" in trace.readiness_gaps[0]
     assert "mission-trace-gaps has no WorldTwin scenario ids" in trace.readiness_gaps
     assert (
-        "mission-trace-gaps has no BlackFox review receipt ids"
-        in trace.readiness_gaps
+        "mission-trace-gaps has no BlackFox review receipt ids" in trace.readiness_gaps
     )
 
 
