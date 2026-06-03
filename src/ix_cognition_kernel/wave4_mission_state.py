@@ -218,7 +218,7 @@ class WaveFourMissionContinuityCheck:
             self,
             "preserved_risk_ids",
             _unique_text(self.preserved_risk_ids, label="preserved risk_id"),
-                )
+        )
         object.__setattr__(
             self,
             "dropped_risk_ids",
@@ -478,7 +478,7 @@ class WaveFourMissionStateTrace:
 
     @property
     def readiness_gaps(self) -> tuple[str, ...]:
-                """Return gaps that prevent controlled mission-state review."""
+        """Return gaps that prevent controlled mission-state review."""
 
         gaps: list[str] = []
         if len(self.snapshots) < self.minimum_phase_count:
