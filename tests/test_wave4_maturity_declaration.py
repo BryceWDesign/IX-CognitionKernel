@@ -27,6 +27,7 @@ from ix_cognition_kernel.wave4_proto_candidate import (
 )
 from ix_cognition_kernel.wave4_review_packet import (
     WaveFourHumanReviewDecision,
+    WaveFourHumanReviewPacket,
     WaveFourHumanReviewPacketStatus,
     build_wave_four_human_review_packet,
 )
@@ -40,7 +41,6 @@ from ix_cognition_kernel.wave4_trials import (
     WaveFourTrialProtocol,
     WaveFourTrialTaskKind,
 )
-
 
 KIND_TO_CAPABILITY: dict[WaveFourArtifactKind, WaveFourCapabilityArea] = {
     WaveFourArtifactKind.CONTROLLED_TRIAL: WaveFourCapabilityArea.AUDIT_TRAIL,
@@ -175,7 +175,7 @@ def proto_bundle(
     )
 
 
-def ready_packet():
+def ready_packet() -> WaveFourHumanReviewPacket:
     scorecard = build_wave_four_proto_candidate_scorecard(
         scorecard_id="scorecard-maturity-declaration-001",
         proto_candidate_bundle=proto_bundle(),
@@ -324,8 +324,9 @@ def test_blocked_declaration_blocks_even_with_ready_packet() -> None:
     )
 
 
-def test_declaration_rejects_execution_promotion_agi_validation_and_production(
-) -> None:
+def test_declaration_rejects_execution_promotion_agi_validation_and_production() -> (
+    None
+):
     checks = ready_declaration().boundary_checks
     packet = ready_packet()
 
