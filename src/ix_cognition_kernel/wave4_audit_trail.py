@@ -13,7 +13,7 @@ import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, TypeVar
+from typing import Any, TypeVar, cast
 
 from ix_cognition_kernel.wave4_contracts import (
     WaveFourArtifactBundle,
@@ -109,9 +109,7 @@ class WaveFourAuditTrailEntry:
         object.__setattr__(self, "entry_id", _text(self.entry_id, "entry_id"))
         if self.sequence_index < 0:
             raise ValueError("Wave 4 audit entry sequence_index must be >= 0.")
-        object.__setattr__(
-            self, "artifact_id", _text(self.artifact_id, "artifact_id")
-        )
+        object.__setattr__(self, "artifact_id", _text(self.artifact_id, "artifact_id"))
         object.__setattr__(
             self, "event_summary", _text(self.event_summary, "event_summary")
         )
@@ -322,9 +320,7 @@ class WaveFourReproducibleAuditTrail:
         if self.claims_agi:
             raise ValueError("Wave 4 audit trails cannot claim AGI.")
         if self.independently_validated:
-            raise ValueError(
-                "Wave 4 audit trails cannot claim independent validation."
-            )
+            raise ValueError("Wave 4 audit trails cannot claim independent validation.")
         if self.blocked_reasons and self.replay_checks:
             raise ValueError("Blocked Wave 4 audit trails cannot carry replay results.")
 
@@ -676,7 +672,7 @@ def _normalize_mapping(value: Mapping[str, Any], label: str) -> dict[str, Any]:
         encoded = json.dumps(value, sort_keys=True, separators=(",", ":"))
     except TypeError as exc:
         raise ValueError(f"{label} must be JSON serializable.") from exc
-    return json.loads(encoded)
+    return cast(dict[str, Any], json.loads(encoded))
 
 
 def _text(value: str, label: str) -> str:
