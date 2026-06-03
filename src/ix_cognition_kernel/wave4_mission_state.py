@@ -35,9 +35,7 @@ WAVE_FOUR_MISSION_SNAPSHOT_SCHEMA_VERSION = (
 WAVE_FOUR_CONTINUITY_CHECK_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-continuity-check-v1"
 )
-WAVE_FOUR_MISSION_TRACE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-mission-trace-v1"
-)
+WAVE_FOUR_MISSION_TRACE_SCHEMA_VERSION = "ix-cognition-kernel-wave4-mission-trace-v1"
 
 
 class WaveFourMissionPhaseKind(StrEnum):
@@ -220,7 +218,7 @@ class WaveFourMissionContinuityCheck:
             self,
             "preserved_risk_ids",
             _unique_text(self.preserved_risk_ids, label="preserved risk_id"),
-        )
+                )
         object.__setattr__(
             self,
             "dropped_risk_ids",
@@ -480,7 +478,7 @@ class WaveFourMissionStateTrace:
 
     @property
     def readiness_gaps(self) -> tuple[str, ...]:
-        """Return gaps that prevent controlled mission-state review."""
+                """Return gaps that prevent controlled mission-state review."""
 
         gaps: list[str] = []
         if len(self.snapshots) < self.minimum_phase_count:
@@ -490,8 +488,7 @@ class WaveFourMissionStateTrace:
             )
         if self.missing_transition_keys:
             missing = ", ".join(
-                f"{source}->{target}"
-                for source, target in self.missing_transition_keys
+                f"{source}->{target}" for source, target in self.missing_transition_keys
             )
             gaps.append(f"missing mission continuity checks: {missing}")
         gaps.extend(check.readiness_gap for check in self.continuity_checks)
