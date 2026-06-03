@@ -134,9 +134,7 @@ class WaveFourReviewRequirement:
                 "Passed Wave 4 review requirements cannot carry failure text."
             )
         if not self.passed and not self.failure_summary:
-            raise ValueError(
-                "Failed Wave 4 review requirements require failure text."
-            )
+            raise ValueError("Failed Wave 4 review requirements require failure text.")
 
     @property
     def requirement_key(self) -> str:
@@ -381,8 +379,7 @@ class WaveFourHumanReviewPacket:
         """Return hard blocks for this human-review packet."""
 
         gaps = [
-            f"{self.packet_id} blocked: {reason}"
-            for reason in self.blocked_reasons
+            f"{self.packet_id} blocked: {reason}" for reason in self.blocked_reasons
         ]
         gaps.extend(
             f"blocking review requirement failed: {requirement_id}"
@@ -592,9 +589,7 @@ def build_wave_four_human_review_packet(
         ),
         _requirement(
             requirement_id="requirement:scenario-context-attached",
-            requirement_kind=(
-                WaveFourReviewRequirementKind.SCENARIO_CONTEXT_ATTACHED
-            ),
+            requirement_kind=(WaveFourReviewRequirementKind.SCENARIO_CONTEXT_ATTACHED),
             severity=WaveFourScorecardGateSeverity.EVIDENCE,
             passed=bool(scorecard.scenario_ids),
             summary="WorldTwin-style scenario context remains attached.",
@@ -603,9 +598,7 @@ def build_wave_four_human_review_packet(
         ),
         _requirement(
             requirement_id="requirement:blackfox-receipts-attached",
-            requirement_kind=(
-                WaveFourReviewRequirementKind.BLACKFOX_RECEIPTS_ATTACHED
-            ),
+            requirement_kind=(WaveFourReviewRequirementKind.BLACKFOX_RECEIPTS_ATTACHED),
             severity=WaveFourScorecardGateSeverity.EVIDENCE,
             passed=bool(scorecard.blackfox_receipt_ids),
             summary="BlackFox-style review receipts remain attached.",
@@ -614,9 +607,7 @@ def build_wave_four_human_review_packet(
         ),
         _requirement(
             requirement_id="requirement:human-authority-preserved",
-            requirement_kind=(
-                WaveFourReviewRequirementKind.HUMAN_AUTHORITY_PRESERVED
-            ),
+            requirement_kind=(WaveFourReviewRequirementKind.HUMAN_AUTHORITY_PRESERVED),
             severity=WaveFourScorecardGateSeverity.BLOCKING,
             passed=scorecard.human_authority_state
             is WaveFourAuthorityState.HUMAN_REVIEW_REQUIRED,
@@ -756,7 +747,5 @@ def _unique_items(values: Iterable[T], label: str) -> tuple[T, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
