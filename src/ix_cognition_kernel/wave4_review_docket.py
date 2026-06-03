@@ -248,7 +248,9 @@ class WaveFourReviewDocketEntry:
         """Return deterministic SHA-256 fingerprint."""
 
         return _stable_sha256(self.canonical_payload())
-        @dataclass(frozen=True, slots=True)
+
+
+@dataclass(frozen=True, slots=True)
 class WaveFourReviewerAssignment:
     """Reviewer assignment for one or more Wave 4 docket entries."""
 
@@ -273,7 +275,9 @@ class WaveFourReviewerAssignment:
             "reviewer_role_id",
             _text(self.reviewer_role_id, "reviewer_role_id"),
         )
-        object.__setattr__(self, "review_scope", _text(self.review_scope, "review_scope"))
+        object.__setattr__(
+            self, "review_scope", _text(self.review_scope, "review_scope")
+        )
         object.__setattr__(
             self,
             "required_entry_ids",
@@ -428,7 +432,9 @@ class WaveFourHumanReviewDocket:
         if self.claims_agi:
             raise ValueError("Wave 4 review dockets cannot claim AGI.")
         if self.independently_validated:
-            raise ValueError("Wave 4 review dockets cannot claim independent validation.")
+            raise ValueError(
+                "Wave 4 review dockets cannot claim independent validation."
+            )
         if self.production_ready:
             raise ValueError("Wave 4 review dockets cannot claim production readiness.")
 
@@ -443,7 +449,10 @@ class WaveFourHumanReviewDocket:
         """Return docket entry kinds represented by the docket."""
 
         return tuple(
-            sorted({entry.entry_kind for entry in self.entries}, key=lambda item: item.value)
+            sorted(
+                {entry.entry_kind for entry in self.entries},
+                key=lambda item: item.value,
+            )
         )
 
     @property
@@ -464,7 +473,12 @@ class WaveFourHumanReviewDocket:
         """Return reviewer role ids assigned in this docket."""
 
         return tuple(
-            sorted({assignment.reviewer_role_id for assignment in self.reviewer_assignments})
+            sorted(
+                {
+                    assignment.reviewer_role_id
+                    for assignment in self.reviewer_assignments
+                }
+            )
         )
 
     @property
@@ -473,7 +487,9 @@ class WaveFourHumanReviewDocket:
 
         assigned = set(self.assigned_reviewer_role_ids)
         return tuple(
-            role_id for role_id in self.required_reviewer_role_ids if role_id not in assigned
+            role_id
+            for role_id in self.required_reviewer_role_ids
+            if role_id not in assigned
         )
 
     @property
@@ -495,7 +511,8 @@ class WaveFourHumanReviewDocket:
         for entry in self.entries:
             evidence_ids.update(entry.evidence_ids)
         return tuple(sorted(evidence_ids))
-            @property
+
+    @property
     def missing_declaration_evidence_ids(self) -> tuple[str, ...]:
         """Return declaration evidence ids not carried by docket entries."""
 
@@ -512,7 +529,9 @@ class WaveFourHumanReviewDocket:
 
         gaps: list[str] = []
         if self.missing_required_entry_kinds:
-            missing = ", ".join(kind.value for kind in self.missing_required_entry_kinds)
+            missing = ", ".join(
+                kind.value for kind in self.missing_required_entry_kinds
+            )
             gaps.append(f"missing docket entry coverage: {missing}")
         if self.missing_required_reviewer_role_ids:
             missing = ", ".join(self.missing_required_reviewer_role_ids)
@@ -534,7 +553,9 @@ class WaveFourHumanReviewDocket:
     def blocking_gaps(self) -> tuple[str, ...]:
         """Return hard blocks for this review docket."""
 
-        gaps = [f"{self.docket_id} blocked: {reason}" for reason in self.blocked_reasons]
+        gaps = [
+            f"{self.docket_id} blocked: {reason}" for reason in self.blocked_reasons
+        ]
         gaps.extend(self.maturity_declaration.blocking_gaps)
         return tuple(gaps)
 
@@ -544,7 +565,10 @@ class WaveFourHumanReviewDocket:
 
         if self.blocking_gaps:
             return WaveFourReviewDocketStatus.BLOCKED
-        if self.maturity_declaration.status is WaveFourMaturityDeclarationStatus.NEEDS_REPAIR:
+        if (
+            self.maturity_declaration.status
+            is WaveFourMaturityDeclarationStatus.NEEDS_REPAIR
+        ):
             return WaveFourReviewDocketStatus.NEEDS_REPAIR
         if self.readiness_gaps:
             return WaveFourReviewDocketStatus.NEEDS_EVIDENCE
@@ -675,7 +699,9 @@ class WaveFourHumanReviewDocket:
             "generated_by_engine_id": self.generated_by_engine_id,
             "human_authority_state": self.human_authority_state.value,
             "independently_validated": self.independently_validated,
-            "missing_declaration_evidence_ids": list(self.missing_declaration_evidence_ids),
+            "missing_declaration_evidence_ids": list(
+                self.missing_declaration_evidence_ids
+            ),
             "missing_required_entry_kinds": [
                 kind.value for kind in self.missing_required_entry_kinds
             ],
@@ -691,7 +717,8 @@ class WaveFourHumanReviewDocket:
             "required_reviewer_role_ids": list(self.required_reviewer_role_ids),
             "review_summary": self.review_summary,
             "reviewer_assignments": [
-                assignment.canonical_payload() for assignment in self.reviewer_assignments
+                assignment.canonical_payload()
+                for assignment in self.reviewer_assignments
             ],
             "reviewer_role_id": self.reviewer_role_id,
             "scenario_ids": list(self.scenario_ids),
@@ -714,7 +741,7 @@ def build_wave_four_human_review_docket(
 
     packet = maturity_declaration.review_packet
     scorecard = packet.scorecard
-    scorecard_id = _text(str(getattr(scorecard, "scorecard_id")), "scorecard_id")
+    scorecard_id = _text(str(scorecard.scorecard_id), "scorecard_id")
     proto_bundle = getattr(scorecard, "proto_candidate_bundle", None)
     proto_bundle_id = _text(
         str(getattr(proto_bundle, "bundle_id", "proto-candidate-bundle")),
@@ -771,7 +798,9 @@ def build_wave_four_human_review_docket(
             entry_id="entry:review-instructions",
             entry_kind=WaveFourReviewDocketEntryKind.REVIEW_INSTRUCTIONS,
             source_id=f"review-instructions:{docket_id}",
-            summary="Reviewer instructions preserving human authority and no overclaim.",
+            summary=(
+                "Reviewer instructions preserving human authority and no overclaim."
+            ),
             payload={
                 "allowed_decisions": [
                     option.value for option in DEFAULT_WAVE_FOUR_REVIEW_DECISION_OPTIONS
@@ -788,7 +817,9 @@ def build_wave_four_human_review_docket(
         WaveFourReviewerAssignment(
             assignment_id=f"assignment:{role_id}",
             reviewer_role_id=role_id,
-            review_scope="Review the bounded Wave 4 docket evidence and authority limits.",
+            review_scope=(
+                "Review the bounded Wave 4 docket evidence and authority limits."
+            ),
             required_entry_ids=tuple(entry.entry_id for entry in entries),
             decision_options=DEFAULT_WAVE_FOUR_REVIEW_DECISION_OPTIONS,
             evidence_ids=evidence_ids,
