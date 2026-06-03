@@ -31,7 +31,6 @@ from ix_cognition_kernel.wave4_trials import (
     WaveFourControlledTask,
     WaveFourTrialMeasurement,
     WaveFourTrialOutcome,
-    WaveFourTrialStatus,
     WaveFourTrialTaskKind,
 )
 
@@ -40,9 +39,7 @@ T = TypeVar("T")
 WAVE_FOUR_FAILURE_OBSERVATION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-failure-observation-v1"
 )
-WAVE_FOUR_REPAIR_ACTION_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-repair-action-v1"
-)
+WAVE_FOUR_REPAIR_ACTION_SCHEMA_VERSION = "ix-cognition-kernel-wave4-repair-action-v1"
 WAVE_FOUR_FAILURE_REPAIR_CYCLE_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-failure-repair-cycle-v1"
 )
