@@ -15,7 +15,7 @@ import json
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Protocol, TypeVar
+from typing import Any, Protocol, TypeVar, cast
 
 from ix_cognition_kernel.wave4_contracts import (
     WaveFourArtifactBundle,
@@ -102,39 +102,99 @@ DEFAULT_WAVE_FOUR_REVIEW_DECISION_OPTIONS: tuple[WaveFourReviewDecisionOption, .
 
 
 class WaveFourScorecardLike(Protocol):
-    """Structural protocol for the scorecard fields used by the docket."""
+    """Read-only structural protocol for scorecard fields used by the docket."""
 
-    scorecard_id: str
+    @property
+    def scorecard_id(self) -> str:
+        """Return the scorecard identifier."""
 
 
 class WaveFourReviewPacketLike(Protocol):
-    """Structural protocol for the review-packet fields used by the docket."""
+    """Read-only structural protocol for review-packet fields used by the docket."""
 
-    packet_id: str
-    scorecard: WaveFourScorecardLike
-    all_evidence_ids: tuple[str, ...]
-    scenario_ids: tuple[str, ...]
-    blackfox_receipt_ids: tuple[str, ...]
-    required_reviewer_role_ids: tuple[str, ...]
+    @property
+    def packet_id(self) -> str:
+        """Return the review-packet identifier."""
+
+    @property
+    def scorecard(self) -> WaveFourScorecardLike:
+        """Return the bound scorecard."""
+
+    @property
+    def all_evidence_ids(self) -> tuple[str, ...]:
+        """Return all evidence identifiers visible to the packet."""
+
+    @property
+    def scenario_ids(self) -> tuple[str, ...]:
+        """Return attached WorldTwin scenario identifiers."""
+
+    @property
+    def blackfox_receipt_ids(self) -> tuple[str, ...]:
+        """Return attached BlackFox receipt identifiers."""
+
+    @property
+    def required_reviewer_role_ids(self) -> tuple[str, ...]:
+        """Return required reviewer role identifiers."""
 
 
 class WaveFourMaturityDeclarationLike(Protocol):
-    """Structural protocol for the declaration fields used by the docket."""
+    """Read-only structural protocol for declaration fields used by the docket."""
 
-    declaration_id: str
-    artifact_id: str
-    status: WaveFourMaturityDeclarationStatus
-    decision: WaveFourMaturityDeclarationDecision
-    declarable_for_human_review: bool
-    review_packet: WaveFourReviewPacketLike
-    all_evidence_ids: tuple[str, ...]
-    readiness_gaps: tuple[str, ...]
-    blocking_gaps: tuple[str, ...]
-    permits_automatic_execution: bool
-    permits_automatic_promotion: bool
-    claims_agi: bool
-    independently_validated: bool
-    production_ready: bool
+    @property
+    def declaration_id(self) -> str:
+        """Return the maturity declaration identifier."""
+
+    @property
+    def artifact_id(self) -> str:
+        """Return the declaration artifact identifier."""
+
+    @property
+    def status(self) -> WaveFourMaturityDeclarationStatus:
+        """Return the declaration status."""
+
+    @property
+    def decision(self) -> WaveFourMaturityDeclarationDecision:
+        """Return the declaration decision."""
+
+    @property
+    def declarable_for_human_review(self) -> bool:
+        """Return whether the declaration can be sent to human review."""
+
+    @property
+    def review_packet(self) -> WaveFourReviewPacketLike:
+        """Return the bound human-review packet."""
+
+    @property
+    def all_evidence_ids(self) -> tuple[str, ...]:
+        """Return all evidence identifiers visible to the declaration."""
+
+    @property
+    def readiness_gaps(self) -> tuple[str, ...]:
+        """Return non-blocking readiness gaps."""
+
+    @property
+    def blocking_gaps(self) -> tuple[str, ...]:
+        """Return blocking gaps."""
+
+    @property
+    def permits_automatic_execution(self) -> bool:
+        """Return whether automatic execution is permitted."""
+
+    @property
+    def permits_automatic_promotion(self) -> bool:
+        """Return whether automatic maturity promotion is permitted."""
+
+    @property
+    def claims_agi(self) -> bool:
+        """Return whether the declaration claims AGI."""
+
+    @property
+    def independently_validated(self) -> bool:
+        """Return whether the declaration claims independent validation."""
+
+    @property
+    def production_ready(self) -> bool:
+        """Return whether the declaration claims production readiness."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -460,8 +520,7 @@ class WaveFourHumanReviewDocket:
                 "docket_id": self.docket_id,
                 "entries": self.entry_digest_by_id,
                 "reviewer_assignments": [
-                    assignment.fingerprint()
-                    for assignment in self.reviewer_assignments
+                    assignment.fingerprint() for assignment in self.reviewer_assignments
                 ],
             }
         )
@@ -523,8 +582,7 @@ class WaveFourHumanReviewDocket:
         """Return hard blocks for this review docket."""
 
         gaps = [
-            f"{self.docket_id} blocked: {reason}"
-            for reason in self.blocked_reasons
+            f"{self.docket_id} blocked: {reason}" for reason in self.blocked_reasons
         ]
         gaps.extend(self.maturity_declaration.blocking_gaps)
         return tuple(gaps)
@@ -750,13 +808,11 @@ def build_wave_four_human_review_docket(
             entry_kind=WaveFourReviewDocketEntryKind.REVIEW_INSTRUCTIONS,
             source_id=f"review-instructions:{docket_id}",
             summary=(
-                "Reviewer decisions are bounded to accept, evidence, repair, "
-                "or block."
+                "Reviewer decisions are bounded to accept, evidence, repair, or block."
             ),
             payload={
                 "decision_options": [
-                    option.value
-                    for option in DEFAULT_WAVE_FOUR_REVIEW_DECISION_OPTIONS
+                    option.value for option in DEFAULT_WAVE_FOUR_REVIEW_DECISION_OPTIONS
                 ],
                 "no_agi_claim": True,
                 "no_automatic_execution": True,
@@ -815,7 +871,7 @@ def _normalize_mapping(value: Mapping[str, Any], label: str) -> dict[str, Any]:
         encoded = json.dumps(value, sort_keys=True, separators=(",", ":"))
     except TypeError as exc:
         raise ValueError(f"{label} must be JSON serializable.") from exc
-    return json.loads(encoded)
+    return cast(dict[str, Any], json.loads(encoded))
 
 
 def _text(value: str, label: str) -> str:
@@ -857,7 +913,5 @@ def _unique_items(values: Iterable[T], label: str) -> tuple[T, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
