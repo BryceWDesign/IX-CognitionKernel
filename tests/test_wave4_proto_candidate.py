@@ -2,7 +2,6 @@ import pytest
 
 from ix_cognition_kernel.wave4_contracts import (
     WAVE_FOUR_REQUIRED_ARTIFACT_KINDS,
-    WAVE_FOUR_REQUIRED_CAPABILITY_AREAS,
     WaveFourArtifactBundle,
     WaveFourArtifactDecision,
     WaveFourArtifactKind,
@@ -24,10 +23,8 @@ from ix_cognition_kernel.wave4_trials import (
     WaveFourTrialMeasurement,
     WaveFourTrialOutcome,
     WaveFourTrialProtocol,
-    WaveFourTrialStatus,
     WaveFourTrialTaskKind,
 )
-
 
 KIND_TO_CAPABILITY: dict[WaveFourArtifactKind, WaveFourCapabilityArea] = {
     WaveFourArtifactKind.CONTROLLED_TRIAL: WaveFourCapabilityArea.AUDIT_TRAIL,
@@ -221,8 +218,7 @@ def test_proto_bundle_reports_missing_task_coverage() -> None:
         WaveFourProtoCandidateOutcome.PROTO_CANDIDATE_NEEDS_EVIDENCE
     )
     assert (
-        WaveFourTrialTaskKind.BASELINE_CAPABILITY
-        in bundle.missing_required_task_kinds
+        WaveFourTrialTaskKind.BASELINE_CAPABILITY in bundle.missing_required_task_kinds
     )
     assert "missing proto-candidate task coverage" in bundle.readiness_gaps[-1]
 
