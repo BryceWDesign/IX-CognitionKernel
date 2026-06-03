@@ -245,9 +245,7 @@ def test_docket_holds_for_missing_reviewer_role_coverage() -> None:
     )
 
     assert docket.status is WaveFourReviewDocketStatus.NEEDS_EVIDENCE
-    assert docket.missing_required_reviewer_role_ids == (
-        "safety-boundary-reviewer",
-    )
+    assert docket.missing_required_reviewer_role_ids == ("safety-boundary-reviewer",)
     assert "missing reviewer role coverage" in docket.readiness_gaps[0]
 
 
@@ -257,9 +255,7 @@ def test_docket_rejects_assignment_referencing_unknown_entry() -> None:
             docket_id="review-docket-bad-assignment",
             maturity_declaration=ready_declaration(),
             entries=(entry(),),
-            reviewer_assignments=(
-                assignment(required_entry_ids=("entry:missing",)),
-            ),
+            reviewer_assignments=(assignment(required_entry_ids=("entry:missing",)),),
             scenario_ids=("worldtwin:review-docket",),
             blackfox_receipt_ids=("blackfox:review-docket",),
         )
