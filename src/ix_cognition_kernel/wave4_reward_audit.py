@@ -36,18 +36,12 @@ from ix_cognition_kernel.wave4_trials import (
 
 T = TypeVar("T")
 
-WAVE_FOUR_REWARD_METRIC_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-reward-metric-v1"
-)
-WAVE_FOUR_REWARD_FINDING_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-reward-finding-v1"
-)
+WAVE_FOUR_REWARD_METRIC_SCHEMA_VERSION = "ix-cognition-kernel-wave4-reward-metric-v1"
+WAVE_FOUR_REWARD_FINDING_SCHEMA_VERSION = "ix-cognition-kernel-wave4-reward-finding-v1"
 WAVE_FOUR_REWARD_NEGATIVE_CONTROL_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-reward-negative-control-v1"
 )
-WAVE_FOUR_REWARD_AUDIT_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-reward-audit-v1"
-)
+WAVE_FOUR_REWARD_AUDIT_SCHEMA_VERSION = "ix-cognition-kernel-wave4-reward-audit-v1"
 
 
 class WaveFourRewardRiskKind(StrEnum):
@@ -99,13 +93,13 @@ REQUIRED_WAVE_FOUR_REWARD_RISK_KINDS: tuple[WaveFourRewardRiskKind, ...] = (
     WaveFourRewardRiskKind.HUMAN_AUTHORITY_BYPASS,
 )
 
-BLOCKING_WAVE_FOUR_REWARD_SEVERITIES: frozenset[
-    WaveFourRewardFindingSeverity
-] = frozenset(
-    {
-        WaveFourRewardFindingSeverity.HIGH,
-        WaveFourRewardFindingSeverity.CRITICAL,
-    }
+BLOCKING_WAVE_FOUR_REWARD_SEVERITIES: frozenset[WaveFourRewardFindingSeverity] = (
+    frozenset(
+        {
+            WaveFourRewardFindingSeverity.HIGH,
+            WaveFourRewardFindingSeverity.CRITICAL,
+        }
+    )
 )
 
 
@@ -126,9 +120,7 @@ class WaveFourRewardMetricDefinition:
         """Validate metric identity, mission boundary, and evidence."""
 
         object.__setattr__(self, "metric_id", _text(self.metric_id, "metric_id"))
-        object.__setattr__(
-            self, "metric_name", _text(self.metric_name, "metric_name")
-        )
+        object.__setattr__(self, "metric_name", _text(self.metric_name, "metric_name"))
         object.__setattr__(self, "objective", _text(self.objective, "objective"))
         object.__setattr__(
             self,
@@ -207,9 +199,7 @@ class WaveFourRewardAuditFinding:
 
         object.__setattr__(self, "finding_id", _text(self.finding_id, "finding_id"))
         object.__setattr__(self, "metric_id", _text(self.metric_id, "metric_id"))
-        object.__setattr__(
-            self, "description", _text(self.description, "description")
-        )
+        object.__setattr__(self, "description", _text(self.description, "description"))
         object.__setattr__(
             self,
             "observed_gaming_behavior",
@@ -391,9 +381,7 @@ class WaveFourRewardHackingAudit:
             "evaluated_risk_kinds",
             _unique_items(self.evaluated_risk_kinds, "evaluated risk kind"),
         )
-        findings = tuple(
-            sorted(self.findings, key=lambda finding: finding.finding_key)
-        )
+        findings = tuple(sorted(self.findings, key=lambda finding: finding.finding_key))
         _unique_items((finding.finding_id for finding in findings), "finding_id")
         for finding in findings:
             if finding.metric_id not in metric_ids:
@@ -466,9 +454,7 @@ class WaveFourRewardHackingAudit:
 
         present = set(self.evaluated_risk_kinds)
         return tuple(
-            risk
-            for risk in REQUIRED_WAVE_FOUR_REWARD_RISK_KINDS
-            if risk not in present
+            risk for risk in REQUIRED_WAVE_FOUR_REWARD_RISK_KINDS if risk not in present
         )
 
     @property
@@ -476,9 +462,7 @@ class WaveFourRewardHackingAudit:
         """Return finding ids that block progress."""
 
         return tuple(
-            finding.finding_id
-            for finding in self.findings
-            if finding.blocks_progress
+            finding.finding_id for finding in self.findings if finding.blocks_progress
         )
 
     @property
@@ -496,9 +480,7 @@ class WaveFourRewardHackingAudit:
         """Return negative controls caught with repair guidance."""
 
         return tuple(
-            control.control_id
-            for control in self.negative_controls
-            if control.resolved
+            control.control_id for control in self.negative_controls if control.resolved
         )
 
     @property
