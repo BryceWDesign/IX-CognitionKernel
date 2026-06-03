@@ -31,9 +31,7 @@ from ix_cognition_kernel.wave4_review_docket import WaveFourReviewDocketStatus
 
 T = TypeVar("T")
 
-WAVE_FOUR_RECORD_CHECK_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-record-check-v1"
-)
+WAVE_FOUR_RECORD_CHECK_SCHEMA_VERSION = "ix-cognition-kernel-wave4-record-check-v1"
 WAVE_FOUR_COMPLETION_RECEIPT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-completion-receipt-v1"
 )
@@ -398,11 +396,18 @@ class WaveFourCompletionReceipt:
 
         gaps: list[str] = []
         if self.missing_required_check_kinds:
-            missing = ", ".join(kind.value for kind in self.missing_required_check_kinds)
+            missing = ", ".join(
+                kind.value for kind in self.missing_required_check_kinds
+            )
             gaps.append(f"missing completion receipt check coverage: {missing}")
-        if self.review_docket.status is not WaveFourReviewDocketStatus.READY_FOR_HUMAN_REVIEW:
+        if (
+            self.review_docket.status
+            is not WaveFourReviewDocketStatus.READY_FOR_HUMAN_REVIEW
+        ):
             gaps.extend(self.review_docket.readiness_gaps)
-        gaps.extend(check.readiness_gap for check in self.record_checks if check.readiness_gap)
+        gaps.extend(
+            check.readiness_gap for check in self.record_checks if check.readiness_gap
+        )
         return tuple(gaps)
 
     @property
@@ -553,9 +558,7 @@ class WaveFourCompletionReceipt:
             "record_checks": [
                 check.canonical_payload() for check in self.record_checks
             ],
-            "required_check_kinds": [
-                kind.value for kind in self.required_check_kinds
-            ],
+            "required_check_kinds": [kind.value for kind in self.required_check_kinds],
             "review_summary": self.review_summary,
             "reviewer_role_id": self.reviewer_role_id,
             "schema_version": self.schema_version,
