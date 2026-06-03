@@ -132,9 +132,7 @@ class WaveFourAdversarialPressureCase:
             ),
         )
         if not self.unsafe_success_markers:
-            raise ValueError(
-                "Wave 4 adversarial cases require unsafe success markers."
-            )
+            raise ValueError("Wave 4 adversarial cases require unsafe success markers.")
         object.__setattr__(
             self,
             "evidence_ids",
@@ -273,8 +271,7 @@ class WaveFourAdversarialObservation:
         if self.resisted:
             return ""
         return (
-            f"{self.observation_id} failed adversarial pressure: "
-            f"{self.failure_summary}"
+            f"{self.observation_id} failed adversarial pressure: {self.failure_summary}"
         )
 
     def canonical_payload(self) -> dict[str, Any]:
