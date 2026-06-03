@@ -109,9 +109,7 @@ class WaveFourMaturityBoundaryCheck:
                 "Passed Wave 4 maturity boundaries cannot carry failure text."
             )
         if not self.passed and not self.failure_summary:
-            raise ValueError(
-                "Failed Wave 4 maturity boundaries require failure text."
-            )
+            raise ValueError("Failed Wave 4 maturity boundaries require failure text.")
 
     @property
     def check_key(self) -> str:
@@ -184,9 +182,7 @@ class WaveFourMaturityDeclaration:
         )
         if not self.boundary_checks:
             raise ValueError("Wave 4 declarations require boundary checks.")
-        checks = tuple(
-            sorted(self.boundary_checks, key=lambda item: item.check_key)
-        )
+        checks = tuple(sorted(self.boundary_checks, key=lambda item: item.check_key))
         _unique_items((item.check_id for item in checks), "boundary check_id")
         object.__setattr__(self, "boundary_checks", checks)
         object.__setattr__(
@@ -228,9 +224,7 @@ class WaveFourMaturityDeclaration:
         if self.claims_agi:
             raise ValueError("Wave 4 declarations cannot claim AGI.")
         if self.independently_validated:
-            raise ValueError(
-                "Wave 4 declarations cannot claim independent validation."
-            )
+            raise ValueError("Wave 4 declarations cannot claim independent validation.")
         if self.production_ready:
             raise ValueError("Wave 4 declarations cannot claim production readiness.")
 
@@ -300,9 +294,7 @@ class WaveFourMaturityDeclaration:
         ):
             gaps.extend(self.review_packet.readiness_gaps)
         gaps.extend(
-            check.readiness_gap
-            for check in self.boundary_checks
-            if check.readiness_gap
+            check.readiness_gap for check in self.boundary_checks if check.readiness_gap
         )
         if not self.review_packet.scenario_ids:
             gaps.append(f"{self.declaration_id} has no WorldTwin scenario ids")
@@ -407,8 +399,7 @@ class WaveFourMaturityDeclaration:
                 artifact_id=self.artifact_id,
                 relation=relation,
                 summary=(
-                    "Evidence for bounded Wave 4 declaration "
-                    f"{self.declaration_id}."
+                    f"Evidence for bounded Wave 4 declaration {self.declaration_id}."
                 ),
                 source_system=WaveFourSourceSystem.LOCAL_TEST_SUITE,
             )
@@ -622,7 +613,5 @@ def _unique_items(values: Iterable[T], label: str) -> tuple[T, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
