@@ -149,7 +149,7 @@ class WaveFourProtoCandidateTrialBundle:
             "required_capability_areas",
             _unique_items(self.required_capability_areas, "required capability area"),
         )
-                object.__setattr__(
+        object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
         if self.permits_automatic_execution:
@@ -305,7 +305,8 @@ class WaveFourProtoCandidateTrialBundle:
             for artifact in self.artifact_refs
             if artifact.artifact_id not in ready
         )
-            @property
+
+    @property
     def all_evidence_ids(self) -> tuple[str, ...]:
         """Return sorted evidence ids from tasks, artifacts, and links."""
 
@@ -450,7 +451,8 @@ class WaveFourProtoCandidateTrialBundle:
             )
             for evidence_id in self.all_evidence_ids
         )
-            def to_artifact_bundle(self) -> WaveFourArtifactBundle:
+
+    def to_artifact_bundle(self) -> WaveFourArtifactBundle:
         """Convert this integration bundle into a shared Wave 4 artifact bundle."""
 
         return WaveFourArtifactBundle(
