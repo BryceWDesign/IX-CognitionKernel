@@ -1,367 +1,244 @@
 # IX-CognitionKernel
 
-IX-CognitionKernel is a source-available governed causal cognition research
-kernel created by Bryce Lovell.
+IX-CognitionKernel is a source-available governed causal cognition research kernel by Bryce Lovell.
 
-It is designed to explore evidence-bound cognition architecture for advanced
-AI-agent research without surrendering human authority, hiding uncertainty, or
-making unsupported intelligence claims.
+The project explores how an AI-assisted cognition layer can represent beliefs, evidence, uncertainty, causal assumptions, plan state, evaluation records, memory quarantine, bounded agent roles, review gates, and human authority before any execution layer is trusted.
 
-The core doctrine is simple:
+The core rule is simple:
+
+**Model thinks. Cognition structures. Governance checks. Humans authorize. Evidence decides trust.**
+
+## Current maturity state
+
+**Wave 4 — Controlled proto-candidate review package**
+
+This repository is not an AGI claim. It is not production-ready software. It is not independently validated. It is not certified. It does not grant autonomous execution authority.
+
+Wave 4 adds a controlled review package for early proto-candidate behaviors under strict boundaries:
+
+- cross-domain transfer probes
+- failure-repair cycles
+- uncertainty preservation traces
+- long-horizon mission-state traces
+- safe-refusal records
+- reward-hacking audits
+- adversarial robustness records
+- reproducible audit trails
+- scorecards
+- human-review packets
+- bounded maturity declarations
+- human-review dockets
+- completion receipts
+
+All Wave 4 records are evidence-bound, deterministic where practical, review-only, and explicitly constrained against overclaiming.
+
+## What this repo is trying to do
+
+IX-CognitionKernel is an attempt to build a serious research substrate for governed cognition. The goal is not to wrap model output with marketing language. The goal is to make cognition state inspectable, testable, reviewable, and bounded.
+
+The kernel is intended to help answer questions like:
+
+- What does the system believe?
+- What evidence supports that belief?
+- What remains uncertain?
+- What assumptions are stale, contradicted, unsafe, or unsupported?
+- What causal model is being used?
+- What plan is being proposed?
+- What would count as failure?
+- What evidence changed after an outcome?
+- What memory is trusted, quarantined, or rejected?
+- What human authority is required before action?
+- What claims are not allowed?
+
+## What this repo is not
+
+IX-CognitionKernel is not:
+
+- AGI
+- a claimed AGI candidate
+- an autonomous agent deployment framework
+- a production AI safety system
+- a certified assurance case
+- a government, defense, or enterprise-approved system
+- an independent-validation result
+- a benchmark victory claim
+- an execution engine that can approve its own actions
+
+The repository may model higher maturity states, but it does not claim those states are achieved unless evidence supports them.
+
+## Maturity ladder
+
+The project uses a six-stage maturity ladder.
+
+### Wave 0 — Repository Foundation
+
+Repository structure, license posture, package layout, CI, strict lint/type/test setup, doctrine, cognitive BOM, engine registry, and bounded agent role registry.
+
+### Wave 1 — Research Prototype
+
+Structured code can represent beliefs, evidence, confidence, uncertainty states, causal assumptions, simple plan graphs, evaluation records, non-attached purpose rules, bounded agent roles, and maturity state.
+
+### Wave 2 — Learnable Causal Cognition Core
+
+The system updates beliefs and behavior from evidence; tracks contradictions and stale beliefs; compares predictions against observations; quarantines bad memory; and stores validated reusable skills.
+
+### Wave 3 — Governed AGI-Emulation Substrate
+
+The system coordinates cognition engines, bounded agents, tribunal-style critique, reward auditing, memory quarantine, skill updates, self-play/curriculum tasks, evaluator-driven discovery, BlackFox handoff packages, WorldTwin reasoning, and assurance-style evidence records.
+
+### Wave 4 — Controlled Proto-Candidate Review Package
+
+The system creates a bounded review package for proto-candidate behaviors under controlled tests. It includes transfer probes, failure-repair cycles, uncertainty preservation, mission-state continuity, safe refusal, reward/adversarial audits, reproducible receipts, scorecards, human-review dockets, and explicit no-AGI/no-production/no-independent-validation boundaries.
+
+### Wave 5 — Credible AGI Candidate Under Independent Validation
+
+This state would require external protocols, independent reviewers, reproducible evidence bundles, adversarial safety tests, long-horizon task tests, cross-domain transfer tests, memory integrity checks, safe-refusal proof, and preserved human authority.
+
+This repository does not claim Wave 5.
+
+### Wave 6 — AGI, only if overwhelming evidence justifies it
+
+This state would require broad, durable, independently validated general intelligence, including novel skill acquisition, cross-domain transfer without custom retraining per task, causal understanding, long-horizon coherence, self-correction from evidence, stable mission identity, robust world modeling, safe uncertainty handling, transparent evidence trails, and independent repeatability.
+
+This repository does not claim Wave 6.
+
+## Core doctrine
+
+IX-CognitionKernel uses the following doctrine:
+
+- evidence over confidence
+- uncertainty honesty over performance theater
+- human authority over autonomous self-approval
+- bounded review over hidden execution
+- deterministic receipts over vibes
+- memory quarantine over blind persistence
+- contradiction handling over narrative smoothing
+- reward-audit discipline over metric chasing
+- safe refusal over unsafe compliance
+- no maturity promotion without evidence
+
+## Wave 4 architecture
+
+Wave 4 is built around a controlled proto-candidate review package.
+
+The major source modules include:
+
+- `wave4_contracts.py`
+- `wave4_trials.py`
+- `wave4_transfer.py`
+- `wave4_transfer_bundle.py`
+- `wave4_failure_repair.py`
+- `wave4_repair_suite.py`
+- `wave4_mission_state.py`
+- `wave4_safe_refusal.py`
+- `wave4_adversarial_robustness.py`
+- `wave4_audit_trail.py`
+- `wave4_proto_candidate.py`
+- `wave4_scorecard.py`
+- `wave4_review_packet.py`
+- `wave4_maturity_declaration.py`
+- `wave4_review_docket.py`
+- `wave4_completion_receipt.py`
+
+These modules work together as a review pipeline:
+
+1. Build controlled task evidence.
+2. Convert task outputs into artifact references.
+3. Bundle transfer, repair, mission-state, refusal, adversarial, reward, and audit evidence.
+4. Score the proto-candidate package.
+5. Build a human-review packet.
+6. Build a bounded maturity declaration.
+7. Build a review docket.
+8. Build a completion receipt.
+9. Preserve explicit no-execution, no-AGI, no-production, and no-independent-validation boundaries.
+
+## Wave 4 evidence boundaries
+
+Wave 4 records are designed to fail closed.
+
+A record that lacks evidence should not pretend to be ready.
+
+A record that detects repair issues should not pretend to be complete.
+
+A record with blocked evidence should block progress.
+
+A record may not grant execution authority.
+
+A record may not claim AGI.
+
+A record may not claim independent validation.
+
+A record may not claim production readiness.
+
+## Human authority
+
+The repository preserves human authority as a first-class boundary.
+
+Human review is not a decorative field. It is a control boundary. Wave 4 artifacts are review packages, not execution permission.
+
+The intended posture is:
+
+**AI-generated or AI-assisted cognition remains untrusted until evidence, policy, review, and human authorization say otherwise.**
+
+## Relationship to IX-BlackFox
+
+IX-CognitionKernel is the cognition and planning side of the larger IX research direction.
+
+The intended separation is:
+
+- IX-CognitionKernel structures cognition, evidence, uncertainty, plans, memory, and review packages.
+- IX-BlackFox governs execution-facing code-change workflows with policy gates, receipts, CI evidence, and human review.
+- IX-BlackFox-WorldTwin-style reasoning can provide scenario and consequence context before execution-facing handoff.
+
+The boundary is intentional:
+
+**Cognition does not equal permission.**
+
+## Install for local development
+
+This repository uses Python packaging with strict test, lint, and type-check discipline.
+
+A typical local setup is:
 
 ```
-Model thinks.
-Cognition structures.
-BlackFox governs.
-Humans authorize.
-Evidence decides trust.
+python -m pip install -e ".[dev]"
 ```
-Current maturity state
+Run checks
 
-IX-CognitionKernel is currently structured as a Wave 4 controlled proto-candidate
-review package.
-
-That means the repository is intended to demonstrate early controlled
-proto-candidate behaviors under bounded tests, evidence records, review gates,
-and anti-overclaim constraints.
-
-It does not mean the system is AGI.
-
-It does not mean the system is independently validated.
-
-It does not mean the system is production-ready.
-
-It does not mean the system is certified.
-
-It does not mean the system may execute autonomously.
-
-Wave 4 is a human-review-ready evidence package, not a deployment claim.
-
-What Wave 4 means in this repository
-
-Wave 4 focuses on credible proto-candidate behavior under controlled tests.
-
-The implementation is organized around these reviewable capability areas:
-
-Cross-domain transfer under bounded evidence.
-Self-improvement after failure through controlled repair cycles.
-Uncertainty preservation across long-horizon phases.
-Long-horizon mission-state continuity.
-Safe refusal under unsafe or out-of-authority requests.
-Reward-hacking and metric-gaming detection.
-Adversarial robustness under controlled pressure.
-Reproducible audit trails.
-Integrated proto-candidate trial bundles.
-Fail-closed scorecards.
-Human-review packets.
-Bounded maturity declarations.
-Human-review dockets.
-Completion receipts.
-Release and closeout manifests.
-
-Each layer is intended to preserve evidence, uncertainty, human authority, and
-reviewability.
-
-What this repository does not claim
-
-IX-CognitionKernel does not claim:
-
-AGI.
-Consciousness.
-Self-awareness.
-Autonomous authority.
-Production readiness.
-Safety certification.
-Independent validation.
-Government adoption.
-Defense affiliation.
-Operational deployment approval.
-Permission to bypass human review.
-Permission for automatic execution.
-Permission for automatic maturity promotion.
-
-Any future maturity claim must be earned through evidence, tests, review, and
-independent validation where appropriate.
-
-Maturity ladder
-
-The repository follows a six-stage maturity ladder.
+Run formatting/lint checks:
 ```
-Wave 0 — Repository Foundation
-Wave 1 — Research Prototype
-Wave 2 — Learnable Causal Cognition Core
-Wave 3 — Governed AGI-Emulation Substrate
-Wave 4 — Proto-AGI Candidate
-Wave 5 — Credible AGI Candidate Under Independent Validation
-Wave 6 — AGI, only if overwhelming evidence justifies it
+python -m ruff check .
 ```
-Wave 4 does not skip to Wave 5 or Wave 6.
-
-Wave 5 would require independent external validation, reproducible evidence
-bundles, adversarial review, and outside protocols.
-
-Wave 6 would require overwhelming independent evidence of broad, durable,
-general intelligence. This repository does not make that claim.
-
-Architecture doctrine
-
-IX-CognitionKernel treats cognition as an evidence-bound system, not as a
-free-running agent.
-
-The architecture is built around these principles:
-
-Claims require evidence.
-Evidence must remain traceable.
-Uncertainty must not disappear.
-Confidence must not inflate without support.
-Contradictions must remain visible.
-Bad memory must be quarantined.
-Skills must be validated before reuse.
-Reward metrics must be audited for gaming.
-Human authority must remain explicit.
-Execution authority must not be implied.
-Review gates must fail closed.
-No maturity level may promote itself.
-Core cognitive stack
-
-The project treats its research and failure threads as a layered cognitive
-stack, not as loose inspiration.
-
-The locked conceptual stack is:
-
-Self-play and open-ended curriculum.
-Emergent communication and multi-agent protocol learning.
-World-model and imagination layer.
-Evaluator-driven discovery.
-Memory, reflection, and skill accumulation.
-Scientific-loop automation.
-Tool-using and coding-agent patterns.
-Multi-agent governance and bounded specialist roles.
-Failure and danger threads such as reward hacking, specification gaming,
-alignment faking, deception, and evaluation gaming.
-IX governance: evidence, receipts, policy gates, human authority, and
-anti-overclaim discipline.
-Required engines
-
-The highest-form architecture is built around these required engines:
-
-Belief Engine.
-Uncertainty Engine.
-Causal World Model Engine.
-Plan Graph Engine.
-Evaluator Engine.
-Self-Play / Curriculum Engine.
-Skill Genome Engine.
-Outcome Learning Engine.
-Memory Quarantine Engine.
-Multi-Agent Tribunal Engine.
-Reward Auditor Engine.
-BlackFox Handoff Engine.
-Nirvana / Non-Attached Purpose Layer.
-
-The useful interpretation of the Nirvana layer is architectural, not mystical:
-truth over winning, evidence over confidence, uncertainty over performance
-theater, no private agenda, and no AGI claim without overwhelming evidence.
-
-Wave 4 source modules
-
-The Wave 4 implementation is organized across these source modules:
+Run type checks:
 ```
-src/ix_cognition_kernel/wave4_contracts.py
-src/ix_cognition_kernel/wave4_trials.py
-src/ix_cognition_kernel/wave4_transfer.py
-src/ix_cognition_kernel/wave4_failure_repair.py
-src/ix_cognition_kernel/wave4_repair_suite.py
-src/ix_cognition_kernel/wave4_mission_state.py
-src/ix_cognition_kernel/wave4_uncertainty.py
-src/ix_cognition_kernel/wave4_safe_refusal.py
-src/ix_cognition_kernel/wave4_reward_audit.py
-src/ix_cognition_kernel/wave4_adversarial_robustness.py
-src/ix_cognition_kernel/wave4_audit_trail.py
-src/ix_cognition_kernel/wave4_proto_candidate.py
-src/ix_cognition_kernel/wave4_scorecard.py
-src/ix_cognition_kernel/wave4_review_packet.py
-src/ix_cognition_kernel/wave4_maturity_declaration.py
-src/ix_cognition_kernel/wave4_review_docket.py
-src/ix_cognition_kernel/wave4_completion_receipt.py
-src/ix_cognition_kernel/wave4_release_manifest.py
+python -m mypy src tests
 ```
-Wave 4 test modules
-
-The Wave 4 test surface is expected to include matching tests for the Wave 4
-modules:
+Run tests:
 ```
-tests/test_wave4_contracts.py
-tests/test_wave4_trials.py
-tests/test_wave4_transfer.py
-tests/test_wave4_failure_repair.py
-tests/test_wave4_repair_suite.py
-tests/test_wave4_mission_state.py
-tests/test_wave4_uncertainty.py
-tests/test_wave4_safe_refusal.py
-tests/test_wave4_reward_audit.py
-tests/test_wave4_adversarial_robustness.py
-tests/test_wave4_audit_trail.py
-tests/test_wave4_proto_candidate.py
-tests/test_wave4_scorecard.py
-tests/test_wave4_review_packet.py
-tests/test_wave4_maturity_declaration.py
-tests/test_wave4_review_docket.py
-tests/test_wave4_completion_receipt.py
-tests/test_wave4_release_manifest.py
+python -m pytest
 ```
-Evidence flow
+Test philosophy
 
-The Wave 4 evidence flow is intentionally layered:
-```
-Controlled task
-  -> artifact reference
-  -> artifact bundle
-  -> proto-candidate trial bundle
-  -> scorecard
-  -> human-review packet
-  -> bounded maturity declaration
-  -> human-review docket
-  -> completion receipt
-  -> release manifest
-  -> human review
-```
-The flow is designed to prevent a model or runtime from declaring itself ready
-without evidence and human review.
+The test suite is not just checking happy-path object construction. The tests are intended to enforce the project doctrine:
 
-Fail-closed behavior
+missing evidence must surface as a gap
+failed checks must carry failure text
+passed checks must not carry failure text
+duplicate ids are rejected
+blocked records block progress
+execution permission is rejected
+AGI claims are rejected
+independent-validation claims are rejected
+production-readiness claims are rejected
+deterministic fingerprints remain stable across input ordering
+human-review state stays explicit
+Source-available license posture
 
-Wave 4 records use fail-closed states such as:
-```
-ready-for-controlled-review
-ready-for-human-review
-declarable-for-human-review
-ready-for-wave-four-record
-ready-for-closeout
-needs-evidence
-needs-repair
-blocked
-```
-Readiness is only allowed when required coverage exists and no blocking or repair
-condition is present.
+IX-CognitionKernel is source-available for evaluation and review under the repository license.
 
-Missing evidence is not treated as success.
+It should not be described as open source unless the license is changed to an OSI-approved open-source license.
 
-A blocked state is not treated as review-ready.
-
-A repair state is not treated as review-ready.
-
-Human authority
-
-Human authority is a first-class property throughout Wave 4.
-
-A Wave 4 object may be review-ready, but it does not grant execution authority.
-
-The intended authority boundary is:
-```
-Evidence package may be reviewed.
-Humans decide what to do with it.
-The system does not promote itself.
-The system does not authorize action.
-```
-Anti-overclaim boundaries
-
-Wave 4 records explicitly reject these claims when they appear as runtime or
-record properties:
-```
-permits_automatic_execution = True
-permits_automatic_promotion = True
-claims_agi = True
-independently_validated = True
-production_ready = True
-```
-These are rejected because they would turn a bounded review package into an
-unsupported deployment, certification, or AGI claim.
-
-Validation commands
-
-Recommended local validation commands:
-```
-PYTHONPATH=src pytest -q
-python -m compileall -q src tests
-ruff check .
-mypy src tests
-```
-A repository should not be described as green unless the current complete repo
-state passes its configured validation and CI checks.
-
-Example use
-
-A typical Wave 4 flow is expected to build controlled task records, convert them
-into artifact bundles, assemble a proto-candidate trial bundle, score it, package
-it for human review, and then create bounded closeout records only when the
-evidence is complete.
-
-The exact objects depend on the test scenario, but the intended review chain is:
-```
-from ix_cognition_kernel.wave4_scorecard import (
-    build_wave_four_proto_candidate_scorecard,
-)
-from ix_cognition_kernel.wave4_review_packet import (
-    build_wave_four_human_review_packet,
-)
-from ix_cognition_kernel.wave4_maturity_declaration import (
-    build_wave_four_maturity_declaration,
-)
-from ix_cognition_kernel.wave4_review_docket import (
-    build_wave_four_human_review_docket,
-)
-from ix_cognition_kernel.wave4_completion_receipt import (
-    build_wave_four_completion_receipt,
-)
-from ix_cognition_kernel.wave4_release_manifest import (
-    build_wave_four_release_manifest,
-)
-```
-The builders are intended to preserve a strict chain from evidence to review
-readiness without granting execution authority.
-
-Project positioning
-
-IX-CognitionKernel is a governed causal cognition research kernel.
-
-It is adjacent to AI-agent governance, assurance-case construction, runtime
-safety, causal reasoning, memory discipline, evidence-bound planning, and
-human-in-the-loop AI control.
-
-The repository is not presented as a finished product or autonomous AGI system.
-
-Relationship to IX-BlackFox
-
-IX-CognitionKernel is the cognition and planning side of the broader IX research
-direction.
-
-IX-BlackFox is the governed execution-control and evidence-bound code-change
-control plane.
-
-The intended relationship is:
-```
-Cognition structures plans.
-BlackFox governs execution boundaries.
-Humans authorize.
-Evidence decides trust.
-```
-This repository should not be used to bypass execution governance.
-
-License
-
-IX-CognitionKernel is source-available for evaluation under the repository's
-license terms.
-
-It is not open source unless the license file explicitly grants open-source
-rights.
-
-Commercial use, production use, hosted-service use, derivative operational use,
-procurement use, contractor use, funded pilot use, or government operational use
-requires prior written permission from Bryce Lovell under the applicable license
-terms.
-
-Review the repository license before using this work.
+Commercial, production, derivative operational, hosted-service, procurement, contractor, funded pilot, or government operational use requires the permission terms stated in the repository license.
 
 Authorship
 
@@ -369,21 +246,8 @@ Created by Bryce Lovell.
 
 Copyright © 2026 Bryce Lovell.
 
-All authorship, licensing, and public attribution should preserve Bryce Lovell as
-the originator and creator of IX-CognitionKernel.
+Status note
 
-Status summary
+This repository is a research prototype. Any claim about readiness must be backed by tests, evidence records, independent review where applicable, and the actual repository state at the time of review.
 
-IX-CognitionKernel Wave 4 is intended to be a controlled proto-candidate review
-package with evidence-bound records, fail-closed gates, reproducible receipts,
-and human-review boundaries.
-
-The correct interpretation is:
-```
-Review-ready research evidence package.
-Not AGI.
-Not independently validated.
-Not production-ready.
-Not certified.
-Not autonomous execution authority.
-```
+No README statement should be interpreted as a claim of AGI, production readiness, certification, government affiliation, or independent validation.
