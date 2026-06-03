@@ -36,9 +36,7 @@ from ix_cognition_kernel.wave4_trials import (
 
 T = TypeVar("T")
 
-WAVE_FOUR_TRANSFER_RULE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-transfer-rule-v1"
-)
+WAVE_FOUR_TRANSFER_RULE_SCHEMA_VERSION = "ix-cognition-kernel-wave4-transfer-rule-v1"
 WAVE_FOUR_TRANSFER_TARGET_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-transfer-target-v1"
 )
@@ -109,9 +107,7 @@ class WaveFourTransferRule:
         object.__setattr__(
             self,
             "prohibited_assumptions",
-            _unique_text(
-                self.prohibited_assumptions, label="prohibited assumption"
-            ),
+            _unique_text(self.prohibited_assumptions, label="prohibited assumption"),
         )
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
@@ -276,8 +272,7 @@ class WaveFourTransferObservation:
             raise ValueError(
                 "Failed Wave 4 transfer observations require violated invariants."
             )
-
-    @property
+                @property
     def observation_key(self) -> str:
         """Return deterministic uniqueness key for this transfer observation."""
 
@@ -294,9 +289,7 @@ class WaveFourTransferObservation:
             "passed": self.passed,
             "schema_version": self.schema_version,
             "target_id": self.target_id,
-            "violated_invariant_conditions": list(
-                self.violated_invariant_conditions
-            ),
+            "violated_invariant_conditions": list(self.violated_invariant_conditions),
         }
 
     def fingerprint(self) -> str:
@@ -458,8 +451,7 @@ class WaveFourCrossDomainTransferEvaluation:
         """Return hard blocks for this transfer evaluation."""
 
         return tuple(
-            f"{self.evaluation_id} blocked: {reason}"
-            for reason in self.blocked_reasons
+            f"{self.evaluation_id} blocked: {reason}" for reason in self.blocked_reasons
         )
 
     @property
@@ -512,8 +504,7 @@ class WaveFourCrossDomainTransferEvaluation:
             f"{len(self.failed_observation_ids)} failed observations; "
             "human review required; no AGI claim."
         )
-
-    def to_artifact_ref(self) -> WaveFourArtifactRef:
+            def to_artifact_ref(self) -> WaveFourArtifactRef:
         """Convert the evaluation into a shared Wave 4 artifact reference."""
 
         if self.status is WaveFourTransferStatus.READY_FOR_CONTROLLED_REVIEW:
@@ -544,8 +535,7 @@ class WaveFourCrossDomainTransferEvaluation:
                 artifact_id=self.artifact_id,
                 relation=WaveFourEvidenceRelation.TESTS,
                 summary=(
-                    "Evidence for Wave 4 transfer evaluation "
-                    f"{self.evaluation_id}."
+                    f"Evidence for Wave 4 transfer evaluation {self.evaluation_id}."
                 ),
                 source_system=WaveFourSourceSystem.LOCAL_TEST_SUITE,
             )
