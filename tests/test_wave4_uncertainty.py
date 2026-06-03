@@ -328,8 +328,7 @@ def test_uncertainty_trace_reports_missing_transition_and_receipts() -> None:
     assert trace.missing_transition_keys == (("snapshot-planning", "snapshot-review"),)
     assert "missing uncertainty transition checks" in trace.readiness_gaps[0]
     assert (
-        "trace-missing-transition has no WorldTwin scenario ids"
-        in trace.readiness_gaps
+        "trace-missing-transition has no WorldTwin scenario ids" in trace.readiness_gaps
     )
     assert (
         "trace-missing-transition has no BlackFox review receipt ids"
