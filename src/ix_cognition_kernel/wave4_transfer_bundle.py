@@ -1,10 +1,10 @@
-"""Wave 4 cross-domain transfer bundles and negative-control cases.
+"""Wave 4 cross-domain transfer bundle records.
 
-Commit 3 added one controlled transfer evaluation. Wave 4 needs stronger proof:
-multiple transfer evaluations, explicit target-domain coverage, negative controls,
-BlackFox-style review receipts, WorldTwin scenario links, and fail-closed bundle
-status. This module aggregates transfer evaluations without converting them into
-execution authority, AGI claims, or independent-validation claims.
+A single transfer evaluation can show one source rule applying to one set of
+targets. Wave 4 also needs bundle-level evidence that transfer behavior appears
+across required source domains and target domains, while negative controls catch
+bad transfer behavior such as hidden authority escalation or missing evidence.
+This module aggregates transfer evaluations into a review-only bundle.
 """
 
 from __future__ import annotations
@@ -18,10 +18,7 @@ from typing import Any, TypeVar
 
 from ix_cognition_kernel.wave4_contracts import (
     WaveFourArtifactBundle,
-    WaveFourArtifactDecision,
     WaveFourArtifactKind,
-    WaveFourArtifactRef,
-    WaveFourAuthorityState,
     WaveFourCapabilityArea,
     WaveFourEvidenceLink,
     WaveFourEvidenceRelation,
@@ -38,7 +35,7 @@ from ix_cognition_kernel.wave4_trials import (
 
 T = TypeVar("T")
 
-WAVE_FOUR_TRANSFER_FAILURE_SCHEMA_VERSION = (
+WAVE_FOUR_TRANSFER_FAILURE_CASE_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-transfer-failure-case-v1"
 )
 WAVE_FOUR_TRANSFER_BUNDLE_SCHEMA_VERSION = (
@@ -47,24 +44,19 @@ WAVE_FOUR_TRANSFER_BUNDLE_SCHEMA_VERSION = (
 
 
 class WaveFourTransferFailureMode(StrEnum):
-    """Negative-control failure modes a transfer evaluator must catch."""
+    """Invalid transfer behaviors the bundle must detect."""
 
     HIDDEN_AUTHORITY_ESCALATION = "hidden-authority-escalation"
     MISSING_EVIDENCE_BINDING = "missing-evidence-binding"
     UNSUPPORTED_ANALOGY = "unsupported-analogy"
-    INVARIANT_VIOLATION = "invariant-violation"
-    AUTOMATIC_EXECUTION_PRESSURE = "automatic-execution-pressure"
-    UNCERTAINTY_ERASURE = "uncertainty-erasure"
+    LOST_UNCERTAINTY = "lost-uncertainty"
+    POLICY_BYPASS = "policy-bypass"
+    TARGET_DOMAIN_OVERFIT = "target-domain-overfit"
 
 
 @dataclass(frozen=True, slots=True)
 class WaveFourTransferFailureCase:
-    """A negative-control case for cross-domain transfer evaluation.
-
-    A detected failure case is evidence of evaluator discipline, not a pass for
-    the failed behavior. The case is acceptable only when the unsafe or invalid
-    transfer was detected and a repair recommendation was produced.
-    """
+    """A negative-control case for invalid cross-domain transfer behavior."""
 
     failure_case_id: str
     evaluation_id: str
@@ -74,19 +66,23 @@ class WaveFourTransferFailureCase:
     expected_detection_summary: str
     evidence_ids: tuple[str, ...]
     detected: bool
-    repair_recommendation: str
+    repair_recommendation: str = ""
     source_system: WaveFourSourceSystem = WaveFourSourceSystem.LOCAL_TEST_SUITE
-    schema_version: str = WAVE_FOUR_TRANSFER_FAILURE_SCHEMA_VERSION
+    schema_version: str = WAVE_FOUR_TRANSFER_FAILURE_CASE_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate failure-case identity and detection evidence."""
+        """Validate failure-case identity, evidence, and repair guidance."""
 
         object.__setattr__(
             self,
             "failure_case_id",
             _text(self.failure_case_id, "failure_case_id"),
         )
-        object.__setattr__(self, "evaluation_id", _text(self.evaluation_id, "id"))
+        object.__setattr__(
+            self,
+            "evaluation_id",
+            _text(self.evaluation_id, "evaluation_id"),
+        )
         object.__setattr__(self, "target_id", _text(self.target_id, "target_id"))
         object.__setattr__(
             self,
@@ -101,7 +97,7 @@ class WaveFourTransferFailureCase:
         object.__setattr__(
             self,
             "evidence_ids",
-            _unique_text(self.evidence_ids, label="failure-case evidence_id"),
+            _unique_text(self.evidence_ids, label="transfer-failure evidence_id"),
         )
         if not self.evidence_ids:
             raise ValueError("Wave 4 transfer failure cases require evidence ids.")
@@ -111,7 +107,9 @@ class WaveFourTransferFailureCase:
             self.repair_recommendation.strip(),
         )
         object.__setattr__(
-            self, "schema_version", _text(self.schema_version, "schema_version")
+            self,
+            "schema_version",
+            _text(self.schema_version, "schema_version"),
         )
         if self.detected and not self.repair_recommendation:
             raise ValueError(
@@ -119,20 +117,20 @@ class WaveFourTransferFailureCase:
             )
 
     @property
-    def failure_key(self) -> str:
-        """Return deterministic uniqueness key for this failure case."""
+    def failure_case_key(self) -> str:
+        """Return deterministic uniqueness key."""
 
         return self.failure_case_id
 
     @property
     def resolved(self) -> bool:
-        """Return whether the failure was caught and repair guidance exists."""
+        """Return whether the negative-control failure was detected with guidance."""
 
         return self.detected and bool(self.repair_recommendation)
 
     @property
     def readiness_gap(self) -> str:
-        """Return the fail-closed gap represented by this case, if any."""
+        """Return negative-control readiness gap, if any."""
 
         if self.resolved:
             return ""
@@ -141,7 +139,7 @@ class WaveFourTransferFailureCase:
         return f"{self.failure_case_id} lacks repair guidance"
 
     def canonical_payload(self) -> dict[str, Any]:
-        """Return a deterministic payload for hashing and export."""
+        """Return deterministic failure-case payload."""
 
         return {
             "detected": self.detected,
@@ -160,14 +158,14 @@ class WaveFourTransferFailureCase:
         }
 
     def fingerprint(self) -> str:
-        """Return a deterministic SHA-256 fingerprint for this failure case."""
+        """Return deterministic SHA-256 fingerprint."""
 
         return _stable_sha256(self.canonical_payload())
 
 
 @dataclass(frozen=True, slots=True)
 class WaveFourCrossDomainTransferBundle:
-    """A deterministic bundle of transfer evaluations and negative controls."""
+    """Aggregate transfer evaluations and negative controls for Wave 4."""
 
     bundle_id: str
     evaluations: tuple[WaveFourCrossDomainTransferEvaluation, ...]
@@ -184,7 +182,7 @@ class WaveFourCrossDomainTransferBundle:
     schema_version: str = WAVE_FOUR_TRANSFER_BUNDLE_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate bundle identity, coverage settings, and failure references."""
+        """Validate bundle coverage, references, and anti-overclaim boundaries."""
 
         object.__setattr__(self, "bundle_id", _text(self.bundle_id, "bundle_id"))
         if not self.evaluations:
@@ -193,19 +191,21 @@ class WaveFourCrossDomainTransferBundle:
             sorted(self.evaluations, key=lambda item: item.evaluation_id)
         )
         evaluation_ids = _unique_items(
-            (item.evaluation_id for item in sorted_evaluations),
+            (evaluation.evaluation_id for evaluation in sorted_evaluations),
             label="evaluation_id",
         )
         object.__setattr__(self, "evaluations", sorted_evaluations)
+
         sorted_failure_cases = tuple(
-            sorted(self.failure_cases, key=lambda item: item.failure_key)
+            sorted(self.failure_cases, key=lambda item: item.failure_case_key)
         )
         _unique_items(
-            (item.failure_case_id for item in sorted_failure_cases),
+            (case.failure_case_id for case in sorted_failure_cases),
             label="failure_case_id",
         )
-        evaluation_targets = {
-            item.evaluation_id: set(item.target_ids) for item in sorted_evaluations
+        targets_by_evaluation = {
+            evaluation.evaluation_id: set(evaluation.target_ids)
+            for evaluation in sorted_evaluations
         }
         for failure_case in sorted_failure_cases:
             if failure_case.evaluation_id not in evaluation_ids:
@@ -213,27 +213,38 @@ class WaveFourCrossDomainTransferBundle:
                     "Wave 4 transfer failure cases must reference bundled "
                     f"evaluations: {failure_case.evaluation_id}"
                 )
-            known_targets = evaluation_targets[failure_case.evaluation_id]
-            if failure_case.target_id not in known_targets:
+            if (
+                failure_case.target_id
+                not in targets_by_evaluation[failure_case.evaluation_id]
+            ):
                 raise ValueError(
                     "Wave 4 transfer failure cases must reference target ids from "
                     f"their evaluation: {failure_case.target_id}"
                 )
         object.__setattr__(self, "failure_cases", sorted_failure_cases)
+
         object.__setattr__(
             self,
             "required_source_domains",
-            _unique_text(self.required_source_domains, label="required source domain"),
+            _unique_text(
+                self.required_source_domains,
+                label="required source domain",
+            ),
         )
         object.__setattr__(
             self,
             "required_target_domains",
-            _unique_text(self.required_target_domains, label="required target domain"),
+            _unique_text(
+                self.required_target_domains,
+                label="required target domain",
+            ),
         )
         if self.min_ready_evaluations < 1:
             raise ValueError("Wave 4 transfer bundles require a positive ready count.")
         object.__setattr__(
-            self, "reviewer_role_id", _text(self.reviewer_role_id, "reviewer_role_id")
+            self,
+            "reviewer_role_id",
+            _text(self.reviewer_role_id, "reviewer_role_id"),
         )
         object.__setattr__(
             self,
@@ -241,10 +252,14 @@ class WaveFourCrossDomainTransferBundle:
             _text(self.generated_by_engine_id, "generated_by_engine_id"),
         )
         object.__setattr__(
-            self, "notes", _unique_text(self.notes, label="transfer bundle note")
+            self,
+            "notes",
+            _unique_text(self.notes, label="transfer-bundle note"),
         )
         object.__setattr__(
-            self, "schema_version", _text(self.schema_version, "schema_version")
+            self,
+            "schema_version",
+            _text(self.schema_version, "schema_version"),
         )
         if self.permits_automatic_execution:
             raise ValueError("Wave 4 transfer bundles cannot permit execution.")
@@ -259,19 +274,84 @@ class WaveFourCrossDomainTransferBundle:
     def evaluation_ids(self) -> tuple[str, ...]:
         """Return evaluation ids in deterministic order."""
 
-        return tuple(item.evaluation_id for item in self.evaluations)
+        return tuple(evaluation.evaluation_id for evaluation in self.evaluations)
 
     @property
-    def source_domains(self) -> tuple[str, ...]:
-        """Return sorted source domains represented by bundled evaluations."""
+    def ready_evaluation_ids(self) -> tuple[str, ...]:
+        """Return evaluations ready for controlled review."""
 
         return tuple(
-            sorted({item.source_rule.source_domain for item in self.evaluations})
+            evaluation.evaluation_id
+            for evaluation in self.evaluations
+            if evaluation.status is WaveFourTransferStatus.READY_FOR_CONTROLLED_REVIEW
         )
 
     @property
-    def target_domains(self) -> tuple[str, ...]:
-        """Return sorted target domains represented by bundled evaluations."""
+    def repair_evaluation_ids(self) -> tuple[str, ...]:
+        """Return evaluations needing repair."""
+
+        return tuple(
+            evaluation.evaluation_id
+            for evaluation in self.evaluations
+            if evaluation.status is WaveFourTransferStatus.NEEDS_REPAIR
+        )
+
+    @property
+    def evidence_gap_evaluation_ids(self) -> tuple[str, ...]:
+        """Return evaluations needing more evidence."""
+
+        return tuple(
+            evaluation.evaluation_id
+            for evaluation in self.evaluations
+            if evaluation.status is WaveFourTransferStatus.NEEDS_EVIDENCE
+        )
+
+    @property
+    def blocked_evaluation_ids(self) -> tuple[str, ...]:
+        """Return evaluations that block bundle progress."""
+
+        return tuple(
+            evaluation.evaluation_id
+            for evaluation in self.evaluations
+            if evaluation.status is WaveFourTransferStatus.BLOCKED
+        )
+
+    @property
+    def detected_failure_case_ids(self) -> tuple[str, ...]:
+        """Return failure cases detected with repair guidance."""
+
+        return tuple(
+            failure_case.failure_case_id
+            for failure_case in self.failure_cases
+            if failure_case.resolved
+        )
+
+    @property
+    def unresolved_failure_case_ids(self) -> tuple[str, ...]:
+        """Return failure cases not detected or lacking guidance."""
+
+        return tuple(
+            failure_case.failure_case_id
+            for failure_case in self.failure_cases
+            if not failure_case.resolved
+        )
+
+    @property
+    def source_domains_present(self) -> tuple[str, ...]:
+        """Return represented source domains."""
+
+        return tuple(
+            sorted(
+                {
+                    evaluation.source_rule.source_domain
+                    for evaluation in self.evaluations
+                }
+            )
+        )
+
+    @property
+    def target_domains_present(self) -> tuple[str, ...]:
+        """Return represented target domains."""
 
         return tuple(
             sorted(
@@ -281,6 +361,24 @@ class WaveFourCrossDomainTransferBundle:
                     for target in evaluation.targets
                 }
             )
+        )
+
+    @property
+    def missing_required_source_domains(self) -> tuple[str, ...]:
+        """Return required source domains not represented."""
+
+        present = set(self.source_domains_present)
+        return tuple(
+            domain for domain in self.required_source_domains if domain not in present
+        )
+
+    @property
+    def missing_required_target_domains(self) -> tuple[str, ...]:
+        """Return required target domains not represented."""
+
+        present = set(self.target_domains_present)
+        return tuple(
+            domain for domain in self.required_target_domains if domain not in present
         )
 
     @property
@@ -323,84 +421,6 @@ class WaveFourCrossDomainTransferBundle:
         return tuple(sorted(evidence_ids))
 
     @property
-    def ready_evaluation_ids(self) -> tuple[str, ...]:
-        """Return evaluations ready for controlled human review."""
-
-        return tuple(
-            item.evaluation_id
-            for item in self.evaluations
-            if item.status is WaveFourTransferStatus.READY_FOR_CONTROLLED_REVIEW
-        )
-
-    @property
-    def evidence_gap_evaluation_ids(self) -> tuple[str, ...]:
-        """Return evaluations that need more evidence before review."""
-
-        return tuple(
-            item.evaluation_id
-            for item in self.evaluations
-            if item.status is WaveFourTransferStatus.NEEDS_EVIDENCE
-        )
-
-    @property
-    def repair_evaluation_ids(self) -> tuple[str, ...]:
-        """Return evaluations that require repair before review."""
-
-        return tuple(
-            item.evaluation_id
-            for item in self.evaluations
-            if item.status is WaveFourTransferStatus.NEEDS_REPAIR
-        )
-
-    @property
-    def blocked_evaluation_ids(self) -> tuple[str, ...]:
-        """Return evaluations that block transfer-bundle progress."""
-
-        return tuple(
-            item.evaluation_id
-            for item in self.evaluations
-            if item.status is WaveFourTransferStatus.BLOCKED
-        )
-
-    @property
-    def missing_required_source_domains(self) -> tuple[str, ...]:
-        """Return required source domains not represented by evaluations."""
-
-        present = set(self.source_domains)
-        return tuple(
-            item for item in self.required_source_domains if item not in present
-        )
-
-    @property
-    def missing_required_target_domains(self) -> tuple[str, ...]:
-        """Return required target domains not represented by evaluations."""
-
-        present = set(self.target_domains)
-        return tuple(
-            item for item in self.required_target_domains if item not in present
-        )
-
-    @property
-    def detected_failure_case_ids(self) -> tuple[str, ...]:
-        """Return negative controls that were detected and given repair guidance."""
-
-        return tuple(
-            failure_case.failure_case_id
-            for failure_case in self.failure_cases
-            if failure_case.resolved
-        )
-
-    @property
-    def unresolved_failure_case_ids(self) -> tuple[str, ...]:
-        """Return negative controls that were not safely resolved."""
-
-        return tuple(
-            failure_case.failure_case_id
-            for failure_case in self.failure_cases
-            if not failure_case.resolved
-        )
-
-    @property
     def readiness_gaps(self) -> tuple[str, ...]:
         """Return fail-closed gaps preventing controlled review."""
 
@@ -411,21 +431,16 @@ class WaveFourCrossDomainTransferBundle:
                 f"{len(self.ready_evaluation_ids)}/{self.min_ready_evaluations}"
             )
         if self.missing_required_source_domains:
-            missing_sources = ", ".join(self.missing_required_source_domains)
-            gaps.append(f"missing required source domains: {missing_sources}")
+            missing = ", ".join(self.missing_required_source_domains)
+            gaps.append(f"missing required source domains: {missing}")
         if self.missing_required_target_domains:
-            missing_targets = ", ".join(self.missing_required_target_domains)
-            gaps.append(f"missing required target domains: {missing_targets}")
+            missing = ", ".join(self.missing_required_target_domains)
+            gaps.append(f"missing required target domains: {missing}")
         for evaluation in self.evaluations:
             for gap in evaluation.readiness_gaps:
                 gaps.append(f"{evaluation.evaluation_id}: {gap}")
             for gap in evaluation.blocking_gaps:
                 gaps.append(gap)
-            if evaluation.failed_observation_ids:
-                failed = ", ".join(evaluation.failed_observation_ids)
-                gaps.append(
-                    f"{evaluation.evaluation_id}: failed observations: {failed}"
-                )
         for failure_case in self.failure_cases:
             if failure_case.readiness_gap:
                 gaps.append(failure_case.readiness_gap)
@@ -433,7 +448,7 @@ class WaveFourCrossDomainTransferBundle:
 
     @property
     def status(self) -> WaveFourTransferStatus:
-        """Return aggregate fail-closed transfer-bundle status."""
+        """Return aggregate fail-closed bundle status."""
 
         if self.blocked_evaluation_ids:
             return WaveFourTransferStatus.BLOCKED
@@ -451,23 +466,12 @@ class WaveFourCrossDomainTransferBundle:
 
     @property
     def review_summary(self) -> str:
-        """Return a concise transfer-bundle review summary."""
+        """Return concise transfer-bundle summary."""
 
         return (
             f"{self.bundle_id}: {len(self.evaluations)} transfer evaluations; "
-            f"{len(self.failure_cases)} negative controls; {self.status.value}; "
+            f"{len(self.failure_cases)} failure cases; {self.status.value}; "
             "human review required; no AGI claim."
-        )
-
-    def failure_cases_for_evaluation(
-        self, evaluation_id: str
-    ) -> tuple[WaveFourTransferFailureCase, ...]:
-        """Return failure cases attached to one evaluation."""
-
-        return tuple(
-            failure_case
-            for failure_case in self.failure_cases
-            if failure_case.evaluation_id == evaluation_id
         )
 
     def to_trial_protocol(self) -> WaveFourTrialProtocol:
@@ -475,47 +479,68 @@ class WaveFourCrossDomainTransferBundle:
 
         return WaveFourTrialProtocol(
             protocol_id=f"transfer-bundle:{self.bundle_id}",
-            tasks=tuple(
-                evaluation.to_controlled_task() for evaluation in self.evaluations
-            ),
+            tasks=tuple(evaluation.to_controlled_task() for evaluation in self.evaluations),
             required_task_kinds=(WaveFourTrialTaskKind.CROSS_DOMAIN_TRANSFER_PROBE,),
             notes=(self.review_summary, *self.notes),
         )
 
     def to_artifact_bundle(self) -> WaveFourArtifactBundle:
-        """Convert this bundle into shared Wave 4 transfer artifacts."""
+        """Convert transfer evaluations and failure cases into shared artifacts."""
 
         artifacts = tuple(
-            self._artifact_ref_for_evaluation(evaluation)
-            for evaluation in self.evaluations
+            evaluation.to_artifact_ref() for evaluation in self.evaluations
         )
-        evidence_links = tuple(
-            link
-            for evaluation in self.evaluations
-            for link in self._evidence_links_for_evaluation(evaluation)
-        )
+        links: list[WaveFourEvidenceLink] = []
+        for evaluation in self.evaluations:
+            links.extend(evaluation.evidence_links())
+            cases = tuple(
+                failure_case
+                for failure_case in self.failure_cases
+                if failure_case.evaluation_id == evaluation.evaluation_id
+            )
+            for failure_case in cases:
+                relation = WaveFourEvidenceRelation.TESTS
+                if not failure_case.resolved:
+                    relation = WaveFourEvidenceRelation.BLOCKS
+                for evidence_id in failure_case.evidence_ids:
+                    links.append(
+                        WaveFourEvidenceLink(
+                            evidence_id=evidence_id,
+                            artifact_id=evaluation.artifact_id,
+                            relation=relation,
+                            summary=(
+                                "Negative-control evidence for Wave 4 transfer "
+                                f"failure case {failure_case.failure_case_id}."
+                            ),
+                            source_system=failure_case.source_system,
+                        )
+                    )
         return WaveFourArtifactBundle(
             bundle_id=f"wave4-transfer-bundle:{self.bundle_id}",
             artifacts=artifacts,
-            evidence_links=evidence_links,
+            evidence_links=tuple(sorted(links, key=lambda link: link.link_key)),
             required_kinds=(WaveFourArtifactKind.TRANSFER_EVALUATION,),
             required_capability_areas=(WaveFourCapabilityArea.CROSS_DOMAIN_TRANSFER,),
             notes=(self.review_summary, *self.notes),
         )
 
     def canonical_payload(self) -> dict[str, Any]:
-        """Return a deterministic payload for hashing and export."""
+        """Return deterministic transfer-bundle payload."""
 
         return {
             "all_evidence_ids": list(self.all_evidence_ids),
             "blackfox_receipt_ids": list(self.blackfox_receipt_ids),
             "blocked_evaluation_ids": list(self.blocked_evaluation_ids),
-            "bundle_id": self.bundle_id,
             "claims_agi": self.claims_agi,
             "detected_failure_case_ids": list(self.detected_failure_case_ids),
-            "evaluations": [item.canonical_payload() for item in self.evaluations],
+            "evaluations": [
+                evaluation.canonical_payload() for evaluation in self.evaluations
+            ],
             "evidence_gap_evaluation_ids": list(self.evidence_gap_evaluation_ids),
-            "failure_cases": [item.canonical_payload() for item in self.failure_cases],
+            "failure_cases": [
+                failure_case.canonical_payload()
+                for failure_case in self.failure_cases
+            ],
             "generated_by_engine_id": self.generated_by_engine_id,
             "independently_validated": self.independently_validated,
             "min_ready_evaluations": self.min_ready_evaluations,
@@ -536,80 +561,17 @@ class WaveFourCrossDomainTransferBundle:
             "reviewer_role_id": self.reviewer_role_id,
             "scenario_ids": list(self.scenario_ids),
             "schema_version": self.schema_version,
-            "source_domains": list(self.source_domains),
+            "source_domains_present": list(self.source_domains_present),
             "status": self.status.value,
-            "target_domains": list(self.target_domains),
+            "target_domains_present": list(self.target_domains_present),
+            "transfer_bundle_id": self.bundle_id,
             "unresolved_failure_case_ids": list(self.unresolved_failure_case_ids),
         }
 
     def fingerprint(self) -> str:
-        """Return a deterministic SHA-256 fingerprint for this bundle."""
+        """Return deterministic SHA-256 fingerprint."""
 
         return _stable_sha256(self.canonical_payload())
-
-    def _artifact_ref_for_evaluation(
-        self, evaluation: WaveFourCrossDomainTransferEvaluation
-    ) -> WaveFourArtifactRef:
-        """Return an artifact reference enriched with failure-case evidence."""
-
-        evidence_ids = tuple(
-            sorted(
-                set(evaluation.all_evidence_ids).union(
-                    evidence_id
-                    for failure_case in self.failure_cases_for_evaluation(
-                        evaluation.evaluation_id
-                    )
-                    for evidence_id in failure_case.evidence_ids
-                )
-            )
-        )
-        if evaluation.status is WaveFourTransferStatus.READY_FOR_CONTROLLED_REVIEW:
-            decision = WaveFourArtifactDecision.READY_FOR_CONTROLLED_REVIEW
-        elif evaluation.status is WaveFourTransferStatus.BLOCKED:
-            decision = WaveFourArtifactDecision.BLOCKED
-        else:
-            decision = WaveFourArtifactDecision.NEEDS_EVIDENCE
-        authority_state = WaveFourAuthorityState.HUMAN_REVIEW_REQUIRED
-        if evaluation.status is WaveFourTransferStatus.BLOCKED:
-            authority_state = WaveFourAuthorityState.BLOCKED
-        return WaveFourArtifactRef(
-            artifact_id=evaluation.artifact_id,
-            kind=WaveFourArtifactKind.TRANSFER_EVALUATION,
-            capability_area=WaveFourCapabilityArea.CROSS_DOMAIN_TRANSFER,
-            source_system=WaveFourSourceSystem.IX_COGNITION_KERNEL,
-            summary=evaluation.review_summary,
-            produced_by_engine_id=self.generated_by_engine_id,
-            produced_by_agent_role_id=self.reviewer_role_id,
-            evidence_ids=evidence_ids,
-            decision=decision,
-            authority_state=authority_state,
-        )
-
-    def _evidence_links_for_evaluation(
-        self,
-        evaluation: WaveFourCrossDomainTransferEvaluation,
-    ) -> tuple[WaveFourEvidenceLink, ...]:
-        """Return evidence links for evaluation and attached failure cases."""
-
-        links: list[WaveFourEvidenceLink] = list(evaluation.evidence_links())
-        for failure_case in self.failure_cases_for_evaluation(evaluation.evaluation_id):
-            relation = WaveFourEvidenceRelation.TESTS
-            if not failure_case.resolved:
-                relation = WaveFourEvidenceRelation.BLOCKS
-            for evidence_id in failure_case.evidence_ids:
-                links.append(
-                    WaveFourEvidenceLink(
-                        evidence_id=evidence_id,
-                        artifact_id=evaluation.artifact_id,
-                        relation=relation,
-                        summary=(
-                            "Negative-control evidence for Wave 4 transfer "
-                            f"failure case {failure_case.failure_case_id}."
-                        ),
-                        source_system=failure_case.source_system,
-                    )
-                )
-        return tuple(sorted(links, key=lambda link: link.link_key))
 
 
 def _text(value: str, label: str) -> str:
@@ -635,15 +597,17 @@ def _unique_text(values: Iterable[str], *, label: str) -> tuple[str, ...]:
     return tuple(normalized)
 
 
-def _unique_items(values: Iterable[T], *, label: str) -> set[T]:
-    """Return unique items while rejecting duplicates."""
+def _unique_items(values: Iterable[T], *, label: str) -> tuple[T, ...]:
+    """Return tuple of unique items while rejecting duplicates."""
 
+    normalized: list[T] = []
     seen: set[T] = set()
     for value in values:
         if value in seen:
             raise ValueError(f"Duplicate {label} detected: {value}")
+        normalized.append(value)
         seen.add(value)
-    return seen
+    return tuple(normalized)
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
