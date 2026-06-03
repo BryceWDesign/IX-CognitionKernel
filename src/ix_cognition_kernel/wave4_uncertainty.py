@@ -456,9 +456,7 @@ class WaveFourUncertaintyTransitionCheck:
             "erased_uncertainty_ids": list(self.erased_uncertainty_ids),
             "escalated_uncertainty_ids": list(self.escalated_uncertainty_ids),
             "evidence_ids": list(self.evidence_ids),
-            "excessive_confidence_drift_ids": list(
-                self.excessive_confidence_drift_ids
-            ),
+            "excessive_confidence_drift_ids": list(self.excessive_confidence_drift_ids),
             "failure_reasons": list(self.failure_reasons),
             "from_snapshot_id": self.from_snapshot_id,
             "max_allowed_confidence_drift": self.max_allowed_confidence_drift,
@@ -765,8 +763,7 @@ class WaveFourUncertaintyPreservationTrace:
                 measurement_id=f"uncertainty-preservation:{check.check_id}",
                 metric_name="uncertainty-preservation-across-phase-transition",
                 target=(
-                    "uncertainties remain preserved, escalated, "
-                    "or evidence-resolved"
+                    "uncertainties remain preserved, escalated, or evidence-resolved"
                 ),
                 observed=check.readiness_gap or "uncertainty preserved",
                 passed=check.passed,
@@ -896,8 +893,10 @@ def passed_uncertainty_check(
 ) -> WaveFourUncertaintyTransitionCheck:
     """Build a passing uncertainty transition check."""
 
-    drift = {} if confidence_drift_by_uncertainty_id is None else dict(
-        confidence_drift_by_uncertainty_id
+    drift = (
+        {}
+        if confidence_drift_by_uncertainty_id is None
+        else dict(confidence_drift_by_uncertainty_id)
     )
     return WaveFourUncertaintyTransitionCheck(
         check_id=check_id,
