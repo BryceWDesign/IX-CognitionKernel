@@ -7,7 +7,6 @@ from ix_cognition_kernel.wave4_completion_receipt import (
 )
 from ix_cognition_kernel.wave4_contracts import (
     WaveFourArtifactKind,
-    WaveFourAuthorityState,
     WaveFourCapabilityArea,
 )
 from ix_cognition_kernel.wave4_release_manifest import (
@@ -300,30 +299,44 @@ def test_manifest_reports_missing_scenarios_and_receipts() -> None:
     )
 
 
-def test_manifest_rejects_execution_promotion_agi_validation_and_production() -> None:
-    kwargs = {
-        "manifest_id": "invalid-manifest",
-        "completion_receipt": ready_receipt(),
-        "components": ready_manifest().components,
-        "validation_commands": validation_commands(),
-        "scenario_ids": ("worldtwin:release-manifest",),
-        "blackfox_receipt_ids": ("blackfox:release-manifest",),
-    }
+def manifest_with_boundary_flags(
+    *,
+    permits_automatic_execution: bool = False,
+    permits_automatic_promotion: bool = False,
+    claims_agi: bool = False,
+    independently_validated: bool = False,
+    production_ready: bool = False,
+) -> WaveFourReleaseManifest:
+    return WaveFourReleaseManifest(
+        manifest_id="invalid-manifest",
+        completion_receipt=ready_receipt(),
+        components=ready_manifest().components,
+        validation_commands=validation_commands(),
+        scenario_ids=("worldtwin:release-manifest",),
+        blackfox_receipt_ids=("blackfox:release-manifest",),
+        permits_automatic_execution=permits_automatic_execution,
+        permits_automatic_promotion=permits_automatic_promotion,
+        claims_agi=claims_agi,
+        independently_validated=independently_validated,
+        production_ready=production_ready,
+    )
 
+
+def test_manifest_rejects_execution_promotion_agi_validation_and_production() -> None:
     with pytest.raises(ValueError, match="cannot permit execution"):
-        WaveFourReleaseManifest(**kwargs, permits_automatic_execution=True)
+        manifest_with_boundary_flags(permits_automatic_execution=True)
 
     with pytest.raises(ValueError, match="cannot permit promotion"):
-        WaveFourReleaseManifest(**kwargs, permits_automatic_promotion=True)
+        manifest_with_boundary_flags(permits_automatic_promotion=True)
 
     with pytest.raises(ValueError, match="cannot claim AGI"):
-        WaveFourReleaseManifest(**kwargs, claims_agi=True)
+        manifest_with_boundary_flags(claims_agi=True)
 
     with pytest.raises(ValueError, match="cannot claim independent validation"):
-        WaveFourReleaseManifest(**kwargs, independently_validated=True)
+        manifest_with_boundary_flags(independently_validated=True)
 
     with pytest.raises(ValueError, match="cannot claim production readiness"):
-        WaveFourReleaseManifest(**kwargs, production_ready=True)
+        manifest_with_boundary_flags(production_ready=True)
 
 
 def test_manifest_converts_to_readiness_artifact_and_bundle() -> None:
