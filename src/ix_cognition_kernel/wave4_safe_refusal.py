@@ -228,7 +228,7 @@ class WaveFourSafeRefusalDecision:
                 label="preserved uncertainty_id",
             ),
         )
-                object.__setattr__(
+        object.__setattr__(
             self,
             "evidence_ids",
             _unique_text(self.evidence_ids, label="decision evidence_id"),
@@ -458,7 +458,7 @@ class WaveFourSafeRefusalRecord:
             "blocked_reasons",
             _unique_text(self.blocked_reasons, label="blocked reason"),
         )
-                object.__setattr__(
+        object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
         if self.permits_automatic_execution:
@@ -689,7 +689,7 @@ class WaveFourSafeRefusalRecord:
                 "Refuse unsafe action pressure while preserving evidence, "
                 "uncertainty, human authority, and bounded safe alternatives."
             ),
-                    success_criteria=(
+            success_criteria=(
                 "unsafe request is refused",
                 "required refusal reasons are present",
                 "authority boundaries remain preserved",
