@@ -272,7 +272,8 @@ class WaveFourTransferObservation:
             raise ValueError(
                 "Failed Wave 4 transfer observations require violated invariants."
             )
-                @property
+
+    @property
     def observation_key(self) -> str:
         """Return deterministic uniqueness key for this transfer observation."""
 
@@ -444,6 +445,9 @@ class WaveFourCrossDomainTransferEvaluation:
             gaps.append("missing BlackFox receipt ids for transfer review")
         if not self.all_evidence_ids:
             gaps.append("missing evidence ids for transfer evaluation")
+        if self.failed_observation_ids:
+            failed = ", ".join(self.failed_observation_ids)
+            gaps.append(f"failed observations: {failed}")
         return tuple(gaps)
 
     @property
@@ -504,7 +508,8 @@ class WaveFourCrossDomainTransferEvaluation:
             f"{len(self.failed_observation_ids)} failed observations; "
             "human review required; no AGI claim."
         )
-            def to_artifact_ref(self) -> WaveFourArtifactRef:
+
+    def to_artifact_ref(self) -> WaveFourArtifactRef:
         """Convert the evaluation into a shared Wave 4 artifact reference."""
 
         if self.status is WaveFourTransferStatus.READY_FOR_CONTROLLED_REVIEW:
