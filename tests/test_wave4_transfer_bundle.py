@@ -78,8 +78,7 @@ def evaluation(
     blackfox_receipts: tuple[str, ...] = ("blackfox:receipt-transfer",),
 ) -> WaveFourCrossDomainTransferEvaluation:
     targets = tuple(
-        target(target_id, target_domain)
-        for target_id, target_domain in target_pairs
+        target(target_id, target_domain) for target_id, target_domain in target_pairs
     )
     observations = tuple(
         observation(f"observation:{target_id}", target_id)
