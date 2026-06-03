@@ -40,9 +40,7 @@ T = TypeVar("T")
 WAVE_FOUR_REPAIR_NEGATIVE_CONTROL_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave4-repair-negative-control-v1"
 )
-WAVE_FOUR_REPAIR_SUITE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave4-repair-suite-v1"
-)
+WAVE_FOUR_REPAIR_SUITE_SCHEMA_VERSION = "ix-cognition-kernel-wave4-repair-suite-v1"
 
 
 class WaveFourRepairNegativeControlMode(StrEnum):
@@ -210,7 +208,7 @@ class WaveFourFailureRepairSuite:
             self, "reviewer_role_id", _text(self.reviewer_role_id, "reviewer_role_id")
         )
         object.__setattr__(
-            self,
+                    self,
             "generated_by_engine_id",
             _text(self.generated_by_engine_id, "generated_by_engine_id"),
         )
@@ -324,11 +322,7 @@ class WaveFourFailureRepairSuite:
 
         return tuple(
             sorted(
-                {
-                    item
-                    for cycle in self.cycles
-                    for item in cycle.blackfox_receipt_ids
-                }
+                {item for cycle in self.cycles for item in cycle.blackfox_receipt_ids}
             )
         )
 
@@ -423,8 +417,7 @@ class WaveFourFailureRepairSuite:
 
     def cycle_by_id(self, cycle_id: str) -> WaveFourFailureRepairCycle:
         """Return one cycle by id."""
-
-        for cycle in self.cycles:
+                for cycle in self.cycles:
             if cycle.cycle_id == cycle_id:
                 return cycle
         raise ValueError(f"Unknown Wave 4 repair cycle_id: {cycle_id}")
