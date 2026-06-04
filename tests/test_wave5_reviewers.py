@@ -64,7 +64,7 @@ def attestation(
     decision: WaveFiveReviewerDecision = (
         WaveFiveReviewerDecision.ACCEPT_WITH_BOUNDARIES
     ),
-    conflicts: tuple[WaveFiveConflictDisclosure, ...] = (no_conflict(),),
+    conflicts: tuple[WaveFiveConflictDisclosure, ...] | None = None,
     limitations: tuple[str, ...] = (),
     dissent_notes: tuple[str, ...] = (),
     source_system: WaveFiveSourceSystem = WaveFiveSourceSystem.INDEPENDENT_REVIEWER,
@@ -72,6 +72,8 @@ def attestation(
         WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
     ),
 ) -> WaveFiveReviewerAttestation:
+    resolved_conflicts = (no_conflict(),) if conflicts is None else conflicts
+
     return WaveFiveReviewerAttestation(
         attestation_id=attestation_id,
         reviewer_id=reviewer_id,
@@ -83,7 +85,7 @@ def attestation(
         reviewed_artifact_ids=("wave5-artifact-001",),
         protocol_ids=("wave5-external-protocol-001",),
         evidence_ids=("review-evidence-001",),
-        conflict_disclosures=conflicts,
+        conflict_disclosures=resolved_conflicts,
         rationale="Independent reviewer accepts only bounded Wave 5 evidence.",
         limitations=limitations,
         dissent_notes=dissent_notes,
