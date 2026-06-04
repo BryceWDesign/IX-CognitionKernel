@@ -106,23 +106,27 @@ def bundle(
     status: WaveFiveReproductionStatus = (
         WaveFiveReproductionStatus.INTERNAL_REPLAY_READY
     ),
-    commands: tuple[WaveFiveCommandRecord, ...] = (command(),),
-    digests: tuple[WaveFiveDigestRecord, ...] = required_digests(),
-    checks: tuple[WaveFiveReplayCheck, ...] = required_checks(),
+    commands: tuple[WaveFiveCommandRecord, ...] | None = None,
+    digests: tuple[WaveFiveDigestRecord, ...] | None = None,
+    checks: tuple[WaveFiveReplayCheck, ...] | None = None,
     gaps: tuple[WaveFiveReproductionGap, ...] = (),
     claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
         WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
     ),
 ) -> WaveFiveReproducibleEvidenceBundle:
+    resolved_commands = (command(),) if commands is None else commands
+    resolved_digests = required_digests() if digests is None else digests
+    resolved_checks = required_checks() if checks is None else checks
+
     return WaveFiveReproducibleEvidenceBundle(
         bundle_id="wave5-reproducible-bundle-001",
         title="Wave 5 reproducible evidence bundle for independent replay.",
         source_system=source_system,
         reproduction_status=status,
         protocol_ids=("wave5-external-protocol-001",),
-        command_records=commands,
-        digests=digests,
-        replay_checks=checks,
+        command_records=resolved_commands,
+        digests=resolved_digests,
+        replay_checks=resolved_checks,
         environment_notes=(
             "Python version, platform, package metadata, and command order captured.",
         ),
