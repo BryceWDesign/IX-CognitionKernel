@@ -38,9 +38,7 @@ WAVE_FIVE_CONFLICT_DISCLOSURE_SCHEMA_VERSION = (
 WAVE_FIVE_REVIEWER_ATTESTATION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-reviewer-attestation-v1"
 )
-WAVE_FIVE_REVIEW_PANEL_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-review-panel-v1"
-)
+WAVE_FIVE_REVIEW_PANEL_SCHEMA_VERSION = "ix-cognition-kernel-wave5-review-panel-v1"
 
 
 class WaveFiveReviewerRole(StrEnum):
@@ -239,9 +237,7 @@ class WaveFiveReviewerAttestation:
         object.__setattr__(
             self,
             "reviewed_artifact_ids",
-            _unique_text(
-                self.reviewed_artifact_ids, label="reviewed artifact_id"
-            ),
+            _unique_text(self.reviewed_artifact_ids, label="reviewed artifact_id"),
         )
         object.__setattr__(
             self, "protocol_ids", _unique_text(self.protocol_ids, label="protocol_id")
@@ -556,8 +552,7 @@ class WaveFiveReviewPanel:
 
         return {
             "attestations": [
-                attestation.canonical_payload()
-                for attestation in self.attestations
+                attestation.canonical_payload() for attestation in self.attestations
             ],
             "minimum_usable_reviewers": self.minimum_usable_reviewers,
             "notes": list(self.notes),
