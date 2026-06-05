@@ -32,12 +32,8 @@ from ix_cognition_kernel.wave5_contracts import (
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_FIVE_MEMORY_CLAIM_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-memory-claim-v1"
-)
-WAVE_FIVE_MEMORY_CHECK_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-memory-check-v1"
-)
+WAVE_FIVE_MEMORY_CLAIM_SCHEMA_VERSION = "ix-cognition-kernel-wave5-memory-claim-v1"
+WAVE_FIVE_MEMORY_CHECK_SCHEMA_VERSION = "ix-cognition-kernel-wave5-memory-check-v1"
 WAVE_FIVE_MEMORY_QUARANTINE_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-memory-quarantine-v1"
 )
@@ -177,28 +173,36 @@ class WaveFiveMemoryClaim:
         object.__setattr__(
             self,
             "staleness_evidence_ids",
-            _unique_text(
-                self.staleness_evidence_ids, label="staleness evidence_id"
-            ),
+            _unique_text(self.staleness_evidence_ids, label="staleness evidence_id"),
         )
-        if self.provenance is WaveFiveMemoryProvenance.UNKNOWN:
-            if self.integrity_state not in {
+        if (
+            self.provenance is WaveFiveMemoryProvenance.UNKNOWN
+            and self.integrity_state
+            not in {
                 WaveFiveMemoryIntegrityState.QUARANTINED,
                 WaveFiveMemoryIntegrityState.REJECTED,
-            }:
-                raise ValueError("Unknown-provenance memory must be quarantined.")
-        if self.integrity_state in SAFE_MEMORY_INTEGRITY_STATES:
-            if not self.evidence_ids:
-                raise ValueError("Validated memory claims require evidence ids.")
-        if self.integrity_state is WaveFiveMemoryIntegrityState.CONTRADICTED:
-            if not self.contradiction_ids:
-                raise ValueError("Contradicted memory requires contradiction ids.")
-        if self.integrity_state is WaveFiveMemoryIntegrityState.STALE:
-            if not self.staleness_evidence_ids:
-                raise ValueError("Stale memory requires staleness evidence ids.")
-        if self.integrity_state not in SAFE_MEMORY_INTEGRITY_STATES:
-            if self.allowed_for_planning or self.allowed_for_action:
-                raise ValueError("Unsafe memory cannot be allowed for planning/action.")
+            }
+        ):
+            raise ValueError("Unknown-provenance memory must be quarantined.")
+        if (
+            self.integrity_state in SAFE_MEMORY_INTEGRITY_STATES
+            and not self.evidence_ids
+        ):
+            raise ValueError("Validated memory claims require evidence ids.")
+        if (
+            self.integrity_state is WaveFiveMemoryIntegrityState.CONTRADICTED
+            and not self.contradiction_ids
+        ):
+            raise ValueError("Contradicted memory requires contradiction ids.")
+        if (
+            self.integrity_state is WaveFiveMemoryIntegrityState.STALE
+            and not self.staleness_evidence_ids
+        ):
+            raise ValueError("Stale memory requires staleness evidence ids.")
+        if self.integrity_state not in SAFE_MEMORY_INTEGRITY_STATES and (
+            self.allowed_for_planning or self.allowed_for_action
+        ):
+            raise ValueError("Unsafe memory cannot be allowed for planning/action.")
         if self.allowed_for_action:
             raise ValueError("Wave 5 memory claims cannot authorize action.")
         if not self.requires_human_review:
@@ -612,11 +616,11 @@ class WaveFiveMemoryIntegrityProof:
         elif self.ready_for_external_memory_review:
             decision = WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
             status = WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
-        elif self.blocking_check_ids or self.blocking_quarantine_finding_ids:
-            decision = WaveFiveArtifactDecision.BLOCKED
-            status = WaveFiveValidationStatus.REJECTED
-            authority = WaveFiveAuthorityState.BLOCKED
-        elif self.blocking_claim_ids and not self.rejects_untrusted_memory:
+        elif (
+            self.blocking_check_ids
+            or self.blocking_quarantine_finding_ids
+            or (self.blocking_claim_ids and not self.rejects_untrusted_memory)
+        ):
             decision = WaveFiveArtifactDecision.BLOCKED
             status = WaveFiveValidationStatus.REJECTED
             authority = WaveFiveAuthorityState.BLOCKED
@@ -751,7 +755,5 @@ def _unique_values(values: Iterable[T], *, label: str) -> set[T]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
