@@ -103,9 +103,14 @@ def test_wave_six_readiness_gate_ready_when_preconditions_are_satisfied() -> Non
     assert gate.makes_no_forbidden_claims
 
     artifact_ref = gate.to_artifact_ref()
-    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.evidence_ids == gate.all_evidence_ids
 
 
@@ -206,4 +211,7 @@ def test_externally_reviewed_wave_six_gate_exports_reviewed_artifact() -> None:
     assert gate.externally_reviewed_with_boundaries
     artifact_ref = gate.to_artifact_ref()
     assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    )
