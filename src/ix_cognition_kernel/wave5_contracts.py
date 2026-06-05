@@ -328,9 +328,7 @@ class WaveFiveArtifactRef:
         object.__setattr__(
             self,
             "claim_boundaries",
-            _normalize_unique_enum_tuple(
-                self.claim_boundaries, label="claim boundary"
-            ),
+            _normalize_unique_enum_tuple(self.claim_boundaries, label="claim boundary"),
         )
         object.__setattr__(
             self,
@@ -345,9 +343,7 @@ class WaveFiveArtifactRef:
             }
             and not self.evidence_ids
         ):
-            raise ValueError(
-                "Reviewable Wave 5 artifacts require evidence ids."
-            )
+            raise ValueError("Reviewable Wave 5 artifacts require evidence ids.")
         if (
             self.decision is WaveFiveArtifactDecision.BLOCKED
             and self.authority_state is WaveFiveAuthorityState.HUMAN_AUTHORITY_GRANTED
@@ -487,9 +483,7 @@ class WaveFiveArtifactBundle:
                     "Wave 5 evidence links must reference bundled artifacts: "
                     f"{link.artifact_id}"
                 )
-        linked_evidence_ids_by_artifact = _linked_evidence_ids_by_artifact(
-            sorted_links
-        )
+        linked_evidence_ids_by_artifact = _linked_evidence_ids_by_artifact(sorted_links)
         external_evidence_ids_by_artifact = _external_evidence_ids_by_artifact(
             sorted_links
         )
