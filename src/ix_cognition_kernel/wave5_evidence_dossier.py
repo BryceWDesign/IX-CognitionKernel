@@ -38,9 +38,7 @@ WAVE_FIVE_DOSSIER_SECTION_SCHEMA_VERSION = (
 WAVE_FIVE_DOSSIER_CHECK_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-dossier-integrity-check-v1"
 )
-WAVE_FIVE_DOSSIER_GAP_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-dossier-gap-v1"
-)
+WAVE_FIVE_DOSSIER_GAP_SCHEMA_VERSION = "ix-cognition-kernel-wave5-dossier-gap-v1"
 WAVE_FIVE_EVIDENCE_DOSSIER_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-evidence-dossier-v1"
 )
@@ -225,9 +223,11 @@ class WaveFiveDossierSection:
             raise ValueError("Dossier sections require artifact ids.")
         if not self.evidence_ids:
             raise ValueError("Dossier sections require evidence ids.")
-        if self.status is WaveFiveDossierSectionStatus.REVIEWABLE_WITH_LIMITS:
-            if not self.limitations:
-                raise ValueError("Limited dossier sections require limitations.")
+        if (
+            self.status is WaveFiveDossierSectionStatus.REVIEWABLE_WITH_LIMITS
+            and not self.limitations
+        ):
+            raise ValueError("Limited dossier sections require limitations.")
         missing = tuple(
             boundary
             for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
@@ -235,8 +235,7 @@ class WaveFiveDossierSection:
         )
         if missing:
             raise ValueError(
-                "Dossier sections must preserve claim boundary: "
-                f"{missing[0].value}"
+                f"Dossier sections must preserve claim boundary: {missing[0].value}"
             )
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
@@ -380,8 +379,7 @@ class WaveFiveDossierGap:
         """Return whether this unresolved gap blocks dossier review."""
 
         return (
-            self.severity is WaveFiveDossierGapSeverity.BLOCKING
-            and not self.resolved
+            self.severity is WaveFiveDossierGapSeverity.BLOCKING and not self.resolved
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -446,9 +444,7 @@ class WaveFiveEvidenceDossier:
         if self.claims_certified:
             raise ValueError("Evidence dossiers cannot claim certification.")
         sections = tuple(sorted(self.sections, key=lambda item: item.section_key))
-        checks = tuple(
-            sorted(self.integrity_checks, key=lambda item: item.check_key)
-        )
+        checks = tuple(sorted(self.integrity_checks, key=lambda item: item.check_key))
         gaps = tuple(sorted(self.gaps, key=lambda item: item.gap_key))
         if not sections:
             raise ValueError("Evidence dossiers require sections.")
@@ -494,9 +490,7 @@ class WaveFiveEvidenceDossier:
                     "Externally reviewed dossiers require external source."
                 )
             if not self.reviewer_ids:
-                raise ValueError(
-                    "Externally reviewed dossiers require reviewer ids."
-                )
+                raise ValueError("Externally reviewed dossiers require reviewer ids.")
             if self.blocks_dossier_readiness:
                 raise ValueError(
                     "Externally reviewed dossiers cannot contain blockers."
@@ -798,7 +792,5 @@ def _unique_values(values: Iterable[T], *, label: str) -> set[T]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
