@@ -37,9 +37,7 @@ from ix_cognition_kernel.wave5_contracts import (
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_FIVE_BLACKFOX_GATE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-blackfox-gate-v1"
-)
+WAVE_FIVE_BLACKFOX_GATE_SCHEMA_VERSION = "ix-cognition-kernel-wave5-blackfox-gate-v1"
 WAVE_FIVE_BLACKFOX_RECEIPT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-blackfox-receipt-v1"
 )
@@ -238,9 +236,11 @@ class WaveFiveBlackFoxReceipt:
             raise ValueError("BlackFox bridge receipts cannot authorize execution.")
         if self.self_approved:
             raise ValueError("BlackFox bridge receipts cannot be self-approved.")
-        if self.receipt_kind is WaveFiveBlackFoxReceiptKind.HUMAN_REVIEW:
-            if not self.human_reviewer_id:
-                raise ValueError("Human-review receipts require a human reviewer id.")
+        if (
+            self.receipt_kind is WaveFiveBlackFoxReceiptKind.HUMAN_REVIEW
+            and not self.human_reviewer_id
+        ):
+            raise ValueError("Human-review receipts require a human reviewer id.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -255,9 +255,8 @@ class WaveFiveBlackFoxReceipt:
     def has_human_review(self) -> bool:
         """Return whether this receipt carries human review evidence."""
 
-        return (
-            self.receipt_kind is WaveFiveBlackFoxReceiptKind.HUMAN_REVIEW
-            and bool(self.human_reviewer_id)
+        return self.receipt_kind is WaveFiveBlackFoxReceiptKind.HUMAN_REVIEW and bool(
+            self.human_reviewer_id
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -370,9 +369,11 @@ class WaveFiveBlackFoxCompatibilityHandoff:
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
-        if self.authority_mode is WaveFiveBlackFoxAuthorityMode.BLOCKED:
-            if not self.blocks_blackfox_compatibility:
-                raise ValueError("Blocked authority mode requires a blocking gap.")
+        if (
+            self.authority_mode is WaveFiveBlackFoxAuthorityMode.BLOCKED
+            and not self.blocks_blackfox_compatibility
+        ):
+            raise ValueError("Blocked authority mode requires a blocking gap.")
         if self.blackfox_accepted_with_boundaries:
             if self.source_system not in BLACKFOX_ACCEPTANCE_SOURCE_SYSTEMS:
                 raise ValueError(
@@ -673,7 +674,5 @@ def _sha256(value: str, label: str) -> str:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
