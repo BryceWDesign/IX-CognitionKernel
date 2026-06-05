@@ -34,9 +34,7 @@ E = TypeVar("E", bound=StrEnum)
 WAVE_FIVE_FALSIFICATION_CHALLENGE_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-falsification-challenge-v1"
 )
-WAVE_FIVE_KILL_CRITERION_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-kill-criterion-v1"
-)
+WAVE_FIVE_KILL_CRITERION_SCHEMA_VERSION = "ix-cognition-kernel-wave5-kill-criterion-v1"
 WAVE_FIVE_FALSIFICATION_RESULT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-falsification-result-v1"
 )
@@ -111,9 +109,7 @@ class WaveFiveFalsificationLedgerState(StrEnum):
     """Review state of the Wave 5 falsification ledger."""
 
     INTERNAL_LEDGER_READY = "internal-ledger-ready"
-    READY_FOR_EXTERNAL_FALSIFICATION_REVIEW = (
-        "ready-for-external-falsification-review"
-    )
+    READY_FOR_EXTERNAL_FALSIFICATION_REVIEW = "ready-for-external-falsification-review"
     UNDER_EXTERNAL_FALSIFICATION_REVIEW = "under-external-falsification-review"
     EXTERNALLY_REVIEWED_WITH_BOUNDARIES = "externally-reviewed-with-boundaries"
     BLOCKED_BY_FALSIFICATION = "blocked-by-falsification"
@@ -292,11 +288,10 @@ class WaveFiveKillCriterion:
         if not self.reviewer_visible:
             raise ValueError("Kill criteria must be reviewer visible.")
         if (
-            self.disposition
-            is WaveFiveKillCriterionDisposition.TRIGGERED_BUT_RESOLVED
+            self.disposition is WaveFiveKillCriterionDisposition.TRIGGERED_BUT_RESOLVED
+            and not self.resolved_by_evidence_ids
         ):
-            if not self.resolved_by_evidence_ids:
-                raise ValueError("Resolved kill criteria require resolution evidence.")
+            raise ValueError("Resolved kill criteria require resolution evidence.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -380,12 +375,16 @@ class WaveFiveFalsificationResult:
         )
         if not self.evidence_ids:
             raise ValueError("Falsification results require evidence ids.")
-        if self.verdict in BLOCKING_FALSIFICATION_VERDICTS:
-            if not self.retained_failure_output:
-                raise ValueError("Blocking falsification outputs must be retained.")
-        if self.verdict is WaveFiveFalsificationVerdict.BLOCKED_BY_KILL_CRITERION:
-            if not self.triggered_criterion_ids:
-                raise ValueError("Kill-criterion verdicts require criterion ids.")
+        if (
+            self.verdict in BLOCKING_FALSIFICATION_VERDICTS
+            and not self.retained_failure_output
+        ):
+            raise ValueError("Blocking falsification outputs must be retained.")
+        if (
+            self.verdict is WaveFiveFalsificationVerdict.BLOCKED_BY_KILL_CRITERION
+            and not self.triggered_criterion_ids
+        ):
+            raise ValueError("Kill-criterion verdicts require criterion ids.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -451,9 +450,7 @@ class WaveFiveFalsificationLedger:
             raise ValueError("Falsification ledgers cannot claim AGI.")
         if self.grants_execution_authority:
             raise ValueError("Falsification ledgers cannot grant execution authority.")
-        challenges = tuple(
-            sorted(self.challenges, key=lambda item: item.challenge_key)
-        )
+        challenges = tuple(sorted(self.challenges, key=lambda item: item.challenge_key))
         criteria = tuple(
             sorted(self.kill_criteria, key=lambda item: item.criterion_key)
         )
@@ -505,8 +502,7 @@ class WaveFiveFalsificationLedger:
         if self.externally_reviewed_with_boundaries:
             if self.source_system not in EXTERNAL_FALSIFICATION_REVIEW_SOURCE_SYSTEMS:
                 raise ValueError(
-                    "Externally reviewed falsification ledgers require external "
-                    "source."
+                    "Externally reviewed falsification ledgers require external source."
                 )
             if not self.reviewer_ids:
                 raise ValueError(
@@ -514,8 +510,7 @@ class WaveFiveFalsificationLedger:
                 )
             if self.blocks_falsification_readiness:
                 raise ValueError(
-                    "Externally reviewed falsification ledgers cannot contain "
-                    "blockers."
+                    "Externally reviewed falsification ledgers cannot contain blockers."
                 )
 
     @property
@@ -530,8 +525,7 @@ class WaveFiveFalsificationLedger:
 
         covered = set(self.covered_targets)
         return tuple(
-            target for target in REQUIRED_FALSIFICATION_TARGETS
-            if target not in covered
+            target for target in REQUIRED_FALSIFICATION_TARGETS if target not in covered
         )
 
     @property
@@ -546,7 +540,8 @@ class WaveFiveFalsificationLedger:
 
         covered = set(self.covered_criterion_kinds)
         return tuple(
-            criterion for criterion in REQUIRED_KILL_CRITERIA
+            criterion
+            for criterion in REQUIRED_KILL_CRITERIA
             if criterion not in covered
         )
 
@@ -575,8 +570,7 @@ class WaveFiveFalsificationLedger:
         """Return falsification results that block Wave 6 entry."""
 
         return tuple(
-            result.result_id for result in self.results
-            if result.blocks_wave_six_entry
+            result.result_id for result in self.results if result.blocks_wave_six_entry
         )
 
     @property
@@ -625,8 +619,7 @@ class WaveFiveFalsificationLedger:
             in {
                 WaveFiveFalsificationLedgerState.INTERNAL_LEDGER_READY,
                 (
-                    WaveFiveFalsificationLedgerState.
-                    READY_FOR_EXTERNAL_FALSIFICATION_REVIEW
+                    WaveFiveFalsificationLedgerState.READY_FOR_EXTERNAL_FALSIFICATION_REVIEW
                 ),
                 WaveFiveFalsificationLedgerState.UNDER_EXTERNAL_FALSIFICATION_REVIEW,
             }
@@ -772,9 +765,7 @@ def blocking_falsification_verdicts() -> tuple[WaveFiveFalsificationVerdict, ...
     return BLOCKING_FALSIFICATION_VERDICTS
 
 
-def external_falsification_review_source_systems() -> tuple[
-    WaveFiveSourceSystem, ...
-]:
+def external_falsification_review_source_systems() -> tuple[WaveFiveSourceSystem, ...]:
     """Return source systems allowed to assert external falsification review."""
 
     return EXTERNAL_FALSIFICATION_REVIEW_SOURCE_SYSTEMS
@@ -842,7 +833,5 @@ def _dedupe_text(values: Iterable[str]) -> tuple[str, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
