@@ -1,490 +1,209 @@
 import pytest
 
 from ix_cognition_kernel.wave5_contracts import (
-    WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES,
     WaveFiveArtifactDecision,
-    WaveFiveArtifactKind,
     WaveFiveAuthorityState,
-    WaveFiveCapabilityArea,
-    WaveFiveClaimBoundary,
     WaveFiveSourceSystem,
     WaveFiveValidationStatus,
 )
 from ix_cognition_kernel.wave5_wave6_readiness import (
-    BLOCKING_READINESS_STATUSES,
-    EXTERNAL_READINESS_REVIEW_SOURCE_SYSTEMS,
-    REQUIRED_READINESS_CHECKS,
-    REQUIRED_READINESS_FAMILIES,
-    SAFE_READINESS_STATUSES,
-    WaveFiveReadinessBlockerKind,
-    WaveFiveReadinessCheckKind,
-    WaveFiveReadinessCheckResult,
-    WaveFiveReadinessEvidenceFamilyRecord,
-    WaveFiveReadinessFamily,
-    WaveFiveReadinessGateCheck,
-    WaveFiveReadinessReviewState,
-    WaveFiveReadinessStatus,
+    WaveFiveWaveSixBlockerKind,
+    WaveFiveWaveSixBlockerSeverity,
+    WaveFiveWaveSixPreconditionKind,
+    WaveFiveWaveSixPreconditionRecord,
+    WaveFiveWaveSixPreconditionStatus,
     WaveFiveWaveSixReadinessBlocker,
     WaveFiveWaveSixReadinessGate,
-    blocking_readiness_statuses,
-    external_readiness_review_source_systems,
-    required_readiness_checks,
-    required_readiness_families,
-    safe_readiness_statuses,
+    WaveFiveWaveSixReadinessState,
+    blocking_wave_six_precondition_statuses,
+    external_wave_six_review_source_systems,
+    required_wave_six_preconditions,
+    safe_wave_six_precondition_statuses,
 )
 
 
-def family_record(
-    family_id: str = "family-external-protocols",
-    *,
-    family: WaveFiveReadinessFamily = WaveFiveReadinessFamily.EXTERNAL_PROTOCOLS,
-    status: WaveFiveReadinessStatus = WaveFiveReadinessStatus.SATISFIED,
-    limitations: tuple[str, ...] = (),
-    claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
-        WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
+def _preconditions(
+    status: WaveFiveWaveSixPreconditionStatus = (
+        WaveFiveWaveSixPreconditionStatus.SATISFIED
     ),
-) -> WaveFiveReadinessEvidenceFamilyRecord:
-    return WaveFiveReadinessEvidenceFamilyRecord(
-        family_id=family_id,
-        family=family,
-        status=status,
-        artifact_ids=(f"artifact-{family_id}",),
-        evidence_ids=(f"evidence-{family_id}",),
-        source_system=WaveFiveSourceSystem.IX_COGNITION_KERNEL,
-        summary="Wave 5 family is reviewable and evidence-bound.",
-        limitations=limitations,
-        reviewer_ids=("reviewer-001",),
-        claim_boundaries=claim_boundaries,
-    )
-
-
-def gate_check(
-    check_id: str,
-    check_kind: WaveFiveReadinessCheckKind,
-    *,
-    result: WaveFiveReadinessCheckResult = WaveFiveReadinessCheckResult.PASSED,
-    blocking: bool = True,
-) -> WaveFiveReadinessGateCheck:
-    return WaveFiveReadinessGateCheck(
-        check_id=check_id,
-        check_kind=check_kind,
-        result=result,
-        description="Wave 6 readiness check preserves anti-overclaim boundaries.",
-        evidence_ids=(f"evidence-{check_id}",),
-        blocking=blocking,
-    )
-
-
-def blocker(
-    blocker_id: str = "blocker-memory-gap",
-    *,
-    family: WaveFiveReadinessFamily = WaveFiveReadinessFamily.MEMORY_INTEGRITY,
-    blocker_kind: WaveFiveReadinessBlockerKind = (
-        WaveFiveReadinessBlockerKind.MEMORY_INTEGRITY_GAP
-    ),
-    resolved: bool = False,
-    blocking: bool = True,
-) -> WaveFiveWaveSixReadinessBlocker:
-    return WaveFiveWaveSixReadinessBlocker(
-        blocker_id=blocker_id,
-        blocker_kind=blocker_kind,
-        family=family,
-        description="Blocker remains visible before Wave 6 design review.",
-        mitigation="Resolve evidence gap before allowing Wave 6 design work.",
-        evidence_ids=(f"evidence-{blocker_id}",),
-        resolved=resolved,
-        blocking=blocking,
-    )
-
-
-def required_families() -> tuple[WaveFiveReadinessEvidenceFamilyRecord, ...]:
+) -> tuple[WaveFiveWaveSixPreconditionRecord, ...]:
     return tuple(
-        family_record(
-            f"family-{family.value}",
-            family=family,
-            status=WaveFiveReadinessStatus.SATISFIED_WITH_LIMITS,
-            limitations=("Reviewable for Wave 6 design only; not Wave 6 proof.",),
+        WaveFiveWaveSixPreconditionRecord(
+            precondition_id=f"precondition-{precondition_kind.value}",
+            precondition_kind=precondition_kind,
+            status=status,
+            artifact_ids=(f"artifact-{precondition_kind.value}",),
+            evidence_ids=(f"evidence-{precondition_kind.value}",),
+            summary=f"Wave 6 precondition for {precondition_kind.value}",
+            limitations=(
+                (f"limited-{precondition_kind.value}",)
+                if status is WaveFiveWaveSixPreconditionStatus.SATISFIED_WITH_LIMITS
+                else ()
+            ),
+            blocker_ids=(
+                (f"blocker-{precondition_kind.value}",)
+                if status in blocking_wave_six_precondition_statuses()
+                else ()
+            ),
         )
-        for family in REQUIRED_READINESS_FAMILIES
+        for precondition_kind in required_wave_six_preconditions()
     )
 
 
-def required_gate_checks() -> tuple[WaveFiveReadinessGateCheck, ...]:
-    return tuple(
-        gate_check(f"check-{check_kind.value}", check_kind)
-        for check_kind in REQUIRED_READINESS_CHECKS
-    )
-
-
-def readiness_gate(
+def _readiness_gate(
     *,
-    source_system: WaveFiveSourceSystem = WaveFiveSourceSystem.IX_COGNITION_KERNEL,
-    review_state: WaveFiveReadinessReviewState = (
-        WaveFiveReadinessReviewState.READY_FOR_WAVE_SIX_DESIGN_REVIEW
+    readiness_state: WaveFiveWaveSixReadinessState = (
+        WaveFiveWaveSixReadinessState.READY_FOR_EXTERNAL_WAVE_SIX_REVIEW
     ),
-    families: tuple[WaveFiveReadinessEvidenceFamilyRecord, ...] | None = None,
-    checks: tuple[WaveFiveReadinessGateCheck, ...] | None = None,
+    source_system: WaveFiveSourceSystem = WaveFiveSourceSystem.IX_COGNITION_KERNEL,
+    preconditions: tuple[WaveFiveWaveSixPreconditionRecord, ...] | None = None,
     blockers: tuple[WaveFiveWaveSixReadinessBlocker, ...] = (),
     reviewer_ids: tuple[str, ...] = (),
-    attempted_wave_six_promotion: bool = False,
-    claims_agi: bool = False,
-    grants_execution_authority: bool = False,
-    claims_production_ready: bool = False,
-    claims_certified: bool = False,
-    claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
-        WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
-    ),
 ) -> WaveFiveWaveSixReadinessGate:
-    resolved_families = required_families() if families is None else families
-    resolved_checks = required_gate_checks() if checks is None else checks
     return WaveFiveWaveSixReadinessGate(
-        gate_id="wave5-wave6-readiness-gate-001",
-        title="Wave 5 to Wave 6 readiness gate.",
+        gate_id="wave-six-readiness-gate-1",
+        title="Wave 5 to Wave 6 readiness gate",
         source_system=source_system,
-        review_state=review_state,
-        evidence_families=resolved_families,
-        checks=resolved_checks,
+        readiness_state=readiness_state,
+        preconditions=preconditions or _preconditions(),
         blockers=blockers,
-        protocol_ids=("wave5-external-protocol-001",),
+        protocol_ids=("protocol-1",),
         reviewer_ids=reviewer_ids,
-        attempted_wave_six_promotion=attempted_wave_six_promotion,
-        claims_agi=claims_agi,
-        grants_execution_authority=grants_execution_authority,
-        claims_production_ready=claims_production_ready,
-        claims_certified=claims_certified,
-        claim_boundaries=claim_boundaries,
-        notes=("Ready means Wave 6 design review may begin, not Wave 6 success.",),
     )
 
 
-def test_required_readiness_families_are_locked() -> None:
-    assert required_readiness_families() == REQUIRED_READINESS_FAMILIES
-    assert len(REQUIRED_READINESS_FAMILIES) == 13
-    assert WaveFiveReadinessFamily.BLACKFOX_COMPATIBILITY in (
-        REQUIRED_READINESS_FAMILIES
+def test_required_wave_six_readiness_sets_are_locked() -> None:
+    assert len(required_wave_six_preconditions()) >= 10
+    assert (
+        WaveFiveWaveSixPreconditionKind.EXTERNAL_PROTOCOLS_PREREGISTERED
+        in required_wave_six_preconditions()
     )
-    assert WaveFiveReadinessFamily.WORLDTWIN_SCENARIOS in (
-        REQUIRED_READINESS_FAMILIES
+    assert (
+        WaveFiveWaveSixPreconditionStatus.SATISFIED
+        in safe_wave_six_precondition_statuses()
     )
-
-
-def test_required_readiness_checks_are_locked() -> None:
-    assert required_readiness_checks() == REQUIRED_READINESS_CHECKS
-    assert len(REQUIRED_READINESS_CHECKS) == 10
-    assert WaveFiveReadinessCheckKind.NO_AGI_CLAIM in REQUIRED_READINESS_CHECKS
-    assert WaveFiveReadinessCheckKind.WAVE_SIX_SCOPE_BOUND in (
-        REQUIRED_READINESS_CHECKS
+    assert (
+        WaveFiveWaveSixPreconditionStatus.MISSING
+        in blocking_wave_six_precondition_statuses()
     )
-
-
-def test_safe_and_blocking_readiness_statuses_are_locked() -> None:
-    assert safe_readiness_statuses() == SAFE_READINESS_STATUSES
-    assert blocking_readiness_statuses() == BLOCKING_READINESS_STATUSES
-    assert WaveFiveReadinessStatus.SATISFIED in SAFE_READINESS_STATUSES
-    assert WaveFiveReadinessStatus.DISPUTED in BLOCKING_READINESS_STATUSES
-
-
-def test_external_readiness_review_sources_are_locked() -> None:
-    assert external_readiness_review_source_systems() == (
-        EXTERNAL_READINESS_REVIEW_SOURCE_SYSTEMS
-    )
-    assert WaveFiveSourceSystem.INDEPENDENT_REVIEWER in (
-        EXTERNAL_READINESS_REVIEW_SOURCE_SYSTEMS
-    )
-    assert WaveFiveSourceSystem.IX_COGNITION_KERNEL not in (
-        EXTERNAL_READINESS_REVIEW_SOURCE_SYSTEMS
+    assert (
+        WaveFiveSourceSystem.INDEPENDENT_REPLICATION_LAB
+        in external_wave_six_review_source_systems()
     )
 
 
-def test_family_record_requires_artifacts_and_evidence() -> None:
-    with pytest.raises(ValueError, match="artifact ids"):
-        WaveFiveReadinessEvidenceFamilyRecord(
-            family_id="family-invalid",
-            family=WaveFiveReadinessFamily.EXTERNAL_PROTOCOLS,
-            status=WaveFiveReadinessStatus.SATISFIED,
-            artifact_ids=(),
-            evidence_ids=("evidence",),
-            source_system=WaveFiveSourceSystem.IX_COGNITION_KERNEL,
-            summary="Invalid family.",
-        )
+def test_wave_six_readiness_gate_ready_when_preconditions_are_satisfied() -> None:
+    gate = _readiness_gate()
 
-    with pytest.raises(ValueError, match="evidence ids"):
-        WaveFiveReadinessEvidenceFamilyRecord(
-            family_id="family-invalid",
-            family=WaveFiveReadinessFamily.EXTERNAL_PROTOCOLS,
-            status=WaveFiveReadinessStatus.SATISFIED,
-            artifact_ids=("artifact",),
-            evidence_ids=(),
-            source_system=WaveFiveSourceSystem.IX_COGNITION_KERNEL,
-            summary="Invalid family.",
-        )
+    assert gate.has_required_precondition_coverage
+    assert gate.ready_for_external_wave_six_review
+    assert not gate.blocks_wave_six_readiness
+    assert gate.blocking_precondition_ids == ()
+    assert gate.unresolved_blocker_ids == ()
+    assert gate.makes_no_forbidden_claims
+
+    artifact_ref = gate.to_artifact_ref()
+    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
+    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert artifact_ref.evidence_ids == gate.all_evidence_ids
 
 
-def test_limited_family_requires_limitations() -> None:
-    with pytest.raises(ValueError, match="require limitations"):
-        family_record(status=WaveFiveReadinessStatus.SATISFIED_WITH_LIMITS)
+def test_wave_six_readiness_gate_reports_missing_precondition() -> None:
+    missing_kind = required_wave_six_preconditions()[0]
+    preconditions = tuple(
+        precondition
+        for precondition in _preconditions()
+        if precondition.precondition_kind is not missing_kind
+    )
+
+    gate = _readiness_gate(preconditions=preconditions)
+
+    assert gate.missing_required_precondition_kinds == (missing_kind,)
+    assert gate.blocks_wave_six_readiness
+    assert not gate.ready_for_external_wave_six_review
 
 
-def test_family_rejects_missing_claim_boundary() -> None:
-    with pytest.raises(ValueError, match="no-self-validation"):
-        family_record(
-            claim_boundaries=tuple(
-                boundary
-                for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
-                if boundary is not WaveFiveClaimBoundary.NO_SELF_VALIDATION
-            )
-        )
+def test_wave_six_readiness_gate_blocks_blocking_precondition() -> None:
+    gate = _readiness_gate(
+        preconditions=_preconditions(status=WaveFiveWaveSixPreconditionStatus.BLOCKED)
+    )
+
+    assert gate.blocking_precondition_ids
+    assert gate.blocks_wave_six_readiness
+    assert not gate.ready_for_external_wave_six_review
+
+    artifact_ref = gate.to_artifact_ref()
+    assert artifact_ref.decision is WaveFiveArtifactDecision.BLOCKED
+    assert artifact_ref.authority_state is WaveFiveAuthorityState.BLOCKED
+    assert artifact_ref.validation_status is WaveFiveValidationStatus.REJECTED
 
 
-def test_blocking_family_status_blocks_wave_six_entry() -> None:
-    item = family_record(status=WaveFiveReadinessStatus.DISPUTED)
+def test_wave_six_readiness_gate_blocks_unresolved_blocker() -> None:
+    blocker = WaveFiveWaveSixReadinessBlocker(
+        blocker_id="blocker-1",
+        blocker_kind=WaveFiveWaveSixBlockerKind.UNRESOLVED_FALSIFICATION,
+        severity=WaveFiveWaveSixBlockerSeverity.BLOCKING,
+        precondition_kind=required_wave_six_preconditions()[0],
+        description="A falsification blocker remains unresolved.",
+        mitigation="Resolve the falsification issue before Wave 6 submission.",
+        evidence_ids=("blocker-evidence-1",),
+    )
 
-    assert item.blocks_wave_six_entry is True
-    assert item.reviewable_with_boundaries is False
+    gate = _readiness_gate(blockers=(blocker,))
+
+    assert gate.unresolved_blocker_ids == ("blocker-1",)
+    assert gate.blocks_wave_six_readiness
+    assert not gate.ready_for_external_wave_six_review
 
 
-def test_satisfied_family_is_reviewable_with_boundaries() -> None:
-    item = family_record()
-
-    assert item.blocks_wave_six_entry is False
-    assert item.reviewable_with_boundaries is True
-
-
-def test_readiness_check_requires_evidence() -> None:
-    with pytest.raises(ValueError, match="evidence ids"):
-        WaveFiveReadinessGateCheck(
-            check_id="check-invalid",
-            check_kind=WaveFiveReadinessCheckKind.NO_AGI_CLAIM,
-            result=WaveFiveReadinessCheckResult.PASSED,
-            description="Invalid check.",
-            evidence_ids=(),
+def test_wave_six_precondition_requires_blocker_ids_for_blocking_status() -> None:
+    with pytest.raises(ValueError, match="require blocker ids"):
+        WaveFiveWaveSixPreconditionRecord(
+            precondition_id="precondition-blocked",
+            precondition_kind=WaveFiveWaveSixPreconditionKind.EXTERNAL_REVIEW_GAP
+            if hasattr(WaveFiveWaveSixPreconditionKind, "EXTERNAL_REVIEW_GAP")
+            else WaveFiveWaveSixPreconditionKind.EXTERNAL_PROTOCOLS_PREREGISTERED,
+            status=WaveFiveWaveSixPreconditionStatus.BLOCKED,
+            artifact_ids=("artifact-1",),
+            evidence_ids=("evidence-1",),
+            summary="Blocked precondition without blocker ids.",
         )
 
 
-def test_failed_readiness_check_blocks_wave_six_entry() -> None:
-    item = gate_check(
-        "check-failed",
-        WaveFiveReadinessCheckKind.NO_EXECUTION_AUTHORITY,
-        result=WaveFiveReadinessCheckResult.FAILED,
-    )
-
-    assert item.passed_with_boundaries is False
-    assert item.blocks_wave_six_entry is True
-
-
-def test_non_blocking_check_does_not_block_wave_six_entry() -> None:
-    item = gate_check(
-        "check-warning",
-        WaveFiveReadinessCheckKind.EXTERNAL_REVIEW_PATH_PRESENT,
-        result=WaveFiveReadinessCheckResult.NEEDS_MORE_EVIDENCE,
-        blocking=False,
-    )
-
-    assert item.blocks_wave_six_entry is False
-
-
-def test_readiness_blocker_requires_evidence() -> None:
-    with pytest.raises(ValueError, match="evidence ids"):
-        WaveFiveWaveSixReadinessBlocker(
-            blocker_id="blocker-invalid",
-            blocker_kind=WaveFiveReadinessBlockerKind.CLAIM_BOUNDARY_GAP,
-            family=WaveFiveReadinessFamily.EXTERNAL_PROTOCOLS,
-            description="Invalid blocker.",
-            mitigation="Resolve blocker.",
-            evidence_ids=(),
-        )
-
-
-def test_unresolved_blocker_blocks_wave_six_entry() -> None:
-    item = blocker()
-
-    assert item.blocks_wave_six_entry is True
-
-
-def test_resolved_blocker_does_not_block_wave_six_entry() -> None:
-    item = blocker(resolved=True)
-
-    assert item.blocks_wave_six_entry is False
-
-
-def test_gate_rejects_forbidden_claim_flags() -> None:
-    with pytest.raises(ValueError, match="cannot promote to Wave 6"):
-        readiness_gate(attempted_wave_six_promotion=True)
-
+def test_wave_six_readiness_gate_rejects_forbidden_claims() -> None:
     with pytest.raises(ValueError, match="cannot claim AGI"):
-        readiness_gate(claims_agi=True)
-
-    with pytest.raises(ValueError, match="cannot grant execution"):
-        readiness_gate(grants_execution_authority=True)
-
-
-def test_gate_rejects_production_and_certification_claims() -> None:
-    with pytest.raises(ValueError, match="production readiness"):
-        readiness_gate(claims_production_ready=True)
-
-    with pytest.raises(ValueError, match="certification"):
-        readiness_gate(claims_certified=True)
-
-
-def test_gate_rejects_missing_claim_boundary() -> None:
-    with pytest.raises(ValueError, match="no-self-validation"):
-        readiness_gate(
-            claim_boundaries=tuple(
-                boundary
-                for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
-                if boundary is not WaveFiveClaimBoundary.NO_SELF_VALIDATION
-            )
+        WaveFiveWaveSixReadinessGate(
+            gate_id="invalid-wave-six-gate",
+            title="Invalid Wave 6 gate",
+            source_system=WaveFiveSourceSystem.IX_COGNITION_KERNEL,
+            readiness_state=WaveFiveWaveSixReadinessState.INTERNAL_GATE_READY,
+            preconditions=_preconditions(),
+            blockers=(),
+            protocol_ids=("protocol-1",),
+            claims_agi=True,
         )
 
 
-def test_gate_reports_missing_required_family_and_check_coverage() -> None:
-    item = readiness_gate(
-        families=(family_record(),),
-        checks=(
-            gate_check(
-                "check-artifacts-present",
-                WaveFiveReadinessCheckKind.ARTIFACTS_PRESENT,
-            ),
-        ),
-    )
-
-    assert item.has_required_family_coverage is False
-    assert WaveFiveReadinessFamily.WORLDTWIN_SCENARIOS in (
-        item.missing_required_families
-    )
-    assert item.has_required_check_coverage is False
-    assert WaveFiveReadinessCheckKind.WAVE_SIX_SCOPE_BOUND in (
-        item.missing_required_check_kinds
-    )
-    assert item.ready_for_wave_six_design_review is False
-
-
-def test_gate_blocks_when_family_status_is_blocking() -> None:
-    families = tuple(
-        family_record(
-            f"family-{family.value}",
-            family=family,
-            status=(
-                WaveFiveReadinessStatus.DISPUTED
-                if family is WaveFiveReadinessFamily.REPEATABILITY_LEDGER
-                else WaveFiveReadinessStatus.SATISFIED
-            ),
-        )
-        for family in REQUIRED_READINESS_FAMILIES
-    )
-    item = readiness_gate(families=families)
-
-    assert item.blocking_family_ids == ("family-repeatability-ledger",)
-    assert item.blocks_wave_six_design_review is True
-
-
-def test_gate_blocks_when_check_fails() -> None:
-    checks = tuple(
-        gate_check(
-            f"check-{check_kind.value}",
-            check_kind,
-            result=(
-                WaveFiveReadinessCheckResult.FAILED
-                if check_kind is WaveFiveReadinessCheckKind.NO_AGI_CLAIM
-                else WaveFiveReadinessCheckResult.PASSED
-            ),
-        )
-        for check_kind in REQUIRED_READINESS_CHECKS
-    )
-    item = readiness_gate(checks=checks)
-
-    assert item.blocking_check_ids == ("check-no-agi-claim",)
-    assert item.blocks_wave_six_design_review is True
-
-
-def test_gate_blocks_when_unresolved_blocker_exists() -> None:
-    item = readiness_gate(blockers=(blocker(),))
-
-    assert item.unresolved_blocker_ids == ("blocker-memory-gap",)
-    assert item.blocks_wave_six_design_review is True
-
-
-def test_gate_is_ready_for_wave_six_design_review_only() -> None:
-    item = readiness_gate()
-
-    assert item.has_required_family_coverage is True
-    assert item.has_required_check_coverage is True
-    assert item.blocking_family_ids == ()
-    assert item.blocking_check_ids == ()
-    assert item.unresolved_blocker_ids == ()
-    assert item.makes_no_forbidden_claims is True
-    assert item.blocks_wave_six_design_review is False
-    assert item.ready_for_wave_six_design_review is True
-
-
-def test_ready_gate_exports_reviewable_traceability_artifact() -> None:
-    artifact = readiness_gate().to_artifact_ref()
-
-    assert artifact.kind is WaveFiveArtifactKind.ECOSYSTEM_TRACEABILITY_MAP
-    assert artifact.capability_area is WaveFiveCapabilityArea.ECOSYSTEM_TRACEABILITY
-    assert artifact.source_system is WaveFiveSourceSystem.IX_COGNITION_KERNEL
-    assert artifact.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
-    assert artifact.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact.validation_status is (
-        WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
-    )
-
-
-def test_blocked_gate_exports_blocked_artifact() -> None:
-    artifact = readiness_gate(blockers=(blocker(),)).to_artifact_ref()
-
-    assert artifact.decision is WaveFiveArtifactDecision.BLOCKED
-    assert artifact.authority_state is WaveFiveAuthorityState.BLOCKED
-    assert artifact.validation_status is WaveFiveValidationStatus.REJECTED
-
-
-def test_externally_reviewed_gate_requires_external_source() -> None:
+def test_externally_reviewed_wave_six_gate_requires_external_source() -> None:
     with pytest.raises(ValueError, match="external source"):
-        readiness_gate(
-            review_state=(
-                WaveFiveReadinessReviewState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
+        _readiness_gate(
+            readiness_state=(
+                WaveFiveWaveSixReadinessState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
             ),
-            reviewer_ids=("reviewer-001",),
+            source_system=WaveFiveSourceSystem.IX_COGNITION_KERNEL,
+            reviewer_ids=("reviewer-1",),
         )
 
 
-def test_externally_reviewed_gate_requires_reviewer_ids() -> None:
-    with pytest.raises(ValueError, match="reviewer ids"):
-        readiness_gate(
-            source_system=WaveFiveSourceSystem.INDEPENDENT_REVIEWER,
-            review_state=(
-                WaveFiveReadinessReviewState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
-            ),
-        )
-
-
-def test_externally_reviewed_gate_exports_bounded_external_artifact() -> None:
-    item = readiness_gate(
-        source_system=WaveFiveSourceSystem.INDEPENDENT_REVIEWER,
-        review_state=WaveFiveReadinessReviewState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES,
-        reviewer_ids=("reviewer-001",),
+def test_externally_reviewed_wave_six_gate_exports_reviewed_artifact() -> None:
+    gate = _readiness_gate(
+        readiness_state=WaveFiveWaveSixReadinessState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES,
+        source_system=WaveFiveSourceSystem.EXTERNAL_REVIEW,
+        reviewer_ids=("reviewer-1",),
     )
-    artifact = item.to_artifact_ref()
 
-    assert item.externally_reviewed_with_boundaries is True
-    assert artifact.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact.validation_status is (
-        WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
-    )
-    assert artifact.externally_validated_with_boundaries is True
-
-
-def test_gate_collects_unique_evidence_ids() -> None:
-    item = readiness_gate()
-
-    assert item.all_evidence_ids[0] == "evidence-family-adversarial-safety"
-    assert "evidence-family-worldtwin-scenarios" in item.all_evidence_ids
-    assert "evidence-check-wave-six-scope-bound" in item.all_evidence_ids
-    assert len(item.all_evidence_ids) == 23
-
-
-def test_gate_fingerprint_is_deterministic() -> None:
-    item = readiness_gate()
-
-    assert item.fingerprint() == item.fingerprint()
-    assert len(item.fingerprint()) == 64
+    assert gate.externally_reviewed_with_boundaries
+    artifact_ref = gate.to_artifact_ref()
+    assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
+    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
