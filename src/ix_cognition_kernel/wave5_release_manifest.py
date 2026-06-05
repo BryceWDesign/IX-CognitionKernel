@@ -5,8 +5,8 @@ bundle without changing the meaning of the evidence. This module records the
 required artifact families, deterministic fingerprints, manifest integrity
 checks, unresolved release blockers, and anti-overclaim controls. A release
 manifest can make the Wave 5 package reviewable; it cannot promote the repo to
-Wave 6, claim AGI, grant execution authority, certify the system, or replace
-external validation.
+Wave 6, claim AGI, grant execution authority, certify anything, or self-claim
+independent validation.
 """
 
 from __future__ import annotations
@@ -33,11 +33,11 @@ from ix_cognition_kernel.wave5_contracts import (
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_FIVE_RELEASE_ARTIFACT_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-release-artifact-v1"
+WAVE_FIVE_MANIFEST_ENTRY_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave5-manifest-entry-v1"
 )
-WAVE_FIVE_RELEASE_CHECK_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-release-check-v1"
+WAVE_FIVE_MANIFEST_CHECK_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave5-manifest-integrity-check-v1"
 )
 WAVE_FIVE_RELEASE_BLOCKER_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-release-blocker-v1"
@@ -47,58 +47,59 @@ WAVE_FIVE_RELEASE_MANIFEST_SCHEMA_VERSION = (
 )
 
 
-class WaveFiveReleaseArtifactKind(StrEnum):
-    """Required artifacts in the final Wave 5 evidence bundle."""
+class WaveFiveManifestArtifactFamily(StrEnum):
+    """Artifact families required in the Wave 5 release manifest."""
 
-    EXTERNAL_PROTOCOL_SUITE = "external-protocol-suite"
-    INDEPENDENT_REVIEWER_REGISTRY = "independent-reviewer-registry"
-    REPRODUCIBILITY_BUNDLE = "reproducibility-bundle"
-    ADVERSARIAL_SAFETY_BUNDLE = "adversarial-safety-bundle"
-    LONG_HORIZON_EVIDENCE_BUNDLE = "long-horizon-evidence-bundle"
-    CROSS_DOMAIN_TRANSFER_BUNDLE = "cross-domain-transfer-bundle"
-    BENCHMARK_GAMING_AUDIT = "benchmark-gaming-audit"
-    MEMORY_INTEGRITY_PROOF = "memory-integrity-proof"
-    SAFE_REFUSAL_PROOF = "safe-refusal-proof"
-    HUMAN_AUTHORITY_PROOF = "human-authority-proof"
-    REPEATABILITY_LEDGER = "repeatability-ledger"
-    BLACKFOX_COMPATIBILITY_HANDOFF = "blackfox-compatibility-handoff"
-    WORLDTWIN_SCENARIO_BRIDGE = "worldtwin-scenario-bridge"
-    WAVE_SIX_READINESS_GATE = "wave-six-readiness-gate"
+    FOUNDATION_CONTRACTS = "foundation-contracts"
+    EXTERNAL_PROTOCOLS = "external-protocols"
+    REVIEWER_ATTESTATIONS = "reviewer-attestations"
+    REPRODUCIBILITY = "reproducibility"
+    REPEATABILITY = "repeatability"
+    ADVERSARIAL_SAFETY = "adversarial-safety"
+    LONG_HORIZON = "long-horizon"
+    CROSS_DOMAIN_TRANSFER = "cross-domain-transfer"
+    BENCHMARK_GAMING = "benchmark-gaming"
+    MEMORY_INTEGRITY = "memory-integrity"
+    SAFE_REFUSAL = "safe-refusal"
+    HUMAN_AUTHORITY = "human-authority"
+    BLACKFOX_BRIDGE = "blackfox-bridge"
+    WORLDTWIN_BRIDGE = "worldtwin-bridge"
+    WAVE_SIX_READINESS = "wave-six-readiness"
+    FALSIFICATION_LEDGER = "falsification-ledger"
     EVIDENCE_DOSSIER = "evidence-dossier"
     MATURITY_SCORECARD = "maturity-scorecard"
     EXTERNAL_REVIEW_PACKET = "external-review-packet"
-    FALSIFICATION_LEDGER = "falsification-ledger"
 
 
-class WaveFiveReleaseArtifactStatus(StrEnum):
-    """Status of one release-manifest artifact."""
+class WaveFiveManifestEntryStatus(StrEnum):
+    """Status of one manifest entry."""
 
-    INCLUDED = "included"
-    INCLUDED_WITH_LIMITS = "included-with-limits"
+    SEALED = "sealed"
+    SEALED_WITH_LIMITS = "sealed-with-limits"
     NEEDS_EXTERNAL_EVIDENCE = "needs-external-evidence"
     DISPUTED = "disputed"
     BLOCKED = "blocked"
     MISSING = "missing"
 
 
-class WaveFiveReleaseCheckKind(StrEnum):
-    """Checks required before the Wave 5 bundle can be reviewed."""
+class WaveFiveManifestIntegrityCheckKind(StrEnum):
+    """Integrity checks required for the release manifest."""
 
-    REQUIRED_ARTIFACTS_PRESENT = "required-artifacts-present"
-    ARTIFACT_DIGESTS_PRESENT = "artifact-digests-present"
-    ARTIFACT_EVIDENCE_PRESENT = "artifact-evidence-present"
+    REQUIRED_FAMILIES_PRESENT = "required-families-present"
+    ENTRY_DIGESTS_PRESENT = "entry-digests-present"
+    ENTRY_EVIDENCE_PRESENT = "entry-evidence-present"
     MANIFEST_FINGERPRINT_STABLE = "manifest-fingerprint-stable"
+    BLOCKERS_VISIBLE = "blockers-visible"
     CLAIM_BOUNDARIES_PRESERVED = "claim-boundaries-preserved"
     HUMAN_AUTHORITY_PRESERVED = "human-authority-preserved"
-    EXTERNAL_REVIEW_PATH_PRESENT = "external-review-path-present"
-    RELEASE_BLOCKERS_VISIBLE = "release-blockers-visible"
     NO_WAVE_SIX_PROMOTION = "no-wave-six-promotion"
     NO_AGI_OR_CERTIFICATION_CLAIM = "no-agi-or-certification-claim"
     NO_EXECUTION_AUTHORITY = "no-execution-authority"
+    NO_SELF_CLAIMED_INDEPENDENT_VALIDATION = "no-self-claimed-independent-validation"
 
 
-class WaveFiveReleaseCheckResult(StrEnum):
-    """Observed result of one release-manifest check."""
+class WaveFiveManifestCheckResult(StrEnum):
+    """Observed result of one manifest integrity check."""
 
     PASSED = "passed"
     PASSED_WITH_LIMITS = "passed-with-limits"
@@ -107,21 +108,22 @@ class WaveFiveReleaseCheckResult(StrEnum):
 
 
 class WaveFiveReleaseBlockerKind(StrEnum):
-    """Blockers that prevent a clean Wave 5 release bundle."""
+    """Blockers that prevent bounded release of the Wave 5 package."""
 
-    MISSING_ARTIFACT = "missing-artifact"
+    MISSING_ARTIFACT_FAMILY = "missing-artifact-family"
     INVALID_DIGEST = "invalid-digest"
     MISSING_EVIDENCE = "missing-evidence"
-    UNRESOLVED_DISPUTE = "unresolved-dispute"
-    FAILED_FALSIFICATION = "failed-falsification"
-    AUTHORITY_GAP = "authority-gap"
+    DISPUTED_EVIDENCE = "disputed-evidence"
+    UNRESOLVED_FALSIFICATION = "unresolved-falsification"
+    HUMAN_AUTHORITY_GAP = "human-authority-gap"
+    SAFE_REFUSAL_GAP = "safe-refusal-gap"
     CLAIM_BOUNDARY_GAP = "claim-boundary-gap"
-    REVIEW_PACKET_GAP = "review-packet-gap"
     WAVE_SIX_OVERCLAIM = "wave-six-overclaim"
+    INDEPENDENT_VALIDATION_OVERCLAIM = "independent-validation-overclaim"
 
 
 class WaveFiveReleaseBlockerSeverity(StrEnum):
-    """Severity of a release-manifest blocker."""
+    """Severity of a release blocker."""
 
     INFORMATIONAL = "informational"
     LIMITATION = "limitation"
@@ -130,7 +132,7 @@ class WaveFiveReleaseBlockerSeverity(StrEnum):
 
 
 class WaveFiveReleaseManifestState(StrEnum):
-    """Review state of the Wave 5 release manifest."""
+    """Review state of a Wave 5 release manifest."""
 
     INTERNAL_MANIFEST_READY = "internal-manifest-ready"
     READY_FOR_EXTERNAL_RELEASE_REVIEW = "ready-for-external-release-review"
@@ -139,51 +141,52 @@ class WaveFiveReleaseManifestState(StrEnum):
     BLOCKED_BY_RELEASE_GAP = "blocked-by-release-gap"
 
 
-SAFE_RELEASE_ARTIFACT_STATUSES: tuple[WaveFiveReleaseArtifactStatus, ...] = (
-    WaveFiveReleaseArtifactStatus.INCLUDED,
-    WaveFiveReleaseArtifactStatus.INCLUDED_WITH_LIMITS,
+SAFE_MANIFEST_ENTRY_STATUSES: tuple[WaveFiveManifestEntryStatus, ...] = (
+    WaveFiveManifestEntryStatus.SEALED,
+    WaveFiveManifestEntryStatus.SEALED_WITH_LIMITS,
 )
 
-BLOCKING_RELEASE_ARTIFACT_STATUSES: tuple[WaveFiveReleaseArtifactStatus, ...] = (
-    WaveFiveReleaseArtifactStatus.NEEDS_EXTERNAL_EVIDENCE,
-    WaveFiveReleaseArtifactStatus.DISPUTED,
-    WaveFiveReleaseArtifactStatus.BLOCKED,
-    WaveFiveReleaseArtifactStatus.MISSING,
+BLOCKING_MANIFEST_ENTRY_STATUSES: tuple[WaveFiveManifestEntryStatus, ...] = (
+    WaveFiveManifestEntryStatus.NEEDS_EXTERNAL_EVIDENCE,
+    WaveFiveManifestEntryStatus.DISPUTED,
+    WaveFiveManifestEntryStatus.BLOCKED,
+    WaveFiveManifestEntryStatus.MISSING,
 )
 
-REQUIRED_RELEASE_ARTIFACT_KINDS: tuple[WaveFiveReleaseArtifactKind, ...] = (
-    WaveFiveReleaseArtifactKind.EXTERNAL_PROTOCOL_SUITE,
-    WaveFiveReleaseArtifactKind.INDEPENDENT_REVIEWER_REGISTRY,
-    WaveFiveReleaseArtifactKind.REPRODUCIBILITY_BUNDLE,
-    WaveFiveReleaseArtifactKind.ADVERSARIAL_SAFETY_BUNDLE,
-    WaveFiveReleaseArtifactKind.LONG_HORIZON_EVIDENCE_BUNDLE,
-    WaveFiveReleaseArtifactKind.CROSS_DOMAIN_TRANSFER_BUNDLE,
-    WaveFiveReleaseArtifactKind.BENCHMARK_GAMING_AUDIT,
-    WaveFiveReleaseArtifactKind.MEMORY_INTEGRITY_PROOF,
-    WaveFiveReleaseArtifactKind.SAFE_REFUSAL_PROOF,
-    WaveFiveReleaseArtifactKind.HUMAN_AUTHORITY_PROOF,
-    WaveFiveReleaseArtifactKind.REPEATABILITY_LEDGER,
-    WaveFiveReleaseArtifactKind.BLACKFOX_COMPATIBILITY_HANDOFF,
-    WaveFiveReleaseArtifactKind.WORLDTWIN_SCENARIO_BRIDGE,
-    WaveFiveReleaseArtifactKind.WAVE_SIX_READINESS_GATE,
-    WaveFiveReleaseArtifactKind.EVIDENCE_DOSSIER,
-    WaveFiveReleaseArtifactKind.MATURITY_SCORECARD,
-    WaveFiveReleaseArtifactKind.EXTERNAL_REVIEW_PACKET,
-    WaveFiveReleaseArtifactKind.FALSIFICATION_LEDGER,
+REQUIRED_MANIFEST_ARTIFACT_FAMILIES: tuple[WaveFiveManifestArtifactFamily, ...] = (
+    WaveFiveManifestArtifactFamily.FOUNDATION_CONTRACTS,
+    WaveFiveManifestArtifactFamily.EXTERNAL_PROTOCOLS,
+    WaveFiveManifestArtifactFamily.REVIEWER_ATTESTATIONS,
+    WaveFiveManifestArtifactFamily.REPRODUCIBILITY,
+    WaveFiveManifestArtifactFamily.REPEATABILITY,
+    WaveFiveManifestArtifactFamily.ADVERSARIAL_SAFETY,
+    WaveFiveManifestArtifactFamily.LONG_HORIZON,
+    WaveFiveManifestArtifactFamily.CROSS_DOMAIN_TRANSFER,
+    WaveFiveManifestArtifactFamily.BENCHMARK_GAMING,
+    WaveFiveManifestArtifactFamily.MEMORY_INTEGRITY,
+    WaveFiveManifestArtifactFamily.SAFE_REFUSAL,
+    WaveFiveManifestArtifactFamily.HUMAN_AUTHORITY,
+    WaveFiveManifestArtifactFamily.BLACKFOX_BRIDGE,
+    WaveFiveManifestArtifactFamily.WORLDTWIN_BRIDGE,
+    WaveFiveManifestArtifactFamily.WAVE_SIX_READINESS,
+    WaveFiveManifestArtifactFamily.FALSIFICATION_LEDGER,
+    WaveFiveManifestArtifactFamily.EVIDENCE_DOSSIER,
+    WaveFiveManifestArtifactFamily.MATURITY_SCORECARD,
+    WaveFiveManifestArtifactFamily.EXTERNAL_REVIEW_PACKET,
 )
 
-REQUIRED_RELEASE_CHECK_KINDS: tuple[WaveFiveReleaseCheckKind, ...] = (
-    WaveFiveReleaseCheckKind.REQUIRED_ARTIFACTS_PRESENT,
-    WaveFiveReleaseCheckKind.ARTIFACT_DIGESTS_PRESENT,
-    WaveFiveReleaseCheckKind.ARTIFACT_EVIDENCE_PRESENT,
-    WaveFiveReleaseCheckKind.MANIFEST_FINGERPRINT_STABLE,
-    WaveFiveReleaseCheckKind.CLAIM_BOUNDARIES_PRESERVED,
-    WaveFiveReleaseCheckKind.HUMAN_AUTHORITY_PRESERVED,
-    WaveFiveReleaseCheckKind.EXTERNAL_REVIEW_PATH_PRESENT,
-    WaveFiveReleaseCheckKind.RELEASE_BLOCKERS_VISIBLE,
-    WaveFiveReleaseCheckKind.NO_WAVE_SIX_PROMOTION,
-    WaveFiveReleaseCheckKind.NO_AGI_OR_CERTIFICATION_CLAIM,
-    WaveFiveReleaseCheckKind.NO_EXECUTION_AUTHORITY,
+REQUIRED_MANIFEST_CHECK_KINDS: tuple[WaveFiveManifestIntegrityCheckKind, ...] = (
+    WaveFiveManifestIntegrityCheckKind.REQUIRED_FAMILIES_PRESENT,
+    WaveFiveManifestIntegrityCheckKind.ENTRY_DIGESTS_PRESENT,
+    WaveFiveManifestIntegrityCheckKind.ENTRY_EVIDENCE_PRESENT,
+    WaveFiveManifestIntegrityCheckKind.MANIFEST_FINGERPRINT_STABLE,
+    WaveFiveManifestIntegrityCheckKind.BLOCKERS_VISIBLE,
+    WaveFiveManifestIntegrityCheckKind.CLAIM_BOUNDARIES_PRESERVED,
+    WaveFiveManifestIntegrityCheckKind.HUMAN_AUTHORITY_PRESERVED,
+    WaveFiveManifestIntegrityCheckKind.NO_WAVE_SIX_PROMOTION,
+    WaveFiveManifestIntegrityCheckKind.NO_AGI_OR_CERTIFICATION_CLAIM,
+    WaveFiveManifestIntegrityCheckKind.NO_EXECUTION_AUTHORITY,
+    WaveFiveManifestIntegrityCheckKind.NO_SELF_CLAIMED_INDEPENDENT_VALIDATION,
 )
 
 EXTERNAL_RELEASE_REVIEW_SOURCE_SYSTEMS: tuple[WaveFiveSourceSystem, ...] = (
@@ -194,48 +197,58 @@ EXTERNAL_RELEASE_REVIEW_SOURCE_SYSTEMS: tuple[WaveFiveSourceSystem, ...] = (
 
 
 @dataclass(frozen=True, slots=True)
-class WaveFiveReleaseArtifactRecord:
-    """One artifact sealed into the final Wave 5 release manifest."""
+class WaveFiveReleaseManifestEntry:
+    """One artifact-family entry in the Wave 5 release manifest."""
 
-    artifact_id: str
-    artifact_kind: WaveFiveReleaseArtifactKind
-    status: WaveFiveReleaseArtifactStatus
-    digest: str
+    entry_id: str
+    artifact_family: WaveFiveManifestArtifactFamily
+    status: WaveFiveManifestEntryStatus
+    artifact_ids: tuple[str, ...]
     evidence_ids: tuple[str, ...]
-    source_system: WaveFiveSourceSystem
+    digest: str
     summary: str
     limitations: tuple[str, ...] = ()
-    reviewer_ids: tuple[str, ...] = ()
+    blocker_ids: tuple[str, ...] = ()
+    source_system: WaveFiveSourceSystem = WaveFiveSourceSystem.IX_COGNITION_KERNEL
     claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
         WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
     )
-    schema_version: str = WAVE_FIVE_RELEASE_ARTIFACT_SCHEMA_VERSION
+    schema_version: str = WAVE_FIVE_MANIFEST_ENTRY_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate artifact digest, evidence, and claim boundaries."""
+        """Validate manifest-entry references, digest, and boundaries."""
 
-        object.__setattr__(self, "artifact_id", _text(self.artifact_id, "artifact_id"))
-        object.__setattr__(self, "digest", _sha256(self.digest, "digest"))
+        object.__setattr__(self, "entry_id", _text(self.entry_id, "entry_id"))
+        object.__setattr__(
+            self, "artifact_ids", _unique_text(self.artifact_ids, label="artifact_id")
+        )
         object.__setattr__(
             self, "evidence_ids", _unique_text(self.evidence_ids, label="evidence_id")
         )
+        object.__setattr__(self, "digest", _sha256(self.digest, "digest"))
         object.__setattr__(self, "summary", _text(self.summary, "summary"))
         object.__setattr__(
             self, "limitations", _unique_text(self.limitations, label="limitation")
         )
         object.__setattr__(
-            self, "reviewer_ids", _unique_text(self.reviewer_ids, label="reviewer_id")
+            self, "blocker_ids", _unique_text(self.blocker_ids, label="blocker_id")
         )
         object.__setattr__(
             self,
             "claim_boundaries",
             _unique_enum(self.claim_boundaries, label="claim boundary"),
         )
+        if not self.artifact_ids:
+            raise ValueError("Release manifest entries require artifact ids.")
         if not self.evidence_ids:
-            raise ValueError("Release artifact records require evidence ids.")
-        if self.status is WaveFiveReleaseArtifactStatus.INCLUDED_WITH_LIMITS:
-            if not self.limitations:
-                raise ValueError("Limited release artifacts require limitations.")
+            raise ValueError("Release manifest entries require evidence ids.")
+        if (
+            self.status is WaveFiveManifestEntryStatus.SEALED_WITH_LIMITS
+            and not self.limitations
+        ):
+            raise ValueError("Limited manifest entries require limitations.")
+        if self.status in BLOCKING_MANIFEST_ENTRY_STATUSES and not self.blocker_ids:
+            raise ValueError("Blocking manifest entries require blocker ids.")
         missing = tuple(
             boundary
             for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
@@ -243,7 +256,7 @@ class WaveFiveReleaseArtifactRecord:
         )
         if missing:
             raise ValueError(
-                "Release artifact records must preserve claim boundary: "
+                "Manifest entries must preserve claim boundary: "
                 f"{missing[0].value}"
             )
         object.__setattr__(
@@ -251,36 +264,37 @@ class WaveFiveReleaseArtifactRecord:
         )
 
     @property
-    def artifact_key(self) -> str:
-        """Return deterministic artifact key."""
+    def entry_key(self) -> str:
+        """Return deterministic entry key."""
 
-        return self.artifact_id
-
-    @property
-    def blocks_release_readiness(self) -> bool:
-        """Return whether this artifact blocks release readiness."""
-
-        return self.status in BLOCKING_RELEASE_ARTIFACT_STATUSES
+        return self.entry_id
 
     @property
-    def reviewable_with_boundaries(self) -> bool:
-        """Return whether artifact is reviewable without promotion."""
+    def blocks_release(self) -> bool:
+        """Return whether this entry blocks release manifest readiness."""
 
-        return self.status in SAFE_RELEASE_ARTIFACT_STATUSES and bool(self.evidence_ids)
+        return self.status in BLOCKING_MANIFEST_ENTRY_STATUSES
+
+    @property
+    def sealed_with_boundaries(self) -> bool:
+        """Return whether this entry is sealed without promotion."""
+
+        return self.status in SAFE_MANIFEST_ENTRY_STATUSES and bool(self.evidence_ids)
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic export payload."""
 
         return {
-            "artifact_id": self.artifact_id,
-            "artifact_kind": self.artifact_kind.value,
+            "artifact_family": self.artifact_family.value,
+            "artifact_ids": list(self.artifact_ids),
+            "blocker_ids": list(self.blocker_ids),
             "claim_boundaries": [boundary.value for boundary in self.claim_boundaries],
             "digest": self.digest,
+            "entry_id": self.entry_id,
             "evidence_ids": list(self.evidence_ids),
             "limitations": list(self.limitations),
-            "reviewable_with_boundaries": self.reviewable_with_boundaries,
-            "reviewer_ids": list(self.reviewer_ids),
             "schema_version": self.schema_version,
+            "sealed_with_boundaries": self.sealed_with_boundaries,
             "source_system": self.source_system.value,
             "status": self.status.value,
             "summary": self.summary,
@@ -288,19 +302,19 @@ class WaveFiveReleaseArtifactRecord:
 
 
 @dataclass(frozen=True, slots=True)
-class WaveFiveReleaseManifestCheck:
-    """One integrity check over the final release manifest."""
+class WaveFiveReleaseManifestIntegrityCheck:
+    """One integrity check over the release manifest."""
 
     check_id: str
-    check_kind: WaveFiveReleaseCheckKind
-    result: WaveFiveReleaseCheckResult
+    check_kind: WaveFiveManifestIntegrityCheckKind
+    result: WaveFiveManifestCheckResult
     description: str
     evidence_ids: tuple[str, ...]
     blocking: bool = True
-    schema_version: str = WAVE_FIVE_RELEASE_CHECK_SCHEMA_VERSION
+    schema_version: str = WAVE_FIVE_MANIFEST_CHECK_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate release-check identity and evidence."""
+        """Validate manifest-check evidence."""
 
         object.__setattr__(self, "check_id", _text(self.check_id, "check_id"))
         object.__setattr__(self, "description", _text(self.description, "description"))
@@ -321,16 +335,16 @@ class WaveFiveReleaseManifestCheck:
 
     @property
     def passed_with_boundaries(self) -> bool:
-        """Return whether this check passed without erasing limits."""
+        """Return whether check passed without erasing limits."""
 
         return self.result in {
-            WaveFiveReleaseCheckResult.PASSED,
-            WaveFiveReleaseCheckResult.PASSED_WITH_LIMITS,
+            WaveFiveManifestCheckResult.PASSED,
+            WaveFiveManifestCheckResult.PASSED_WITH_LIMITS,
         }
 
     @property
-    def blocks_release_readiness(self) -> bool:
-        """Return whether this check blocks release review."""
+    def blocks_release(self) -> bool:
+        """Return whether this check blocks release readiness."""
 
         return self.blocking and not self.passed_with_boundaries
 
@@ -350,12 +364,12 @@ class WaveFiveReleaseManifestCheck:
 
 @dataclass(frozen=True, slots=True)
 class WaveFiveReleaseBlocker:
-    """Visible blocker or limitation retained in the release manifest."""
+    """Visible blocker that prevents bounded release."""
 
     blocker_id: str
     blocker_kind: WaveFiveReleaseBlockerKind
     severity: WaveFiveReleaseBlockerSeverity
-    artifact_kind: WaveFiveReleaseArtifactKind
+    artifact_family: WaveFiveManifestArtifactFamily
     description: str
     mitigation: str
     evidence_ids: tuple[str, ...]
@@ -363,7 +377,7 @@ class WaveFiveReleaseBlocker:
     schema_version: str = WAVE_FIVE_RELEASE_BLOCKER_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate release blocker evidence and mitigation."""
+        """Validate release-blocker identity and evidence."""
 
         object.__setattr__(self, "blocker_id", _text(self.blocker_id, "blocker_id"))
         object.__setattr__(self, "description", _text(self.description, "description"))
@@ -384,8 +398,8 @@ class WaveFiveReleaseBlocker:
         return self.blocker_id
 
     @property
-    def blocks_release_readiness(self) -> bool:
-        """Return whether this blocker prevents release review."""
+    def blocks_release(self) -> bool:
+        """Return whether this unresolved blocker prevents release."""
 
         return (
             self.severity is WaveFiveReleaseBlockerSeverity.BLOCKING
@@ -396,7 +410,7 @@ class WaveFiveReleaseBlocker:
         """Return deterministic export payload."""
 
         return {
-            "artifact_kind": self.artifact_kind.value,
+            "artifact_family": self.artifact_family.value,
             "blocker_id": self.blocker_id,
             "blocker_kind": self.blocker_kind.value,
             "description": self.description,
@@ -410,15 +424,18 @@ class WaveFiveReleaseBlocker:
 
 @dataclass(frozen=True, slots=True)
 class WaveFiveReleaseManifest:
-    """Final Wave 5 release manifest for evidence-bundle review."""
+    """Final Wave 5 release manifest for bounded external review."""
 
     manifest_id: str
     title: str
     source_system: WaveFiveSourceSystem
     manifest_state: WaveFiveReleaseManifestState
-    artifacts: tuple[WaveFiveReleaseArtifactRecord, ...]
-    checks: tuple[WaveFiveReleaseManifestCheck, ...]
+    entries: tuple[WaveFiveReleaseManifestEntry, ...]
+    integrity_checks: tuple[WaveFiveReleaseManifestIntegrityCheck, ...]
     blockers: tuple[WaveFiveReleaseBlocker, ...]
+    evidence_dossier_artifact_id: str
+    maturity_scorecard_artifact_id: str
+    external_review_packet_artifact_id: str
     protocol_ids: tuple[str, ...]
     reviewer_ids: tuple[str, ...] = ()
     attempted_wave_six_promotion: bool = False
@@ -434,10 +451,31 @@ class WaveFiveReleaseManifest:
     schema_version: str = WAVE_FIVE_RELEASE_MANIFEST_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate manifest completeness and anti-promotion boundaries."""
+        """Validate manifest completeness and anti-overclaim boundaries."""
 
         object.__setattr__(self, "manifest_id", _text(self.manifest_id, "manifest_id"))
         object.__setattr__(self, "title", _text(self.title, "title"))
+        object.__setattr__(
+            self,
+            "evidence_dossier_artifact_id",
+            _text(self.evidence_dossier_artifact_id, "evidence_dossier_artifact_id"),
+        )
+        object.__setattr__(
+            self,
+            "maturity_scorecard_artifact_id",
+            _text(
+                self.maturity_scorecard_artifact_id,
+                "maturity_scorecard_artifact_id",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "external_review_packet_artifact_id",
+            _text(
+                self.external_review_packet_artifact_id,
+                "external_review_packet_artifact_id",
+            ),
+        )
         if self.attempted_wave_six_promotion:
             raise ValueError("Release manifests cannot promote to Wave 6.")
         if self.claims_agi:
@@ -452,21 +490,21 @@ class WaveFiveReleaseManifest:
             raise ValueError(
                 "Release manifests cannot self-claim independent validation."
             )
-        artifacts = tuple(sorted(self.artifacts, key=lambda item: item.artifact_key))
-        checks = tuple(sorted(self.checks, key=lambda item: item.check_key))
+        entries = tuple(sorted(self.entries, key=lambda item: item.entry_key))
+        checks = tuple(sorted(self.integrity_checks, key=lambda item: item.check_key))
         blockers = tuple(sorted(self.blockers, key=lambda item: item.blocker_key))
-        if not artifacts:
-            raise ValueError("Release manifests require artifacts.")
+        if not entries:
+            raise ValueError("Release manifests require entries.")
         if not checks:
-            raise ValueError("Release manifests require checks.")
-        _unique_values((item.artifact_id for item in artifacts), label="artifact_id")
+            raise ValueError("Release manifests require integrity checks.")
+        _unique_values((item.entry_id for item in entries), label="entry_id")
         _unique_values(
-            (item.artifact_kind for item in artifacts), label="artifact kind"
+            (item.artifact_family for item in entries), label="artifact family"
         )
         _unique_values((item.check_id for item in checks), label="check_id")
         _unique_values((item.blocker_id for item in blockers), label="blocker_id")
-        object.__setattr__(self, "artifacts", artifacts)
-        object.__setattr__(self, "checks", checks)
+        object.__setattr__(self, "entries", entries)
+        object.__setattr__(self, "integrity_checks", checks)
         object.__setattr__(self, "blockers", blockers)
         object.__setattr__(
             self, "protocol_ids", _unique_text(self.protocol_ids, label="protocol_id")
@@ -504,65 +542,65 @@ class WaveFiveReleaseManifest:
                 raise ValueError(
                     "Externally reviewed release manifests require reviewer ids."
                 )
-            if self.blocks_release_readiness:
+            if self.blocks_release:
                 raise ValueError(
                     "Externally reviewed release manifests cannot contain blockers."
                 )
 
     @property
-    def covered_artifact_kinds(self) -> tuple[WaveFiveReleaseArtifactKind, ...]:
-        """Return artifact kinds represented in this manifest."""
+    def covered_artifact_families(self) -> tuple[WaveFiveManifestArtifactFamily, ...]:
+        """Return artifact families represented in this manifest."""
 
-        return tuple(artifact.artifact_kind for artifact in self.artifacts)
+        return tuple(entry.artifact_family for entry in self.entries)
 
     @property
-    def missing_required_artifact_kinds(
+    def missing_required_artifact_families(
         self,
-    ) -> tuple[WaveFiveReleaseArtifactKind, ...]:
-        """Return required release artifacts absent from this manifest."""
+    ) -> tuple[WaveFiveManifestArtifactFamily, ...]:
+        """Return required artifact families absent from this manifest."""
 
-        covered = set(self.covered_artifact_kinds)
+        covered = set(self.covered_artifact_families)
         return tuple(
-            kind for kind in REQUIRED_RELEASE_ARTIFACT_KINDS if kind not in covered
+            family
+            for family in REQUIRED_MANIFEST_ARTIFACT_FAMILIES
+            if family not in covered
         )
 
     @property
-    def covered_check_kinds(self) -> tuple[WaveFiveReleaseCheckKind, ...]:
-        """Return release check kinds represented in this manifest."""
+    def covered_check_kinds(self) -> tuple[WaveFiveManifestIntegrityCheckKind, ...]:
+        """Return integrity-check kinds represented in this manifest."""
 
-        kinds: list[WaveFiveReleaseCheckKind] = []
-        seen: set[WaveFiveReleaseCheckKind] = set()
-        for check in self.checks:
+        kinds: list[WaveFiveManifestIntegrityCheckKind] = []
+        seen: set[WaveFiveManifestIntegrityCheckKind] = set()
+        for check in self.integrity_checks:
             if check.check_kind not in seen:
                 kinds.append(check.check_kind)
                 seen.add(check.check_kind)
         return tuple(kinds)
 
     @property
-    def missing_required_check_kinds(self) -> tuple[WaveFiveReleaseCheckKind, ...]:
-        """Return required release checks absent from this manifest."""
+    def missing_required_check_kinds(
+        self,
+    ) -> tuple[WaveFiveManifestIntegrityCheckKind, ...]:
+        """Return required manifest checks absent from this manifest."""
 
         covered = set(self.covered_check_kinds)
         return tuple(
-            kind for kind in REQUIRED_RELEASE_CHECK_KINDS if kind not in covered
+            kind for kind in REQUIRED_MANIFEST_CHECK_KINDS if kind not in covered
         )
 
     @property
-    def blocking_artifact_ids(self) -> tuple[str, ...]:
-        """Return artifacts that block release readiness."""
+    def blocking_entry_ids(self) -> tuple[str, ...]:
+        """Return manifest entries that block release."""
 
-        return tuple(
-            artifact.artifact_id
-            for artifact in self.artifacts
-            if artifact.blocks_release_readiness
-        )
+        return tuple(entry.entry_id for entry in self.entries if entry.blocks_release)
 
     @property
     def blocking_check_ids(self) -> tuple[str, ...]:
-        """Return checks that block release readiness."""
+        """Return integrity checks that block release."""
 
         return tuple(
-            check.check_id for check in self.checks if check.blocks_release_readiness
+            check.check_id for check in self.integrity_checks if check.blocks_release
         )
 
     @property
@@ -570,20 +608,18 @@ class WaveFiveReleaseManifest:
         """Return unresolved blocking release blockers."""
 
         return tuple(
-            blocker.blocker_id
-            for blocker in self.blockers
-            if blocker.blocks_release_readiness
+            blocker.blocker_id for blocker in self.blockers if blocker.blocks_release
         )
 
     @property
-    def has_required_artifact_coverage(self) -> bool:
-        """Return whether every locked release artifact is represented."""
+    def has_required_family_coverage(self) -> bool:
+        """Return whether every locked artifact family is represented."""
 
-        return not self.missing_required_artifact_kinds
+        return not self.missing_required_artifact_families
 
     @property
     def has_required_check_coverage(self) -> bool:
-        """Return whether every locked release check is represented."""
+        """Return whether every locked manifest check is represented."""
 
         return not self.missing_required_check_kinds
 
@@ -603,13 +639,13 @@ class WaveFiveReleaseManifest:
         )
 
     @property
-    def blocks_release_readiness(self) -> bool:
-        """Return whether any condition blocks release review."""
+    def blocks_release(self) -> bool:
+        """Return whether any condition blocks bounded release."""
 
         return bool(
-            self.missing_required_artifact_kinds
+            self.missing_required_artifact_families
             or self.missing_required_check_kinds
-            or self.blocking_artifact_ids
+            or self.blocking_entry_ids
             or self.blocking_check_ids
             or self.unresolved_blocker_ids
             or not self.makes_no_forbidden_claims
@@ -617,7 +653,7 @@ class WaveFiveReleaseManifest:
 
     @property
     def ready_for_external_release_review(self) -> bool:
-        """Return whether the release manifest can enter external review."""
+        """Return whether manifest can enter external release review."""
 
         return (
             self.manifest_state
@@ -626,9 +662,9 @@ class WaveFiveReleaseManifest:
                 WaveFiveReleaseManifestState.READY_FOR_EXTERNAL_RELEASE_REVIEW,
                 WaveFiveReleaseManifestState.UNDER_EXTERNAL_RELEASE_REVIEW,
             }
-            and self.has_required_artifact_coverage
+            and self.has_required_family_coverage
             and self.has_required_check_coverage
-            and not self.blocking_artifact_ids
+            and not self.blocking_entry_ids
             and not self.blocking_check_ids
             and not self.unresolved_blocker_ids
             and self.makes_no_forbidden_claims
@@ -644,17 +680,28 @@ class WaveFiveReleaseManifest:
         )
 
     @property
-    def bundle_digest(self) -> str:
-        """Return deterministic digest across artifact digests."""
+    def manifest_bundle_digest(self) -> str:
+        """Return deterministic digest across manifest entry digests."""
 
-        payload = {
-            artifact.artifact_id: artifact.digest for artifact in self.artifacts
-        }
+        payload = {entry.entry_id: entry.digest for entry in self.entries}
         return _stable_sha256(payload)
 
     @property
+    def all_artifact_ids(self) -> tuple[str, ...]:
+        """Return all artifact ids referenced by the manifest."""
+
+        artifact_ids: list[str] = []
+        seen: set[str] = set()
+        for entry in self.entries:
+            for artifact_id in entry.artifact_ids:
+                if artifact_id not in seen:
+                    artifact_ids.append(artifact_id)
+                    seen.add(artifact_id)
+        return tuple(artifact_ids)
+
+    @property
     def all_evidence_ids(self) -> tuple[str, ...]:
-        """Return all evidence ids bound into this manifest."""
+        """Return all evidence ids bound into the manifest."""
 
         evidence_ids: list[str] = []
         seen: set[str] = set()
@@ -665,7 +712,7 @@ class WaveFiveReleaseManifest:
         return tuple(evidence_ids)
 
     def to_artifact_ref(self) -> WaveFiveArtifactRef:
-        """Return this manifest as a Wave 5 traceability artifact."""
+        """Return this manifest as a Wave 5 release artifact."""
 
         decision = WaveFiveArtifactDecision.NEEDS_EXTERNAL_EVIDENCE
         status = WaveFiveValidationStatus.MISSING_EXTERNAL_EVIDENCE
@@ -676,13 +723,13 @@ class WaveFiveReleaseManifest:
         elif self.ready_for_external_release_review:
             decision = WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
             status = WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
-        elif self.blocks_release_readiness:
+        elif self.blocks_release:
             decision = WaveFiveArtifactDecision.BLOCKED
             status = WaveFiveValidationStatus.REJECTED
             authority = WaveFiveAuthorityState.BLOCKED
         return WaveFiveArtifactRef(
             artifact_id=self.manifest_id,
-            kind=WaveFiveArtifactKind.ECOSYSTEM_TRACEABILITY_MAP,
+            kind=WaveFiveArtifactKind.RELEASE_MANIFEST,
             capability_area=WaveFiveCapabilityArea.ECOSYSTEM_TRACEABILITY,
             source_system=self.source_system,
             summary=self.title,
@@ -699,19 +746,26 @@ class WaveFiveReleaseManifest:
         """Return deterministic export payload."""
 
         return {
-            "artifacts": [artifact.canonical_payload() for artifact in self.artifacts],
             "attempted_wave_six_promotion": self.attempted_wave_six_promotion,
             "blockers": [blocker.canonical_payload() for blocker in self.blockers],
-            "bundle_digest": self.bundle_digest,
-            "checks": [check.canonical_payload() for check in self.checks],
             "claim_boundaries": [boundary.value for boundary in self.claim_boundaries],
             "claims_agi": self.claims_agi,
             "claims_certified": self.claims_certified,
             "claims_independent_validation": self.claims_independent_validation,
             "claims_production_ready": self.claims_production_ready,
+            "entries": [entry.canonical_payload() for entry in self.entries],
+            "evidence_dossier_artifact_id": self.evidence_dossier_artifact_id,
+            "external_review_packet_artifact_id": (
+                self.external_review_packet_artifact_id
+            ),
             "grants_execution_authority": self.grants_execution_authority,
+            "integrity_checks": [
+                check.canonical_payload() for check in self.integrity_checks
+            ],
+            "manifest_bundle_digest": self.manifest_bundle_digest,
             "manifest_id": self.manifest_id,
             "manifest_state": self.manifest_state.value,
+            "maturity_scorecard_artifact_id": self.maturity_scorecard_artifact_id,
             "notes": list(self.notes),
             "protocol_ids": list(self.protocol_ids),
             "reviewer_ids": list(self.reviewer_ids),
@@ -728,36 +782,38 @@ class WaveFiveReleaseManifest:
     def _iter_evidence_ids(self) -> Iterable[str]:
         """Yield evidence ids in deterministic manifest traversal order."""
 
-        for artifact in self.artifacts:
-            yield from artifact.evidence_ids
-        for check in self.checks:
+        for entry in self.entries:
+            yield from entry.evidence_ids
+        for check in self.integrity_checks:
             yield from check.evidence_ids
         for blocker in self.blockers:
             yield from blocker.evidence_ids
 
 
-def required_release_artifact_kinds() -> tuple[WaveFiveReleaseArtifactKind, ...]:
-    """Return locked release artifacts required for Wave 5 manifest review."""
+def required_manifest_artifact_families() -> tuple[
+    WaveFiveManifestArtifactFamily, ...
+]:
+    """Return locked artifact families required for Wave 5 manifest release."""
 
-    return REQUIRED_RELEASE_ARTIFACT_KINDS
-
-
-def required_release_check_kinds() -> tuple[WaveFiveReleaseCheckKind, ...]:
-    """Return locked release checks required for Wave 5 manifest review."""
-
-    return REQUIRED_RELEASE_CHECK_KINDS
+    return REQUIRED_MANIFEST_ARTIFACT_FAMILIES
 
 
-def safe_release_artifact_statuses() -> tuple[WaveFiveReleaseArtifactStatus, ...]:
-    """Return release statuses that do not block review."""
+def required_manifest_check_kinds() -> tuple[WaveFiveManifestIntegrityCheckKind, ...]:
+    """Return locked manifest checks required for Wave 5 manifest release."""
 
-    return SAFE_RELEASE_ARTIFACT_STATUSES
+    return REQUIRED_MANIFEST_CHECK_KINDS
 
 
-def blocking_release_artifact_statuses() -> tuple[WaveFiveReleaseArtifactStatus, ...]:
-    """Return release statuses that block review."""
+def safe_manifest_entry_statuses() -> tuple[WaveFiveManifestEntryStatus, ...]:
+    """Return manifest entry statuses that do not block release."""
 
-    return BLOCKING_RELEASE_ARTIFACT_STATUSES
+    return SAFE_MANIFEST_ENTRY_STATUSES
+
+
+def blocking_manifest_entry_statuses() -> tuple[WaveFiveManifestEntryStatus, ...]:
+    """Return manifest entry statuses that block release."""
+
+    return BLOCKING_MANIFEST_ENTRY_STATUSES
 
 
 def external_release_review_source_systems() -> tuple[WaveFiveSourceSystem, ...]:
@@ -829,7 +885,5 @@ def _sha256(value: str, label: str) -> str:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
