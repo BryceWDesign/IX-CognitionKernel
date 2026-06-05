@@ -35,9 +35,7 @@ E = TypeVar("E", bound=StrEnum)
 WAVE_FIVE_BENCHMARK_SOURCE_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-benchmark-source-v1"
 )
-WAVE_FIVE_BENCHMARK_RISK_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-benchmark-risk-v1"
-)
+WAVE_FIVE_BENCHMARK_RISK_SCHEMA_VERSION = "ix-cognition-kernel-wave5-benchmark-risk-v1"
 WAVE_FIVE_BENCHMARK_CONTROL_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-benchmark-control-v1"
 )
@@ -198,10 +196,14 @@ class WaveFiveBenchmarkSource:
             raise ValueError("Benchmark sources require prohibited claims.")
         if not self.evidence_ids:
             raise ValueError("Benchmark sources require evidence ids.")
-        if self.provenance_status in {
-            WaveFiveBenchmarkProvenanceStatus.UNKNOWN,
-            WaveFiveBenchmarkProvenanceStatus.CONTAMINATED,
-        } and self.allowed_use is not WaveFiveBenchmarkUse.NEGATIVE_CONTROL:
+        if (
+            self.provenance_status
+            in {
+                WaveFiveBenchmarkProvenanceStatus.UNKNOWN,
+                WaveFiveBenchmarkProvenanceStatus.CONTAMINATED,
+            }
+            and self.allowed_use is not WaveFiveBenchmarkUse.NEGATIVE_CONTROL
+        ):
             raise ValueError(
                 "Unknown or contaminated benchmark sources can only be "
                 "negative controls."
@@ -220,10 +222,14 @@ class WaveFiveBenchmarkSource:
     def reviewable_as_positive_evidence(self) -> bool:
         """Return whether the source can count as bounded positive evidence."""
 
-        return self.provenance_status in {
-            WaveFiveBenchmarkProvenanceStatus.FULLY_DOCUMENTED,
-            WaveFiveBenchmarkProvenanceStatus.EXTERNAL_HELD_OUT,
-        } and self.allowed_use is not WaveFiveBenchmarkUse.NEGATIVE_CONTROL
+        return (
+            self.provenance_status
+            in {
+                WaveFiveBenchmarkProvenanceStatus.FULLY_DOCUMENTED,
+                WaveFiveBenchmarkProvenanceStatus.EXTERNAL_HELD_OUT,
+            }
+            and self.allowed_use is not WaveFiveBenchmarkUse.NEGATIVE_CONTROL
+        )
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic export payload."""
@@ -274,9 +280,11 @@ class WaveFiveBenchmarkRiskFinding:
         )
         if not self.evidence_ids:
             raise ValueError("Benchmark risk findings require evidence ids.")
-        if self.disposition is WaveFiveBenchmarkRiskDisposition.EXTERNALLY_DISPUTED:
-            if not self.reviewer_ids:
-                raise ValueError("Disputed benchmark risks require reviewer ids.")
+        if (
+            self.disposition is WaveFiveBenchmarkRiskDisposition.EXTERNALLY_DISPUTED
+            and not self.reviewer_ids
+        ):
+            raise ValueError("Disputed benchmark risks require reviewer ids.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -682,9 +690,7 @@ def required_wave_five_benchmark_risks() -> tuple[WaveFiveBenchmarkRiskKind, ...
     return REQUIRED_WAVE_FIVE_BENCHMARK_RISKS
 
 
-def required_wave_five_benchmark_controls() -> tuple[
-    WaveFiveBenchmarkControlKind, ...
-]:
+def required_wave_five_benchmark_controls() -> tuple[WaveFiveBenchmarkControlKind, ...]:
     """Return locked anti-gaming controls required for Wave 5 audit coverage."""
 
     return REQUIRED_WAVE_FIVE_BENCHMARK_CONTROLS
@@ -754,7 +760,5 @@ def _unique_values(values: Iterable[T], *, label: str) -> set[T]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
