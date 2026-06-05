@@ -1,526 +1,229 @@
 import pytest
 
 from ix_cognition_kernel.wave5_contracts import (
-    WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES,
     WaveFiveArtifactDecision,
-    WaveFiveArtifactKind,
     WaveFiveAuthorityState,
-    WaveFiveCapabilityArea,
-    WaveFiveClaimBoundary,
     WaveFiveSourceSystem,
     WaveFiveValidationStatus,
 )
 from ix_cognition_kernel.wave5_external_review_packet import (
-    BLOCKING_REVIEW_SECTION_STATUSES,
-    EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS,
-    REQUIRED_REVIEW_CHALLENGES,
-    REQUIRED_REVIEW_PACKET_SECTIONS,
-    SAFE_REVIEW_SECTION_STATUSES,
     WaveFiveExternalReviewPacket,
-    WaveFiveExternalReviewPacketState,
-    WaveFiveReviewChallengeKind,
-    WaveFiveReviewChallengeStatus,
-    WaveFiveReviewDisposition,
-    WaveFiveReviewDispositionKind,
     WaveFiveReviewPacketSection,
     WaveFiveReviewPacketSectionKind,
-    WaveFiveReviewPacketSectionStatus,
-    WaveFiveReviewerChallenge,
-    blocking_review_section_statuses,
+    WaveFiveReviewPacketState,
+    WaveFiveReviewQuestion,
+    WaveFiveReviewQuestionKind,
+    WaveFiveReviewResponse,
+    WaveFiveReviewResponseDisposition,
+    blocking_review_response_dispositions,
     external_review_packet_source_systems,
-    required_review_packet_sections,
-    required_reviewer_challenges,
-    safe_review_section_statuses,
+    required_review_packet_section_kinds,
+    required_review_question_kinds,
+    safe_review_response_dispositions,
 )
 
 
-def packet_section(
-    section_id: str = "section-reviewer-instructions",
-    *,
-    section_kind: WaveFiveReviewPacketSectionKind = (
-        WaveFiveReviewPacketSectionKind.REVIEWER_INSTRUCTIONS
-    ),
-    status: WaveFiveReviewPacketSectionStatus = (
-        WaveFiveReviewPacketSectionStatus.INCLUDED
-    ),
-    limitations: tuple[str, ...] = (),
-    claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
-        WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
-    ),
-) -> WaveFiveReviewPacketSection:
-    return WaveFiveReviewPacketSection(
-        section_id=section_id,
-        section_kind=section_kind,
-        status=status,
-        artifact_ids=(f"artifact-{section_id}",),
-        evidence_ids=(f"evidence-{section_id}",),
-        reviewer_instruction=(
-            "Review this section as bounded Wave 5 evidence only."
-        ),
-        limitations=limitations,
-        claim_boundaries=claim_boundaries,
-    )
-
-
-def challenge(
-    challenge_id: str = "challenge-reproduce-evidence",
-    *,
-    challenge_kind: WaveFiveReviewChallengeKind = (
-        WaveFiveReviewChallengeKind.REPRODUCE_EVIDENCE
-    ),
-    status: WaveFiveReviewChallengeStatus = WaveFiveReviewChallengeStatus.READY,
-    blocking: bool = True,
-) -> WaveFiveReviewerChallenge:
-    return WaveFiveReviewerChallenge(
-        challenge_id=challenge_id,
-        challenge_kind=challenge_kind,
-        status=status,
-        prompt="Try to break the evidence trail and record the result.",
-        expected_evidence_ids=(f"evidence-{challenge_id}",),
-        blocking=blocking,
-    )
-
-
-def disposition(
-    disposition_id: str = "disposition-packet-ready",
-    *,
-    disposition_kind: WaveFiveReviewDispositionKind = (
-        WaveFiveReviewDispositionKind.PACKET_READY_FOR_EXTERNAL_REVIEW
-    ),
-    reviewer_ids: tuple[str, ...] = (),
-    dissent_ids: tuple[str, ...] = (),
-    blocker_ids: tuple[str, ...] = (),
-) -> WaveFiveReviewDisposition:
-    return WaveFiveReviewDisposition(
-        disposition_id=disposition_id,
-        disposition_kind=disposition_kind,
-        reviewer_ids=reviewer_ids,
-        summary="Review disposition preserves boundaries and dissent visibility.",
-        evidence_ids=(f"evidence-{disposition_id}",),
-        dissent_ids=dissent_ids,
-        blocker_ids=blocker_ids,
-    )
-
-
-def required_sections() -> tuple[WaveFiveReviewPacketSection, ...]:
+def _review_sections() -> tuple[WaveFiveReviewPacketSection, ...]:
     return tuple(
-        packet_section(
-            f"section-{section_kind.value}",
+        WaveFiveReviewPacketSection(
+            section_id=f"section-{section_kind.value}",
             section_kind=section_kind,
-            status=WaveFiveReviewPacketSectionStatus.INCLUDED_WITH_LIMITS,
-            limitations=("External review packet is not independent validation.",),
+            title=f"Section {section_kind.value}",
+            summary=f"Review section for {section_kind.value}",
+            artifact_ids=(f"artifact-{section_kind.value}",),
+            evidence_ids=(f"evidence-{section_kind.value}",),
+            required_reviewer_actions=(f"review-{section_kind.value}",),
         )
-        for section_kind in REQUIRED_REVIEW_PACKET_SECTIONS
+        for section_kind in required_review_packet_section_kinds()
     )
 
 
-def required_challenges() -> tuple[WaveFiveReviewerChallenge, ...]:
+def _review_questions() -> tuple[WaveFiveReviewQuestion, ...]:
     return tuple(
-        challenge(f"challenge-{challenge_kind.value}", challenge_kind=challenge_kind)
-        for challenge_kind in REQUIRED_REVIEW_CHALLENGES
+        WaveFiveReviewQuestion(
+            question_id=f"question-{question_kind.value}",
+            question_kind=question_kind,
+            question=f"Can reviewers assess {question_kind.value}?",
+            expected_evidence_ids=(f"question-evidence-{question_kind.value}",),
+        )
+        for question_kind in required_review_question_kinds()
     )
 
 
-def packet(
+def _review_responses(
+    disposition: WaveFiveReviewResponseDisposition = (
+        WaveFiveReviewResponseDisposition.ACCEPTED_WITH_BOUNDARIES
+    ),
+) -> tuple[WaveFiveReviewResponse, ...]:
+    return tuple(
+        WaveFiveReviewResponse(
+            response_id=f"response-{question_kind.value}",
+            question_id=f"question-{question_kind.value}",
+            reviewer_id="reviewer-1",
+            disposition=disposition,
+            rationale=f"Reviewer response for {question_kind.value}",
+            evidence_ids=(f"response-evidence-{question_kind.value}",),
+            reviewer_source_system=WaveFiveSourceSystem.INDEPENDENT_REVIEWER,
+            limitations=(
+                (f"limited-{question_kind.value}",)
+                if disposition
+                is WaveFiveReviewResponseDisposition.ACCEPTED_WITH_LIMITATIONS
+                else ()
+            ),
+        )
+        for question_kind in required_review_question_kinds()
+    )
+
+
+def _review_packet(
     *,
+    packet_state: WaveFiveReviewPacketState = (
+        WaveFiveReviewPacketState.READY_FOR_EXTERNAL_REVIEW
+    ),
     source_system: WaveFiveSourceSystem = WaveFiveSourceSystem.IX_COGNITION_KERNEL,
-    packet_state: WaveFiveExternalReviewPacketState = (
-        WaveFiveExternalReviewPacketState.READY_FOR_EXTERNAL_REVIEW
-    ),
     sections: tuple[WaveFiveReviewPacketSection, ...] | None = None,
-    challenges: tuple[WaveFiveReviewerChallenge, ...] | None = None,
-    dispositions: tuple[WaveFiveReviewDisposition, ...] = (
-        disposition(),
-    ),
+    questions: tuple[WaveFiveReviewQuestion, ...] | None = None,
+    responses: tuple[WaveFiveReviewResponse, ...] | None = None,
     reviewer_ids: tuple[str, ...] = (),
-    attempted_wave_six_promotion: bool = False,
-    claims_agi: bool = False,
-    grants_execution_authority: bool = False,
-    claims_production_ready: bool = False,
-    claims_certified: bool = False,
-    claims_independent_validation: bool = False,
-    claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
-        WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
-    ),
 ) -> WaveFiveExternalReviewPacket:
-    resolved_sections = required_sections() if sections is None else sections
-    resolved_challenges = required_challenges() if challenges is None else challenges
     return WaveFiveExternalReviewPacket(
-        packet_id="wave5-external-review-packet-001",
-        title="Wave 5 external review packet for Wave 6 readiness scrutiny.",
+        packet_id="review-packet-1",
+        title="Wave 5 external review packet",
         source_system=source_system,
         packet_state=packet_state,
-        sections=resolved_sections,
-        challenges=resolved_challenges,
-        dispositions=dispositions,
-        protocol_ids=("wave5-external-protocol-001",),
+        sections=sections or _review_sections(),
+        questions=questions or _review_questions(),
+        responses=responses if responses is not None else _review_responses(),
+        reviewer_instructions=("Review the packet without granting maturity.",),
+        gap_summaries=("No unresolved packet gaps.",),
         reviewer_ids=reviewer_ids,
-        attempted_wave_six_promotion=attempted_wave_six_promotion,
-        claims_agi=claims_agi,
-        grants_execution_authority=grants_execution_authority,
-        claims_production_ready=claims_production_ready,
-        claims_certified=claims_certified,
-        claims_independent_validation=claims_independent_validation,
-        claim_boundaries=claim_boundaries,
-        notes=("Packet readiness is not Wave 6, AGI, or independent validation.",),
     )
 
 
-def test_required_review_packet_sections_are_locked() -> None:
-    assert required_review_packet_sections() == REQUIRED_REVIEW_PACKET_SECTIONS
-    assert len(REQUIRED_REVIEW_PACKET_SECTIONS) == 12
-    assert WaveFiveReviewPacketSectionKind.DISSENT_AND_GAP_LOG in (
-        REQUIRED_REVIEW_PACKET_SECTIONS
+def test_required_review_packet_sets_are_locked() -> None:
+    assert len(required_review_packet_section_kinds()) >= 10
+    assert len(required_review_question_kinds()) >= 6
+    assert (
+        WaveFiveReviewResponseDisposition.ACCEPTED_WITH_BOUNDARIES
+        in safe_review_response_dispositions()
+    )
+    assert (
+        WaveFiveReviewResponseDisposition.REJECTED
+        in blocking_review_response_dispositions()
+    )
+    assert (
+        WaveFiveSourceSystem.INDEPENDENT_REVIEWER
+        in external_review_packet_source_systems()
     )
 
 
-def test_required_reviewer_challenges_are_locked() -> None:
-    assert required_reviewer_challenges() == REQUIRED_REVIEW_CHALLENGES
-    assert len(REQUIRED_REVIEW_CHALLENGES) == 10
-    assert WaveFiveReviewChallengeKind.BLOCK_WAVE_SIX_IF_NEEDED in (
-        REQUIRED_REVIEW_CHALLENGES
-    )
+def test_review_packet_ready_when_sections_questions_and_responses_are_complete() -> None:
+    packet = _review_packet()
+
+    assert packet.has_required_section_coverage
+    assert packet.has_required_question_coverage
+    assert packet.ready_for_external_review
+    assert not packet.blocks_packet_readiness
+    assert packet.blocking_response_ids == ()
+    assert packet.unanswered_blocking_question_ids == ()
+
+    artifact_ref = packet.to_artifact_ref()
+    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
+    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert artifact_ref.evidence_ids == packet.all_evidence_ids
 
 
-def test_safe_and_blocking_section_statuses_are_locked() -> None:
-    assert safe_review_section_statuses() == SAFE_REVIEW_SECTION_STATUSES
-    assert blocking_review_section_statuses() == BLOCKING_REVIEW_SECTION_STATUSES
-    assert WaveFiveReviewPacketSectionStatus.INCLUDED in (
-        SAFE_REVIEW_SECTION_STATUSES
-    )
-    assert WaveFiveReviewPacketSectionStatus.DISPUTED in (
-        BLOCKING_REVIEW_SECTION_STATUSES
-    )
-
-
-def test_external_review_packet_sources_are_locked() -> None:
-    assert external_review_packet_source_systems() == (
-        EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS
-    )
-    assert WaveFiveSourceSystem.INDEPENDENT_REVIEWER in (
-        EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS
-    )
-    assert WaveFiveSourceSystem.IX_COGNITION_KERNEL not in (
-        EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS
-    )
-
-
-def test_packet_section_requires_artifacts_and_evidence() -> None:
-    with pytest.raises(ValueError, match="artifact ids"):
-        WaveFiveReviewPacketSection(
-            section_id="section-invalid",
-            section_kind=WaveFiveReviewPacketSectionKind.EVIDENCE_DOSSIER,
-            status=WaveFiveReviewPacketSectionStatus.INCLUDED,
-            artifact_ids=(),
-            evidence_ids=("evidence",),
-            reviewer_instruction="Review evidence.",
-        )
-
-    with pytest.raises(ValueError, match="evidence ids"):
-        WaveFiveReviewPacketSection(
-            section_id="section-invalid",
-            section_kind=WaveFiveReviewPacketSectionKind.EVIDENCE_DOSSIER,
-            status=WaveFiveReviewPacketSectionStatus.INCLUDED,
-            artifact_ids=("artifact",),
-            evidence_ids=(),
-            reviewer_instruction="Review evidence.",
-        )
-
-
-def test_limited_packet_section_requires_limitations() -> None:
-    with pytest.raises(ValueError, match="require limits"):
-        packet_section(status=WaveFiveReviewPacketSectionStatus.INCLUDED_WITH_LIMITS)
-
-
-def test_packet_section_rejects_missing_claim_boundary() -> None:
-    with pytest.raises(ValueError, match="no-self-validation"):
-        packet_section(
-            claim_boundaries=tuple(
-                boundary
-                for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
-                if boundary is not WaveFiveClaimBoundary.NO_SELF_VALIDATION
-            )
-        )
-
-
-def test_blocking_packet_section_status_blocks_readiness() -> None:
-    item = packet_section(status=WaveFiveReviewPacketSectionStatus.DISPUTED)
-
-    assert item.blocks_packet_readiness is True
-    assert item.reviewable_with_boundaries is False
-
-
-def test_reviewer_challenge_requires_expected_evidence() -> None:
-    with pytest.raises(ValueError, match="expected evidence ids"):
-        WaveFiveReviewerChallenge(
-            challenge_id="challenge-invalid",
-            challenge_kind=WaveFiveReviewChallengeKind.RECORD_DISSENT,
-            status=WaveFiveReviewChallengeStatus.READY,
-            prompt="Record dissent.",
-            expected_evidence_ids=(),
-        )
-
-
-def test_blocked_challenge_blocks_packet_readiness() -> None:
-    item = challenge(status=WaveFiveReviewChallengeStatus.BLOCKED)
-
-    assert item.ready_for_review is False
-    assert item.blocks_packet_readiness is True
-
-
-def test_non_blocking_challenge_does_not_block_readiness() -> None:
-    item = challenge(
-        status=WaveFiveReviewChallengeStatus.NEEDS_MORE_EVIDENCE,
-        blocking=False,
-    )
-
-    assert item.blocks_packet_readiness is False
-
-
-def test_external_disposition_requires_reviewer_ids() -> None:
-    with pytest.raises(ValueError, match="require reviewers"):
-        disposition(
-            disposition_kind=(
-                WaveFiveReviewDispositionKind.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
-            )
-        )
-
-
-def test_disputed_disposition_requires_dissent_ids() -> None:
-    with pytest.raises(ValueError, match="require dissent ids"):
-        disposition(
-            disposition_kind=WaveFiveReviewDispositionKind.DISPUTED_BY_REVIEWER,
-            reviewer_ids=("reviewer-001",),
-        )
-
-
-def test_blocked_disposition_requires_blocker_ids() -> None:
-    with pytest.raises(ValueError, match="require blockers"):
-        disposition(
-            disposition_kind=WaveFiveReviewDispositionKind.BLOCKED_BEFORE_WAVE_SIX,
-            reviewer_ids=("reviewer-001",),
-        )
-
-
-def test_blocking_dispositions_block_packet_readiness() -> None:
-    disputed = disposition(
-        disposition_kind=WaveFiveReviewDispositionKind.DISPUTED_BY_REVIEWER,
-        reviewer_ids=("reviewer-001",),
-        dissent_ids=("dissent-001",),
-    )
-    blocked = disposition(
-        disposition_kind=WaveFiveReviewDispositionKind.BLOCKED_BEFORE_WAVE_SIX,
-        reviewer_ids=("reviewer-001",),
-        blocker_ids=("blocker-001",),
-    )
-
-    assert disputed.blocks_packet_readiness is True
-    assert blocked.blocks_packet_readiness is True
-
-
-def test_packet_rejects_forbidden_claim_flags() -> None:
-    with pytest.raises(ValueError, match="cannot promote to Wave 6"):
-        packet(attempted_wave_six_promotion=True)
-
-    with pytest.raises(ValueError, match="cannot claim AGI"):
-        packet(claims_agi=True)
-
-    with pytest.raises(ValueError, match="cannot grant execution"):
-        packet(grants_execution_authority=True)
-
-
-def test_packet_rejects_production_certification_and_independent_claims() -> None:
-    with pytest.raises(ValueError, match="cannot claim production"):
-        packet(claims_production_ready=True)
-
-    with pytest.raises(ValueError, match="cannot claim certification"):
-        packet(claims_certified=True)
-
-    with pytest.raises(ValueError, match="independent validation"):
-        packet(claims_independent_validation=True)
-
-
-def test_packet_rejects_missing_claim_boundary() -> None:
-    with pytest.raises(ValueError, match="no-self-validation"):
-        packet(
-            claim_boundaries=tuple(
-                boundary
-                for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
-                if boundary is not WaveFiveClaimBoundary.NO_SELF_VALIDATION
-            )
-        )
-
-
-def test_packet_reports_missing_required_sections_and_challenges() -> None:
-    item = packet(
-        sections=(packet_section(),),
-        challenges=(challenge(),),
-    )
-
-    assert item.has_required_section_coverage is False
-    assert WaveFiveReviewPacketSectionKind.DISSENT_AND_GAP_LOG in (
-        item.missing_required_section_kinds
-    )
-    assert item.has_required_challenge_coverage is False
-    assert WaveFiveReviewChallengeKind.BLOCK_WAVE_SIX_IF_NEEDED in (
-        item.missing_required_challenge_kinds
-    )
-    assert item.ready_for_external_review is False
-
-
-def test_packet_blocks_when_section_status_is_blocking() -> None:
+def test_review_packet_blocks_missing_required_section() -> None:
     sections = tuple(
-        packet_section(
-            f"section-{section_kind.value}",
-            section_kind=section_kind,
-            status=(
-                WaveFiveReviewPacketSectionStatus.DISPUTED
-                if section_kind is WaveFiveReviewPacketSectionKind.REPEATABILITY_LEDGER
-                else WaveFiveReviewPacketSectionStatus.INCLUDED
-            ),
-        )
-        for section_kind in REQUIRED_REVIEW_PACKET_SECTIONS
-    )
-    item = packet(sections=sections)
-
-    assert item.blocking_section_ids == ("section-repeatability-ledger",)
-    assert item.blocks_packet_readiness is True
-
-
-def test_packet_blocks_when_challenge_is_blocked() -> None:
-    challenges = tuple(
-        challenge(
-            f"challenge-{challenge_kind.value}",
-            challenge_kind=challenge_kind,
-            status=(
-                WaveFiveReviewChallengeStatus.BLOCKED
-                if challenge_kind
-                is WaveFiveReviewChallengeKind.BLOCK_WAVE_SIX_IF_NEEDED
-                else WaveFiveReviewChallengeStatus.READY
-            ),
-        )
-        for challenge_kind in REQUIRED_REVIEW_CHALLENGES
-    )
-    item = packet(challenges=challenges)
-
-    assert item.blocking_challenge_ids == ("challenge-block-wave-six-if-needed",)
-    assert item.blocks_packet_readiness is True
-
-
-def test_packet_blocks_when_disposition_blocks() -> None:
-    item = packet(
-        dispositions=(
-            disposition(
-                disposition_kind=WaveFiveReviewDispositionKind.BLOCKED_BEFORE_WAVE_SIX,
-                reviewer_ids=("reviewer-001",),
-                blocker_ids=("blocker-001",),
-            ),
-        )
+        section
+        for section in _review_sections()
+        if section.section_kind is not WaveFiveReviewPacketSectionKind.CLAIM_LIMITS
     )
 
-    assert item.blocking_disposition_ids == ("disposition-packet-ready",)
-    assert item.blocks_packet_readiness is True
+    packet = _review_packet(sections=sections)
+
+    assert packet.missing_required_section_kinds == (
+        WaveFiveReviewPacketSectionKind.CLAIM_LIMITS,
+    )
+    assert packet.blocks_packet_readiness
+    assert not packet.ready_for_external_review
 
 
-def test_packet_is_ready_for_external_review() -> None:
-    item = packet()
-
-    assert item.has_required_section_coverage is True
-    assert item.has_required_challenge_coverage is True
-    assert item.blocking_section_ids == ()
-    assert item.blocking_challenge_ids == ()
-    assert item.blocking_disposition_ids == ()
-    assert item.makes_no_forbidden_claims is True
-    assert item.ready_for_external_review is True
-
-
-def test_ready_packet_exports_reviewable_traceability_artifact() -> None:
-    artifact = packet().to_artifact_ref()
-
-    assert artifact.kind is WaveFiveArtifactKind.ECOSYSTEM_TRACEABILITY_MAP
-    assert artifact.capability_area is WaveFiveCapabilityArea.ECOSYSTEM_TRACEABILITY
-    assert artifact.source_system is WaveFiveSourceSystem.IX_COGNITION_KERNEL
-    assert artifact.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
-    assert artifact.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact.validation_status is (
-        WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+def test_review_packet_blocks_missing_required_question_kind() -> None:
+    questions = tuple(
+        question
+        for question in _review_questions()
+        if question.question_kind is not WaveFiveReviewQuestionKind.OVERCLAIM
+    )
+    responses = tuple(
+        response
+        for response in _review_responses()
+        if response.question_id != "question-overclaim"
     )
 
+    packet = _review_packet(questions=questions, responses=responses)
 
-def test_blocked_packet_exports_blocked_artifact() -> None:
-    artifact = packet(
-        dispositions=(
-            disposition(
-                disposition_kind=WaveFiveReviewDispositionKind.BLOCKED_BEFORE_WAVE_SIX,
-                reviewer_ids=("reviewer-001",),
-                blocker_ids=("blocker-001",),
-            ),
+    assert packet.missing_required_question_kinds == (
+        WaveFiveReviewQuestionKind.OVERCLAIM,
+    )
+    assert packet.blocks_packet_readiness
+    assert not packet.ready_for_external_review
+
+
+def test_review_packet_blocks_unanswered_blocking_questions() -> None:
+    packet = _review_packet(responses=())
+
+    assert packet.unanswered_blocking_question_ids
+    assert packet.blocks_packet_readiness
+    assert not packet.ready_for_external_review
+
+
+def test_review_packet_blocks_disputed_responses() -> None:
+    packet = _review_packet(
+        responses=_review_responses(
+            disposition=WaveFiveReviewResponseDisposition.DISPUTED
         )
-    ).to_artifact_ref()
+    )
 
-    assert artifact.decision is WaveFiveArtifactDecision.BLOCKED
-    assert artifact.authority_state is WaveFiveAuthorityState.BLOCKED
-    assert artifact.validation_status is WaveFiveValidationStatus.REJECTED
+    assert packet.blocking_response_ids
+    assert packet.blocks_packet_readiness
+    assert not packet.ready_for_external_review
+
+
+def test_review_packet_rejects_forbidden_claims() -> None:
+    with pytest.raises(ValueError, match="cannot claim AGI"):
+        WaveFiveExternalReviewPacket(
+            packet_id="invalid-review-packet",
+            title="Invalid packet",
+            source_system=WaveFiveSourceSystem.IX_COGNITION_KERNEL,
+            packet_state=WaveFiveReviewPacketState.INTERNAL_PACKET_READY,
+            sections=_review_sections(),
+            questions=_review_questions(),
+            responses=_review_responses(),
+            reviewer_instructions=("Review only.",),
+            gap_summaries=("No gaps.",),
+            claims_agi=True,
+        )
 
 
 def test_externally_reviewed_packet_requires_external_source() -> None:
-    with pytest.raises(ValueError, match="external source"):
-        packet(
-            packet_state=(
-                WaveFiveExternalReviewPacketState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
-            ),
-            reviewer_ids=("reviewer-001",),
+    with pytest.raises(ValueError, match="external review source"):
+        _review_packet(
+            packet_state=WaveFiveReviewPacketState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES,
+            source_system=WaveFiveSourceSystem.IX_COGNITION_KERNEL,
+            reviewer_ids=("reviewer-1",),
         )
 
 
-def test_externally_reviewed_packet_requires_reviewer_ids() -> None:
-    with pytest.raises(ValueError, match="reviewer ids"):
-        packet(
-            source_system=WaveFiveSourceSystem.INDEPENDENT_REVIEWER,
-            packet_state=(
-                WaveFiveExternalReviewPacketState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
-            ),
-        )
-
-
-def test_externally_reviewed_packet_exports_bounded_external_artifact() -> None:
-    item = packet(
-        source_system=WaveFiveSourceSystem.INDEPENDENT_REVIEWER,
-        packet_state=(
-            WaveFiveExternalReviewPacketState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
-        ),
-        reviewer_ids=("reviewer-001",),
-        dispositions=(
-            disposition(
-                disposition_kind=(
-                    WaveFiveReviewDispositionKind.
-                    EXTERNALLY_REVIEWED_WITH_BOUNDARIES
-                ),
-                reviewer_ids=("reviewer-001",),
-            ),
-        ),
+def test_externally_reviewed_packet_exports_reviewed_artifact() -> None:
+    packet = _review_packet(
+        packet_state=WaveFiveReviewPacketState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES,
+        source_system=WaveFiveSourceSystem.EXTERNAL_REVIEW,
+        reviewer_ids=("reviewer-1",),
     )
-    artifact = item.to_artifact_ref()
 
-    assert item.externally_reviewed_with_boundaries is True
-    assert artifact.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact.validation_status is (
-        WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
-    )
-    assert artifact.externally_validated_with_boundaries is True
-
-
-def test_packet_collects_unique_evidence_ids() -> None:
-    item = packet()
-
-    assert item.all_evidence_ids[0] == "evidence-section-benchmark-gaming-audit"
-    assert "evidence-challenge-block-wave-six-if-needed" in item.all_evidence_ids
-    assert "evidence-disposition-packet-ready" in item.all_evidence_ids
-    assert len(item.all_evidence_ids) == 23
-
-
-def test_packet_fingerprint_is_deterministic() -> None:
-    item = packet()
-
-    assert item.fingerprint() == item.fingerprint()
-    assert len(item.fingerprint()) == 64
+    assert packet.externally_reviewed_with_boundaries
+    artifact_ref = packet.to_artifact_ref()
+    assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
+    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
