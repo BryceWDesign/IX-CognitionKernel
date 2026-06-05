@@ -129,9 +129,7 @@ class WaveFiveBoundedDeclarationState(StrEnum):
     """Review state of a bounded Wave 5 declaration."""
 
     INTERNAL_DECLARATION_READY = "internal-declaration-ready"
-    READY_FOR_EXTERNAL_DECLARATION_REVIEW = (
-        "ready-for-external-declaration-review"
-    )
+    READY_FOR_EXTERNAL_DECLARATION_REVIEW = "ready-for-external-declaration-review"
     UNDER_EXTERNAL_DECLARATION_REVIEW = "under-external-declaration-review"
     EXTERNALLY_REVIEWED_WITH_BOUNDARIES = "externally-reviewed-with-boundaries"
     BLOCKED_BY_DECLARATION_GAP = "blocked-by-declaration-gap"
@@ -142,9 +140,7 @@ SAFE_DECLARATION_INPUT_STATUSES: tuple[WaveFiveDeclarationInputStatus, ...] = (
     WaveFiveDeclarationInputStatus.REVIEWABLE_WITH_LIMITS,
 )
 
-BLOCKING_DECLARATION_INPUT_STATUSES: tuple[
-    WaveFiveDeclarationInputStatus, ...
-] = (
+BLOCKING_DECLARATION_INPUT_STATUSES: tuple[WaveFiveDeclarationInputStatus, ...] = (
     WaveFiveDeclarationInputStatus.NEEDS_EXTERNAL_EVIDENCE,
     WaveFiveDeclarationInputStatus.DISPUTED,
     WaveFiveDeclarationInputStatus.BLOCKED,
@@ -228,9 +224,11 @@ class WaveFiveDeclarationInputRecord:
         )
         if not self.evidence_ids:
             raise ValueError("Declaration input records require evidence ids.")
-        if self.status is WaveFiveDeclarationInputStatus.REVIEWABLE_WITH_LIMITS:
-            if not self.limitations:
-                raise ValueError("Limited declaration inputs require limitations.")
+        if (
+            self.status is WaveFiveDeclarationInputStatus.REVIEWABLE_WITH_LIMITS
+            and not self.limitations
+        ):
+            raise ValueError("Limited declaration inputs require limitations.")
         missing = tuple(
             boundary
             for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
@@ -563,7 +561,8 @@ class WaveFiveBoundedDeclaration:
         """Return declaration checks that block readiness."""
 
         return tuple(
-            check.check_id for check in self.checks
+            check.check_id
+            for check in self.checks
             if check.blocks_declaration_readiness
         )
 
@@ -763,9 +762,7 @@ def safe_declaration_input_statuses() -> tuple[WaveFiveDeclarationInputStatus, .
     return SAFE_DECLARATION_INPUT_STATUSES
 
 
-def blocking_declaration_input_statuses() -> tuple[
-    WaveFiveDeclarationInputStatus, ...
-]:
+def blocking_declaration_input_statuses() -> tuple[WaveFiveDeclarationInputStatus, ...]:
     """Return declaration input statuses that block review."""
 
     return BLOCKING_DECLARATION_INPUT_STATUSES
@@ -840,7 +837,5 @@ def _sha256(value: str, label: str) -> str:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
