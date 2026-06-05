@@ -324,7 +324,9 @@ class WaveFiveReviewResponse:
         ):
             raise ValueError("Limited review acceptance requires limitations.")
         if self.reviewer_source_system not in EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS:
-            raise ValueError("Review responses require external or human review source.")
+            raise ValueError(
+                "Review responses require external or human review source."
+            )
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -394,7 +396,9 @@ class WaveFiveExternalReviewPacket:
         if self.claims_certified:
             raise ValueError("External review packets cannot claim certification.")
         if self.grants_execution_authority:
-            raise ValueError("External review packets cannot grant execution authority.")
+            raise ValueError(
+                "External review packets cannot grant execution authority."
+            )
         if self.claims_independent_validation:
             raise ValueError(
                 "External review packets cannot self-claim independent validation."
@@ -464,9 +468,7 @@ class WaveFiveExternalReviewPacket:
                     "Externally reviewed packets require external review source."
                 )
             if not self.reviewer_ids:
-                raise ValueError(
-                    "Externally reviewed packets require reviewer ids."
-                )
+                raise ValueError("Externally reviewed packets require reviewer ids.")
             if self.blocks_packet_readiness:
                 raise ValueError(
                     "Externally reviewed packets cannot contain blocking responses."
@@ -667,9 +669,7 @@ class WaveFiveExternalReviewPacket:
             "packet_id": self.packet_id,
             "packet_state": self.packet_state.value,
             "questions": [question.canonical_payload() for question in self.questions],
-            "responses": [
-                response.canonical_payload() for response in self.responses
-            ],
+            "responses": [response.canonical_payload() for response in self.responses],
             "reviewer_ids": list(self.reviewer_ids),
             "reviewer_instructions": list(self.reviewer_instructions),
             "schema_version": self.schema_version,
@@ -694,7 +694,9 @@ class WaveFiveExternalReviewPacket:
             yield from response.evidence_ids
 
 
-def required_review_packet_section_kinds() -> tuple[WaveFiveReviewPacketSectionKind, ...]:
+def required_review_packet_section_kinds() -> tuple[
+    WaveFiveReviewPacketSectionKind, ...
+]:
     """Return locked review-packet sections required for Wave 5 review."""
 
     return REQUIRED_REVIEW_PACKET_SECTION_KINDS
@@ -706,7 +708,9 @@ def required_review_question_kinds() -> tuple[WaveFiveReviewQuestionKind, ...]:
     return REQUIRED_REVIEW_QUESTION_KINDS
 
 
-def safe_review_response_dispositions() -> tuple[WaveFiveReviewResponseDisposition, ...]:
+def safe_review_response_dispositions() -> tuple[
+    WaveFiveReviewResponseDisposition, ...
+]:
     """Return review responses that do not block packet closure."""
 
     return SAFE_REVIEW_RESPONSE_DISPOSITIONS
