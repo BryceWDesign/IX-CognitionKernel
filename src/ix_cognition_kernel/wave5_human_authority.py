@@ -206,9 +206,11 @@ class WaveFiveAuthorityBoundary:
         )
         if not self.evidence_ids:
             raise ValueError("Authority boundaries require evidence ids.")
-        if self.boundary_kind is WaveFiveAuthorityBoundaryKind.REVOCATION_AVAILABLE:
-            if not self.revocable:
-                raise ValueError("Revocation boundaries must be revocable.")
+        if (
+            self.boundary_kind is WaveFiveAuthorityBoundaryKind.REVOCATION_AVAILABLE
+            and not self.revocable
+        ):
+            raise ValueError("Revocation boundaries must be revocable.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -927,7 +929,5 @@ def _unique_values(values: Iterable[T], *, label: str) -> set[T]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
