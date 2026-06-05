@@ -7,14 +7,13 @@ from ix_cognition_kernel.wave5_contracts import (
     WaveFiveValidationStatus,
 )
 from ix_cognition_kernel.wave5_maturity_scorecard import (
-    WaveFiveMaturityCheckKind,
     WaveFiveMaturityCheckResult,
     WaveFiveMaturityReviewState,
     WaveFiveMaturityScoreArea,
-    WaveFiveMaturityScoreSection,
-    WaveFiveMaturityScoreStatus,
     WaveFiveMaturityScorecard,
     WaveFiveMaturityScorecardCheck,
+    WaveFiveMaturityScoreSection,
+    WaveFiveMaturityScoreStatus,
     blocking_score_statuses,
     external_scorecard_review_source_systems,
     required_score_areas,
@@ -116,9 +115,14 @@ def test_scorecard_ready_for_external_review_when_complete() -> None:
     assert scorecard.blocking_check_ids == ()
 
     artifact_ref = scorecard.to_artifact_ref()
-    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.evidence_ids == scorecard.all_evidence_ids
 
 
@@ -206,4 +210,7 @@ def test_externally_reviewed_scorecard_exports_reviewed_artifact() -> None:
     assert scorecard.externally_reviewed_with_boundaries
     artifact_ref = scorecard.to_artifact_ref()
     assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    )
