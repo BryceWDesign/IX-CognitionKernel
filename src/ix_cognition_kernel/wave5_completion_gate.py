@@ -93,9 +93,7 @@ class WaveFiveCompletionCheckKind(StrEnum):
     NO_WAVE_SIX_PROMOTION = "no-wave-six-promotion"
     NO_AGI_OR_CERTIFICATION_CLAIM = "no-agi-or-certification-claim"
     NO_EXECUTION_AUTHORITY = "no-execution-authority"
-    NO_SELF_CLAIMED_INDEPENDENT_VALIDATION = (
-        "no-self-claimed-independent-validation"
-    )
+    NO_SELF_CLAIMED_INDEPENDENT_VALIDATION = "no-self-claimed-independent-validation"
 
 
 class WaveFiveCompletionCheckResult(StrEnum):
@@ -147,9 +145,7 @@ SAFE_COMPLETION_ARTIFACT_STATUSES: tuple[WaveFiveCompletionArtifactStatus, ...] 
     WaveFiveCompletionArtifactStatus.COMPLETE_WITH_LIMITS,
 )
 
-BLOCKING_COMPLETION_ARTIFACT_STATUSES: tuple[
-    WaveFiveCompletionArtifactStatus, ...
-] = (
+BLOCKING_COMPLETION_ARTIFACT_STATUSES: tuple[WaveFiveCompletionArtifactStatus, ...] = (
     WaveFiveCompletionArtifactStatus.NEEDS_EXTERNAL_EVIDENCE,
     WaveFiveCompletionArtifactStatus.DISPUTED,
     WaveFiveCompletionArtifactStatus.BLOCKED,
@@ -238,12 +234,16 @@ class WaveFiveCompletionArtifactRecord:
         )
         if not self.evidence_ids:
             raise ValueError("Completion artifact records require evidence ids.")
-        if self.status is WaveFiveCompletionArtifactStatus.COMPLETE_WITH_LIMITS:
-            if not self.limitations:
-                raise ValueError("Limited completion artifacts require limitations.")
-        if self.status in BLOCKING_COMPLETION_ARTIFACT_STATUSES:
-            if not self.blocker_ids:
-                raise ValueError("Blocking completion artifacts require blocker ids.")
+        if (
+            self.status is WaveFiveCompletionArtifactStatus.COMPLETE_WITH_LIMITS
+            and not self.limitations
+        ):
+            raise ValueError("Limited completion artifacts require limitations.")
+        if (
+            self.status in BLOCKING_COMPLETION_ARTIFACT_STATUSES
+            and not self.blocker_ids
+        ):
+            raise ValueError("Blocking completion artifacts require blocker ids.")
         missing = tuple(
             boundary
             for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
@@ -586,7 +586,8 @@ class WaveFiveCompletionGate:
         """Return final artifacts that block bounded completion."""
 
         return tuple(
-            artifact.artifact_id for artifact in self.artifacts
+            artifact.artifact_id
+            for artifact in self.artifacts
             if artifact.blocks_completion
         )
 
@@ -601,8 +602,7 @@ class WaveFiveCompletionGate:
         """Return unresolved blocking completion blockers."""
 
         return tuple(
-            blocker.blocker_id for blocker in self.blockers
-            if blocker.blocks_completion
+            blocker.blocker_id for blocker in self.blockers if blocker.blocks_completion
         )
 
     @property
@@ -780,29 +780,31 @@ class WaveFiveCompletionGate:
         """Validate final review index and declaration artifact references."""
 
         index_artifacts = tuple(
-            artifact for artifact in artifacts
+            artifact
+            for artifact in artifacts
             if artifact.artifact_kind is WaveFiveCompletionArtifactKind.REVIEW_INDEX
         )
         declaration_artifacts = tuple(
-            artifact for artifact in artifacts
+            artifact
+            for artifact in artifacts
             if (
                 artifact.artifact_kind
                 is WaveFiveCompletionArtifactKind.BOUNDED_DECLARATION
             )
         )
-        if index_artifacts:
-            if index_artifacts[0].artifact_id != self.review_index_artifact_id:
-                raise ValueError(
-                    "Completion gate review index reference must match artifact."
-                )
-        if declaration_artifacts:
-            if (
-                declaration_artifacts[0].artifact_id
-                != self.bounded_declaration_artifact_id
-            ):
-                raise ValueError(
-                    "Completion gate bounded declaration reference must match artifact."
-                )
+        if (
+            index_artifacts
+            and index_artifacts[0].artifact_id != self.review_index_artifact_id
+        ):
+            raise ValueError(
+                "Completion gate review index reference must match artifact."
+            )
+        if declaration_artifacts and (
+            declaration_artifacts[0].artifact_id != self.bounded_declaration_artifact_id
+        ):
+            raise ValueError(
+                "Completion gate bounded declaration reference must match artifact."
+            )
 
 
 def required_completion_artifact_kinds() -> tuple[WaveFiveCompletionArtifactKind, ...]:
@@ -817,9 +819,7 @@ def required_completion_check_kinds() -> tuple[WaveFiveCompletionCheckKind, ...]
     return REQUIRED_COMPLETION_CHECK_KINDS
 
 
-def safe_completion_artifact_statuses() -> tuple[
-    WaveFiveCompletionArtifactStatus, ...
-]:
+def safe_completion_artifact_statuses() -> tuple[WaveFiveCompletionArtifactStatus, ...]:
     """Return final artifact statuses that do not block completion."""
 
     return SAFE_COMPLETION_ARTIFACT_STATUSES
@@ -902,7 +902,5 @@ def _sha256(value: str, label: str) -> str:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
