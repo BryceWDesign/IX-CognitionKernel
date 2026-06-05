@@ -150,9 +150,7 @@ BLOCKING_PREDICTION_DISPOSITIONS: tuple[WaveFivePredictionDisposition, ...] = (
     WaveFivePredictionDisposition.UNSAFE_TO_ACT,
 )
 
-REQUIRED_SCENARIO_ASSUMPTION_KINDS: tuple[
-    WaveFiveScenarioAssumptionKind, ...
-] = (
+REQUIRED_SCENARIO_ASSUMPTION_KINDS: tuple[WaveFiveScenarioAssumptionKind, ...] = (
     WaveFiveScenarioAssumptionKind.INITIAL_CONDITIONS,
     WaveFiveScenarioAssumptionKind.OPERATIONAL_CONSTRAINTS,
     WaveFiveScenarioAssumptionKind.UNCERTAINTY_BOUNDARY,
@@ -316,9 +314,11 @@ class WaveFiveConsequencePrediction:
             raise ValueError("WorldTwin predictions cannot grant execution authority.")
         if self.claims_simulation_as_truth:
             raise ValueError("WorldTwin predictions cannot treat simulation as truth.")
-        if self.disposition in SAFE_PREDICTION_DISPOSITIONS:
-            if not self.preserves_human_authority:
-                raise ValueError("Safe predictions must preserve human authority.")
+        if (
+            self.disposition in SAFE_PREDICTION_DISPOSITIONS
+            and not self.preserves_human_authority
+        ):
+            raise ValueError("Safe predictions must preserve human authority.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -898,9 +898,7 @@ class WaveFiveWorldTwinScenarioBridge:
                 )
 
 
-def required_scenario_assumption_kinds() -> tuple[
-    WaveFiveScenarioAssumptionKind, ...
-]:
+def required_scenario_assumption_kinds() -> tuple[WaveFiveScenarioAssumptionKind, ...]:
     """Return locked assumption kinds required for WorldTwin review."""
 
     return REQUIRED_SCENARIO_ASSUMPTION_KINDS
@@ -992,7 +990,5 @@ def _unique_values(values: Iterable[T], *, label: str) -> set[T]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
