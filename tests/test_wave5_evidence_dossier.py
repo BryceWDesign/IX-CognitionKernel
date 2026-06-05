@@ -12,7 +12,6 @@ from ix_cognition_kernel.wave5_evidence_dossier import (
     WaveFiveDossierGapKind,
     WaveFiveDossierGapSeverity,
     WaveFiveDossierIntegrityCheck,
-    WaveFiveDossierIntegrityCheckKind,
     WaveFiveDossierReviewState,
     WaveFiveDossierSection,
     WaveFiveDossierSectionKind,
@@ -114,9 +113,14 @@ def test_evidence_dossier_ready_for_external_review_when_complete() -> None:
     assert dossier.unresolved_gap_ids == ()
 
     artifact_ref = dossier.to_artifact_ref()
-    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.evidence_ids == dossier.all_evidence_ids
 
 
@@ -197,4 +201,7 @@ def test_externally_reviewed_dossier_exports_reviewed_artifact() -> None:
     assert dossier.externally_reviewed_with_boundaries
     artifact_ref = dossier.to_artifact_ref()
     assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    )
