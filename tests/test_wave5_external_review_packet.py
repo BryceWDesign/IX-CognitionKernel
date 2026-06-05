@@ -117,7 +117,9 @@ def test_required_review_packet_sets_are_locked() -> None:
     )
 
 
-def test_review_packet_ready_when_sections_questions_and_responses_are_complete() -> None:
+def test_review_packet_ready_when_sections_questions_and_responses_are_complete() -> (
+    None
+):
     packet = _review_packet()
 
     assert packet.has_required_section_coverage
@@ -128,9 +130,14 @@ def test_review_packet_ready_when_sections_questions_and_responses_are_complete(
     assert packet.unanswered_blocking_question_ids == ()
 
     artifact_ref = packet.to_artifact_ref()
-    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.evidence_ids == packet.all_evidence_ids
 
 
@@ -226,4 +233,7 @@ def test_externally_reviewed_packet_exports_reviewed_artifact() -> None:
     assert packet.externally_reviewed_with_boundaries
     artifact_ref = packet.to_artifact_ref()
     assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    )
