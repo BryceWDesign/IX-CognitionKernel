@@ -294,9 +294,7 @@ class WaveFiveExternalProtocolManifest:
         object.__setattr__(
             self,
             "required_capability_areas",
-            _unique_enum(
-                self.required_capability_areas, label="capability area"
-            ),
+            _unique_enum(self.required_capability_areas, label="capability area"),
         )
         if not self.required_artifact_kinds:
             raise ValueError("External protocols require artifact kinds.")
@@ -350,10 +348,8 @@ class WaveFiveExternalProtocolManifest:
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
         if (
-            self.registration_state
-            is WaveFiveProtocolRegistrationState.DRAFT_INTERNAL
-            and self.source_system
-            is not WaveFiveSourceSystem.IX_COGNITION_KERNEL
+            self.registration_state is WaveFiveProtocolRegistrationState.DRAFT_INTERNAL
+            and self.source_system is not WaveFiveSourceSystem.IX_COGNITION_KERNEL
         ):
             raise ValueError("Draft internal protocols must come from Kernel.")
         if self.is_externally_preregistered and self.source_system not in {
@@ -512,9 +508,7 @@ class WaveFiveExternalProtocolManifest:
             "claim_boundaries": [boundary.value for boundary in self.claim_boundaries],
             "criteria": [criterion.canonical_payload() for criterion in self.criteria],
             "domains": [domain.value for domain in self.domains],
-            "external_reviewer_requirements": list(
-                self.external_reviewer_requirements
-            ),
+            "external_reviewer_requirements": list(self.external_reviewer_requirements),
             "forbidden_shortcuts": list(self.forbidden_shortcuts),
             "notes": list(self.notes),
             "owner": self.owner,
