@@ -116,9 +116,7 @@ class WaveFiveRepeatabilityLedgerState(StrEnum):
     """Review state of an independent repeatability ledger."""
 
     INTERNAL_LEDGER_READY = "internal-ledger-ready"
-    READY_FOR_EXTERNAL_REPEATABILITY_REVIEW = (
-        "ready-for-external-repeatability-review"
-    )
+    READY_FOR_EXTERNAL_REPEATABILITY_REVIEW = "ready-for-external-repeatability-review"
     UNDER_EXTERNAL_REPEATABILITY_REVIEW = "under-external-repeatability-review"
     EXTERNALLY_REVIEWED_WITH_BOUNDARIES = "externally-reviewed-with-boundaries"
     BLOCKED_BY_REPEATABILITY_FAILURE = "blocked-by-repeatability-failure"
@@ -136,9 +134,7 @@ BLOCKING_REPEATABILITY_OUTCOMES: tuple[WaveFiveRepeatabilityOutcome, ...] = (
     WaveFiveRepeatabilityOutcome.BLOCKED_BY_PROTOCOL_GAP,
 )
 
-REQUIRED_REPEATABILITY_ATTEMPT_KINDS: tuple[
-    WaveFiveRepeatabilityAttemptKind, ...
-] = (
+REQUIRED_REPEATABILITY_ATTEMPT_KINDS: tuple[WaveFiveRepeatabilityAttemptKind, ...] = (
     WaveFiveRepeatabilityAttemptKind.CLEAN_CHECKOUT_REPLAY,
     WaveFiveRepeatabilityAttemptKind.INDEPENDENT_LAB_REPLAY,
     WaveFiveRepeatabilityAttemptKind.EXTERNAL_REVIEWER_REPLAY,
@@ -158,9 +154,7 @@ REQUIRED_DISAGREEMENT_KINDS: tuple[WaveFiveDisagreementKind, ...] = (
     WaveFiveDisagreementKind.WAVE_SIX_READINESS,
 )
 
-REQUIRED_REPEATABILITY_CONTROL_KINDS: tuple[
-    WaveFiveRepeatabilityControlKind, ...
-] = (
+REQUIRED_REPEATABILITY_CONTROL_KINDS: tuple[WaveFiveRepeatabilityControlKind, ...] = (
     WaveFiveRepeatabilityControlKind.FAILED_ATTEMPTS_RETAINED,
     WaveFiveRepeatabilityControlKind.DISAGREEMENTS_RETAINED,
     WaveFiveRepeatabilityControlKind.CONTRADICTORY_EVIDENCE_RETAINED,
@@ -225,12 +219,13 @@ class WaveFiveRepeatabilityAttempt:
             raise ValueError("Repeatability attempts require protocol ids.")
         if not self.evidence_ids:
             raise ValueError("Repeatability attempts require evidence ids.")
-        if self.is_external_attempt:
-            if not self.reviewer_ids:
-                raise ValueError("External repeatability attempts require reviewers.")
-        if self.outcome in BLOCKING_REPEATABILITY_OUTCOMES:
-            if not self.retained_failed_output:
-                raise ValueError("Failed or disputed repeatability must be retained.")
+        if self.is_external_attempt and not self.reviewer_ids:
+            raise ValueError("External repeatability attempts require reviewers.")
+        if (
+            self.outcome in BLOCKING_REPEATABILITY_OUTCOMES
+            and not self.retained_failed_output
+        ):
+            raise ValueError("Failed or disputed repeatability must be retained.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -324,10 +319,14 @@ class WaveFiveReviewerDisagreement:
             raise ValueError("Reviewer disagreements require disputed artifacts.")
         if not self.evidence_ids:
             raise ValueError("Reviewer disagreements require evidence ids.")
-        if self.disposition in {
-            WaveFiveDisagreementDisposition.UNRESOLVED,
-            WaveFiveDisagreementDisposition.BLOCKING,
-        } and not self.contradictory_evidence_ids:
+        if (
+            self.disposition
+            in {
+                WaveFiveDisagreementDisposition.UNRESOLVED,
+                WaveFiveDisagreementDisposition.BLOCKING,
+            }
+            and not self.contradictory_evidence_ids
+        ):
             raise ValueError(
                 "Unresolved or blocking disagreements require contradictory evidence."
             )
@@ -668,8 +667,7 @@ class WaveFiveRepeatabilityLedger:
             in {
                 WaveFiveRepeatabilityLedgerState.INTERNAL_LEDGER_READY,
                 (
-                    WaveFiveRepeatabilityLedgerState.
-                    READY_FOR_EXTERNAL_REPEATABILITY_REVIEW
+                    WaveFiveRepeatabilityLedgerState.READY_FOR_EXTERNAL_REPEATABILITY_REVIEW
                 ),
                 WaveFiveRepeatabilityLedgerState.UNDER_EXTERNAL_REPEATABILITY_REVIEW,
             }
@@ -740,8 +738,7 @@ class WaveFiveRepeatabilityLedger:
             "claim_boundaries": [boundary.value for boundary in self.claim_boundaries],
             "controls": [control.canonical_payload() for control in self.controls],
             "disagreements": [
-                disagreement.canonical_payload()
-                for disagreement in self.disagreements
+                disagreement.canonical_payload() for disagreement in self.disagreements
             ],
             "ledger_id": self.ledger_id,
             "ledger_state": self.ledger_state.value,
@@ -871,7 +868,5 @@ def _dedupe_text(values: Iterable[str]) -> tuple[str, ...]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
