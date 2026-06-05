@@ -33,9 +33,7 @@ from ix_cognition_kernel.wave5_contracts import (
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_FIVE_MANIFEST_ENTRY_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-manifest-entry-v1"
-)
+WAVE_FIVE_MANIFEST_ENTRY_SCHEMA_VERSION = "ix-cognition-kernel-wave5-manifest-entry-v1"
 WAVE_FIVE_MANIFEST_CHECK_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-manifest-integrity-check-v1"
 )
@@ -256,8 +254,7 @@ class WaveFiveReleaseManifestEntry:
         )
         if missing:
             raise ValueError(
-                "Manifest entries must preserve claim boundary: "
-                f"{missing[0].value}"
+                f"Manifest entries must preserve claim boundary: {missing[0].value}"
             )
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
@@ -790,9 +787,7 @@ class WaveFiveReleaseManifest:
             yield from blocker.evidence_ids
 
 
-def required_manifest_artifact_families() -> tuple[
-    WaveFiveManifestArtifactFamily, ...
-]:
+def required_manifest_artifact_families() -> tuple[WaveFiveManifestArtifactFamily, ...]:
     """Return locked artifact families required for Wave 5 manifest release."""
 
     return REQUIRED_MANIFEST_ARTIFACT_FAMILIES
