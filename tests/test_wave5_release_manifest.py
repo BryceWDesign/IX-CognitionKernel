@@ -9,7 +9,6 @@ from ix_cognition_kernel.wave5_contracts import (
 from ix_cognition_kernel.wave5_release_manifest import (
     WaveFiveManifestCheckResult,
     WaveFiveManifestEntryStatus,
-    WaveFiveManifestIntegrityCheckKind,
     WaveFiveReleaseBlocker,
     WaveFiveReleaseBlockerKind,
     WaveFiveReleaseBlockerSeverity,
@@ -120,16 +119,23 @@ def test_release_manifest_ready_for_external_review_when_complete() -> None:
     assert len(manifest.manifest_bundle_digest) == 64
 
     artifact_ref = manifest.to_artifact_ref()
-    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.evidence_ids == manifest.all_evidence_ids
 
 
 def test_release_manifest_reports_missing_required_family() -> None:
     missing_family = required_manifest_artifact_families()[0]
     entries = tuple(
-        entry for entry in _manifest_entries() if entry.artifact_family is not missing_family
+        entry
+        for entry in _manifest_entries()
+        if entry.artifact_family is not missing_family
     )
 
     manifest = _release_manifest(entries=entries)
@@ -219,4 +225,7 @@ def test_externally_reviewed_manifest_exports_reviewed_artifact() -> None:
     assert manifest.externally_reviewed_with_boundaries
     artifact_ref = manifest.to_artifact_ref()
     assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    )
