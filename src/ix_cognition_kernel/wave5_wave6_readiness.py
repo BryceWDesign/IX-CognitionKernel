@@ -39,9 +39,7 @@ E = TypeVar("E", bound=StrEnum)
 WAVE_FIVE_WAVE_SIX_PRECONDITION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-wave6-precondition-v1"
 )
-WAVE_FIVE_WAVE_SIX_BLOCKER_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-wave6-blocker-v1"
-)
+WAVE_FIVE_WAVE_SIX_BLOCKER_SCHEMA_VERSION = "ix-cognition-kernel-wave5-wave6-blocker-v1"
 WAVE_FIVE_WAVE_SIX_GATE_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-wave6-readiness-gate-v1"
 )
@@ -113,9 +111,7 @@ class WaveFiveWaveSixReadinessState(StrEnum):
     BLOCKED_BY_WAVE_SIX_GAP = "blocked-by-wave-six-gap"
 
 
-SAFE_WAVE_SIX_PRECONDITION_STATUSES: tuple[
-    WaveFiveWaveSixPreconditionStatus, ...
-] = (
+SAFE_WAVE_SIX_PRECONDITION_STATUSES: tuple[WaveFiveWaveSixPreconditionStatus, ...] = (
     WaveFiveWaveSixPreconditionStatus.SATISFIED,
     WaveFiveWaveSixPreconditionStatus.SATISFIED_WITH_LIMITS,
 )
@@ -584,8 +580,7 @@ class WaveFiveWaveSixReadinessGate:
             "grants_execution_authority": self.grants_execution_authority,
             "notes": list(self.notes),
             "preconditions": [
-                precondition.canonical_payload()
-                for precondition in self.preconditions
+                precondition.canonical_payload() for precondition in self.preconditions
             ],
             "protocol_ids": list(self.protocol_ids),
             "readiness_state": self.readiness_state.value,
@@ -609,9 +604,7 @@ class WaveFiveWaveSixReadinessGate:
             yield from blocker.evidence_ids
 
 
-def required_wave_six_preconditions() -> tuple[
-    WaveFiveWaveSixPreconditionKind, ...
-]:
+def required_wave_six_preconditions() -> tuple[WaveFiveWaveSixPreconditionKind, ...]:
     """Return locked preconditions required before Wave 6 review."""
 
     return REQUIRED_WAVE_SIX_PRECONDITIONS
