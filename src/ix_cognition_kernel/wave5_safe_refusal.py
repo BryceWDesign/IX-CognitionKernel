@@ -1,12 +1,12 @@
 """Wave 5 safe-refusal proof records.
 
-Wave 6 cannot build on a candidate that refuses only when convenient, complies
-under adversarial wording, hides refusal uncertainty, or treats refusal as an
-execution decision. This module records unsafe request classes, refusal
-observations, consistency checks, escalation boundaries, and external-review
-readiness. The proof is reviewable only when unsafe requests are refused or
-escalated safely, refusal reasons are complete, bounded alternatives avoid
-execution, human authority is preserved, and claim boundaries remain explicit.
+Wave 5 must prove that capability-seeking evidence does not erase refusal
+discipline. This module records refusal scenarios, decisions, bypass attempts,
+and checks for unsafe compliance, overclaiming, authority bypass, missing
+evidence, and donor-repo authority leakage. A safe-refusal proof is reviewable
+only when unsafe requests are refused, reviewer-visible escalation is preserved,
+human authority remains intact, and no refusal path can become execution
+approval.
 """
 
 from __future__ import annotations
@@ -33,73 +33,88 @@ from ix_cognition_kernel.wave5_contracts import (
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_FIVE_REFUSAL_REQUEST_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-refusal-request-v1"
+WAVE_FIVE_REFUSAL_SCENARIO_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave5-refusal-scenario-v1"
 )
-WAVE_FIVE_REFUSAL_OBSERVATION_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-refusal-observation-v1"
+WAVE_FIVE_REFUSAL_DECISION_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave5-refusal-decision-v1"
 )
-WAVE_FIVE_REFUSAL_CONSISTENCY_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-refusal-consistency-check-v1"
+WAVE_FIVE_REFUSAL_BYPASS_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave5-refusal-bypass-v1"
+)
+WAVE_FIVE_REFUSAL_CHECK_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave5-refusal-check-v1"
 )
 WAVE_FIVE_SAFE_REFUSAL_PROOF_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-safe-refusal-proof-v1"
 )
 
 
-class WaveFiveRefusalRiskKind(StrEnum):
-    """Risk classes that require refusal or human-authority escalation."""
+class WaveFiveRefusalHazardKind(StrEnum):
+    """Hazards that must trigger bounded refusal or human escalation."""
 
-    AUTOMATIC_EXECUTION_REQUEST = "automatic-execution-request"
-    UNSAFE_TOOL_HANDOFF = "unsafe-tool-handoff"
+    UNSAFE_ACTION = "unsafe-action"
     AUTHORITY_BYPASS = "authority-bypass"
-    EVIDENCE_SUPPRESSION = "evidence-suppression"
-    POLICY_BYPASS = "policy-bypass"
-    DANGEROUS_ACTION = "dangerous-action"
-    AGI_OVERCLAIM_PRESSURE = "agi-overclaim-pressure"
-    MEMORY_TRUST_ESCALATION = "memory-trust-escalation"
-    BENCHMARK_OVERCLAIM_PRESSURE = "benchmark-overclaim-pressure"
+    MISSING_EVIDENCE = "missing-evidence"
+    OVERCLAIMED_CAPABILITY = "overclaimed-capability"
+    AUTONOMOUS_EXECUTION = "autonomous-execution"
+    BENCHMARK_GAMING = "benchmark-gaming"
+    MEMORY_POISONING = "memory-poisoning"
+    DONOR_REPO_AUTHORITY_LEAK = "donor-repo-authority-leak"
+    WAVE_SIX_SELF_PROMOTION = "wave-six-self-promotion"
+
+
+class WaveFiveRefusalScenarioStatus(StrEnum):
+    """Status of a refusal scenario before review."""
+
+    READY = "ready"
+    READY_WITH_LIMITS = "ready-with-limits"
+    NEEDS_MORE_EVIDENCE = "needs-more-evidence"
+    BLOCKED = "blocked"
 
 
 class WaveFiveRefusalDecisionKind(StrEnum):
-    """Decision classes allowed for unsafe or out-of-authority requests."""
+    """Allowed decisions for a refusal scenario."""
 
-    REFUSED = "refused"
-    REFUSED_AND_ESCALATED = "refused-and-escalated"
+    REFUSED_WITH_RATIONALE = "refused-with-rationale"
     ESCALATED_TO_HUMAN_REVIEW = "escalated-to-human-review"
+    SAFE_ALTERNATIVE_OFFERED = "safe-alternative-offered"
+    APPROVED_FOR_REVIEW_ONLY = "approved-for-review-only"
     NEEDS_MORE_EVIDENCE = "needs-more-evidence"
     UNSAFE_COMPLIANCE = "unsafe-compliance"
-    INCONSISTENT_REFUSAL = "inconsistent-refusal"
+    AUTHORITY_BYPASS = "authority-bypass"
 
 
-class WaveFiveRefusalPressureKind(StrEnum):
-    """Pressure modes used to test refusal consistency."""
+class WaveFiveRefusalBypassKind(StrEnum):
+    """Bypass attempts that safe-refusal evidence must catch."""
 
-    DIRECT_REQUEST = "direct-request"
-    ROLEPLAY_BYPASS = "roleplay-bypass"
-    AUTHORITY_IMPERSONATION = "authority-impersonation"
-    URGENCY_PRESSURE = "urgency-pressure"
-    PARTIAL_COMPLIANCE_LURE = "partial-compliance-lure"
-    BENCHMARK_OR_STATUS_PRESSURE = "benchmark-or-status-pressure"
-    MEMORY_CONFIDENCE_PRESSURE = "memory-confidence-pressure"
+    PROMPT_PRESSURE = "prompt-pressure"
+    CLAIM_ESCALATION = "claim-escalation"
+    HUMAN_REVIEW_OMISSION = "human-review-omission"
+    EVIDENCE_OMISSION = "evidence-omission"
+    POLICY_DOWNGRADE = "policy-downgrade"
+    DONOR_AUTHORITY_IMPORT = "donor-authority-import"
+    EXECUTION_REFRAMING = "execution-reframing"
+    MATURITY_SELF_PROMOTION = "maturity-self-promotion"
 
 
 class WaveFiveRefusalCheckKind(StrEnum):
-    """Required checks before safe-refusal proof can enter external review."""
+    """Checks required before safe-refusal proof can be reviewable."""
 
-    RISK_CLASSIFIED = "risk-classified"
-    REFUSAL_REASON_COMPLETE = "refusal-reason-complete"
-    SAFE_ALTERNATIVE_BOUNDED = "safe-alternative-bounded"
-    UNSAFE_MARKER_BLOCKED = "unsafe-marker-blocked"
+    UNSAFE_ACTION_REFUSED = "unsafe-action-refused"
+    AUTHORITY_BYPASS_REFUSED = "authority-bypass-refused"
+    MISSING_EVIDENCE_ESCALATED = "missing-evidence-escalated"
+    OVERCLAIM_REFUSED = "overclaim-refused"
+    AUTONOMOUS_EXECUTION_DENIED = "autonomous-execution-denied"
+    SAFE_ALTERNATIVE_BOUND = "safe-alternative-bound"
     HUMAN_AUTHORITY_PRESERVED = "human-authority-preserved"
-    UNCERTAINTY_PRESERVED = "uncertainty-preserved"
-    CONSISTENCY_UNDER_PRESSURE = "consistency-under-pressure"
-    NO_EXECUTION_GRANTED = "no-execution-granted"
-    NO_AGI_OR_CERTIFICATION_CLAIM = "no-agi-or-certification-claim"
+    REVIEW_TRACE_VISIBLE = "review-trace-visible"
+    DONOR_AUTHORITY_ISOLATED = "donor-authority-isolated"
+    WAVE_SIX_PROMOTION_BLOCKED = "wave-six-promotion-blocked"
 
 
 class WaveFiveRefusalCheckResult(StrEnum):
-    """Observed result of one safe-refusal consistency check."""
+    """Observed result of one safe-refusal check."""
 
     PASSED = "passed"
     PASSED_WITH_LIMITS = "passed-with-limits"
@@ -117,50 +132,53 @@ class WaveFiveSafeRefusalReviewState(StrEnum):
     BLOCKED_BY_REFUSAL_FAILURE = "blocked-by-refusal-failure"
 
 
-SAFE_WAVE_FIVE_REFUSAL_DECISIONS: tuple[WaveFiveRefusalDecisionKind, ...] = (
-    WaveFiveRefusalDecisionKind.REFUSED,
-    WaveFiveRefusalDecisionKind.REFUSED_AND_ESCALATED,
+SAFE_REFUSAL_DECISIONS: tuple[WaveFiveRefusalDecisionKind, ...] = (
+    WaveFiveRefusalDecisionKind.REFUSED_WITH_RATIONALE,
     WaveFiveRefusalDecisionKind.ESCALATED_TO_HUMAN_REVIEW,
+    WaveFiveRefusalDecisionKind.SAFE_ALTERNATIVE_OFFERED,
+    WaveFiveRefusalDecisionKind.APPROVED_FOR_REVIEW_ONLY,
 )
 
-BLOCKING_WAVE_FIVE_REFUSAL_DECISIONS: tuple[WaveFiveRefusalDecisionKind, ...] = (
+BLOCKING_REFUSAL_DECISIONS: tuple[WaveFiveRefusalDecisionKind, ...] = (
     WaveFiveRefusalDecisionKind.NEEDS_MORE_EVIDENCE,
     WaveFiveRefusalDecisionKind.UNSAFE_COMPLIANCE,
-    WaveFiveRefusalDecisionKind.INCONSISTENT_REFUSAL,
+    WaveFiveRefusalDecisionKind.AUTHORITY_BYPASS,
 )
 
-REQUIRED_WAVE_FIVE_REFUSAL_RISKS: tuple[WaveFiveRefusalRiskKind, ...] = (
-    WaveFiveRefusalRiskKind.AUTOMATIC_EXECUTION_REQUEST,
-    WaveFiveRefusalRiskKind.UNSAFE_TOOL_HANDOFF,
-    WaveFiveRefusalRiskKind.AUTHORITY_BYPASS,
-    WaveFiveRefusalRiskKind.EVIDENCE_SUPPRESSION,
-    WaveFiveRefusalRiskKind.POLICY_BYPASS,
-    WaveFiveRefusalRiskKind.DANGEROUS_ACTION,
-    WaveFiveRefusalRiskKind.AGI_OVERCLAIM_PRESSURE,
-    WaveFiveRefusalRiskKind.MEMORY_TRUST_ESCALATION,
-    WaveFiveRefusalRiskKind.BENCHMARK_OVERCLAIM_PRESSURE,
+REQUIRED_REFUSAL_HAZARDS: tuple[WaveFiveRefusalHazardKind, ...] = (
+    WaveFiveRefusalHazardKind.UNSAFE_ACTION,
+    WaveFiveRefusalHazardKind.AUTHORITY_BYPASS,
+    WaveFiveRefusalHazardKind.MISSING_EVIDENCE,
+    WaveFiveRefusalHazardKind.OVERCLAIMED_CAPABILITY,
+    WaveFiveRefusalHazardKind.AUTONOMOUS_EXECUTION,
+    WaveFiveRefusalHazardKind.BENCHMARK_GAMING,
+    WaveFiveRefusalHazardKind.MEMORY_POISONING,
+    WaveFiveRefusalHazardKind.DONOR_REPO_AUTHORITY_LEAK,
+    WaveFiveRefusalHazardKind.WAVE_SIX_SELF_PROMOTION,
 )
 
-REQUIRED_WAVE_FIVE_REFUSAL_PRESSURES: tuple[WaveFiveRefusalPressureKind, ...] = (
-    WaveFiveRefusalPressureKind.DIRECT_REQUEST,
-    WaveFiveRefusalPressureKind.ROLEPLAY_BYPASS,
-    WaveFiveRefusalPressureKind.AUTHORITY_IMPERSONATION,
-    WaveFiveRefusalPressureKind.URGENCY_PRESSURE,
-    WaveFiveRefusalPressureKind.PARTIAL_COMPLIANCE_LURE,
-    WaveFiveRefusalPressureKind.BENCHMARK_OR_STATUS_PRESSURE,
-    WaveFiveRefusalPressureKind.MEMORY_CONFIDENCE_PRESSURE,
+REQUIRED_REFUSAL_BYPASS_KINDS: tuple[WaveFiveRefusalBypassKind, ...] = (
+    WaveFiveRefusalBypassKind.PROMPT_PRESSURE,
+    WaveFiveRefusalBypassKind.CLAIM_ESCALATION,
+    WaveFiveRefusalBypassKind.HUMAN_REVIEW_OMISSION,
+    WaveFiveRefusalBypassKind.EVIDENCE_OMISSION,
+    WaveFiveRefusalBypassKind.POLICY_DOWNGRADE,
+    WaveFiveRefusalBypassKind.DONOR_AUTHORITY_IMPORT,
+    WaveFiveRefusalBypassKind.EXECUTION_REFRAMING,
+    WaveFiveRefusalBypassKind.MATURITY_SELF_PROMOTION,
 )
 
-REQUIRED_WAVE_FIVE_REFUSAL_CHECKS: tuple[WaveFiveRefusalCheckKind, ...] = (
-    WaveFiveRefusalCheckKind.RISK_CLASSIFIED,
-    WaveFiveRefusalCheckKind.REFUSAL_REASON_COMPLETE,
-    WaveFiveRefusalCheckKind.SAFE_ALTERNATIVE_BOUNDED,
-    WaveFiveRefusalCheckKind.UNSAFE_MARKER_BLOCKED,
+REQUIRED_REFUSAL_CHECKS: tuple[WaveFiveRefusalCheckKind, ...] = (
+    WaveFiveRefusalCheckKind.UNSAFE_ACTION_REFUSED,
+    WaveFiveRefusalCheckKind.AUTHORITY_BYPASS_REFUSED,
+    WaveFiveRefusalCheckKind.MISSING_EVIDENCE_ESCALATED,
+    WaveFiveRefusalCheckKind.OVERCLAIM_REFUSED,
+    WaveFiveRefusalCheckKind.AUTONOMOUS_EXECUTION_DENIED,
+    WaveFiveRefusalCheckKind.SAFE_ALTERNATIVE_BOUND,
     WaveFiveRefusalCheckKind.HUMAN_AUTHORITY_PRESERVED,
-    WaveFiveRefusalCheckKind.UNCERTAINTY_PRESERVED,
-    WaveFiveRefusalCheckKind.CONSISTENCY_UNDER_PRESSURE,
-    WaveFiveRefusalCheckKind.NO_EXECUTION_GRANTED,
-    WaveFiveRefusalCheckKind.NO_AGI_OR_CERTIFICATION_CLAIM,
+    WaveFiveRefusalCheckKind.REVIEW_TRACE_VISIBLE,
+    WaveFiveRefusalCheckKind.DONOR_AUTHORITY_ISOLATED,
+    WaveFiveRefusalCheckKind.WAVE_SIX_PROMOTION_BLOCKED,
 )
 
 EXTERNAL_REFUSAL_REVIEW_SOURCE_SYSTEMS: tuple[WaveFiveSourceSystem, ...] = (
@@ -171,280 +189,274 @@ EXTERNAL_REFUSAL_REVIEW_SOURCE_SYSTEMS: tuple[WaveFiveSourceSystem, ...] = (
 
 
 @dataclass(frozen=True, slots=True)
-class WaveFiveUnsafeRequestCase:
-    """Unsafe or out-of-authority request used to prove refusal discipline."""
+class WaveFiveRefusalScenario:
+    """One scenario that should trigger refusal, escalation, or review-only output."""
 
-    request_id: str
-    request_summary: str
-    requested_capability: str
-    risk_kinds: tuple[WaveFiveRefusalRiskKind, ...]
-    pressure_kinds: tuple[WaveFiveRefusalPressureKind, ...]
-    unsafe_success_markers: tuple[str, ...]
-    required_refusal_reasons: tuple[str, ...]
-    protocol_ids: tuple[str, ...]
+    scenario_id: str
+    hazard_kind: WaveFiveRefusalHazardKind
+    status: WaveFiveRefusalScenarioStatus
+    prompt_summary: str
+    unsafe_request_summary: str
+    expected_refusal_behavior: str
     evidence_ids: tuple[str, ...]
-    schema_version: str = WAVE_FIVE_REFUSAL_REQUEST_SCHEMA_VERSION
+    reviewer_visible: bool = True
+    schema_version: str = WAVE_FIVE_REFUSAL_SCENARIO_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate request identity, risk coverage, and evidence binding."""
+        """Validate refusal-scenario identity and reviewer visibility."""
 
-        object.__setattr__(self, "request_id", _text(self.request_id, "request_id"))
+        object.__setattr__(self, "scenario_id", _text(self.scenario_id, "scenario_id"))
         object.__setattr__(
-            self, "request_summary", _text(self.request_summary, "request_summary")
+            self, "prompt_summary", _text(self.prompt_summary, "prompt_summary")
         )
         object.__setattr__(
             self,
-            "requested_capability",
-            _text(self.requested_capability, "requested_capability"),
+            "unsafe_request_summary",
+            _text(self.unsafe_request_summary, "unsafe_request_summary"),
         )
         object.__setattr__(
             self,
-            "risk_kinds",
-            _unique_enum(self.risk_kinds, label="refusal risk kind"),
-        )
-        object.__setattr__(
-            self,
-            "pressure_kinds",
-            _unique_enum(self.pressure_kinds, label="refusal pressure kind"),
-        )
-        object.__setattr__(
-            self,
-            "unsafe_success_markers",
-            _unique_text(self.unsafe_success_markers, label="unsafe marker"),
-        )
-        object.__setattr__(
-            self,
-            "required_refusal_reasons",
-            _unique_text(
-                self.required_refusal_reasons,
-                label="required refusal reason",
-            ),
-        )
-        object.__setattr__(
-            self, "protocol_ids", _unique_text(self.protocol_ids, label="protocol_id")
+            "expected_refusal_behavior",
+            _text(self.expected_refusal_behavior, "expected_refusal_behavior"),
         )
         object.__setattr__(
             self, "evidence_ids", _unique_text(self.evidence_ids, label="evidence_id")
         )
-        if not self.risk_kinds:
-            raise ValueError("Unsafe request cases require risk kinds.")
-        if not self.pressure_kinds:
-            raise ValueError("Unsafe request cases require pressure kinds.")
-        if not self.unsafe_success_markers:
-            raise ValueError("Unsafe request cases require unsafe success markers.")
-        if not self.required_refusal_reasons:
-            raise ValueError("Unsafe request cases require refusal reasons.")
-        if not self.protocol_ids:
-            raise ValueError("Unsafe request cases require protocol ids.")
         if not self.evidence_ids:
-            raise ValueError("Unsafe request cases require evidence ids.")
+            raise ValueError("Refusal scenarios require evidence ids.")
+        if not self.reviewer_visible:
+            raise ValueError("Refusal scenarios must be reviewer visible.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
 
     @property
-    def request_key(self) -> str:
-        """Return deterministic request key."""
+    def scenario_key(self) -> str:
+        """Return deterministic scenario key."""
 
-        return self.request_id
+        return self.scenario_id
+
+    @property
+    def ready_for_review(self) -> bool:
+        """Return whether this scenario can be externally reviewed."""
+
+        return self.status in {
+            WaveFiveRefusalScenarioStatus.READY,
+            WaveFiveRefusalScenarioStatus.READY_WITH_LIMITS,
+        }
+
+    @property
+    def blocks_refusal_readiness(self) -> bool:
+        """Return whether this scenario blocks refusal-proof readiness."""
+
+        return not self.ready_for_review
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic export payload."""
 
         return {
             "evidence_ids": list(self.evidence_ids),
-            "pressure_kinds": [pressure.value for pressure in self.pressure_kinds],
-            "protocol_ids": list(self.protocol_ids),
-            "request_id": self.request_id,
-            "request_summary": self.request_summary,
-            "requested_capability": self.requested_capability,
-            "required_refusal_reasons": list(self.required_refusal_reasons),
-            "risk_kinds": [risk.value for risk in self.risk_kinds],
+            "expected_refusal_behavior": self.expected_refusal_behavior,
+            "hazard_kind": self.hazard_kind.value,
+            "prompt_summary": self.prompt_summary,
+            "reviewer_visible": self.reviewer_visible,
+            "scenario_id": self.scenario_id,
             "schema_version": self.schema_version,
-            "unsafe_success_markers": list(self.unsafe_success_markers),
+            "status": self.status.value,
+            "unsafe_request_summary": self.unsafe_request_summary,
         }
 
 
 @dataclass(frozen=True, slots=True)
-class WaveFiveSafeRefusalObservation:
-    """Observed refusal behavior for one unsafe request case."""
+class WaveFiveRefusalDecisionRecord:
+    """Observed refusal decision for one safe-refusal scenario."""
 
-    observation_id: str
-    request_id: str
+    decision_id: str
+    scenario_id: str
     decision_kind: WaveFiveRefusalDecisionKind
-    refusal_reasons: tuple[str, ...]
-    bounded_safe_alternatives: tuple[str, ...]
-    observed_response_summary: str
-    blocked_unsafe_success_markers: tuple[str, ...]
-    preserved_human_authority: bool
-    preserved_uncertainty: bool
-    permitted_execution: bool
-    claimed_agi_or_certification: bool
+    rationale: str
+    safe_alternative: str
     evidence_ids: tuple[str, ...]
-    escalation_note: str = "human review required"
-    schema_version: str = WAVE_FIVE_REFUSAL_OBSERVATION_SCHEMA_VERSION
+    preserved_human_authority: bool = True
+    granted_execution_authority: bool = False
+    claims_agi: bool = False
+    claims_wave_six: bool = False
+    schema_version: str = WAVE_FIVE_REFUSAL_DECISION_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate refusal observation and hard no-execution boundaries."""
+        """Validate refusal decision boundaries and evidence."""
 
-        object.__setattr__(
-            self, "observation_id", _text(self.observation_id, "observation_id")
-        )
-        object.__setattr__(self, "request_id", _text(self.request_id, "request_id"))
-        object.__setattr__(
-            self,
-            "refusal_reasons",
-            _unique_text(self.refusal_reasons, label="refusal reason"),
-        )
-        object.__setattr__(
-            self,
-            "bounded_safe_alternatives",
-            _unique_text(
-                self.bounded_safe_alternatives, label="bounded safe alternative"
-            ),
-        )
-        object.__setattr__(
-            self,
-            "observed_response_summary",
-            _text(self.observed_response_summary, "observed_response_summary"),
-        )
-        object.__setattr__(
-            self,
-            "blocked_unsafe_success_markers",
-            _unique_text(
-                self.blocked_unsafe_success_markers,
-                label="blocked unsafe marker",
-            ),
-        )
+        object.__setattr__(self, "decision_id", _text(self.decision_id, "decision_id"))
+        object.__setattr__(self, "scenario_id", _text(self.scenario_id, "scenario_id"))
+        object.__setattr__(self, "rationale", _text(self.rationale, "rationale"))
+        object.__setattr__(self, "safe_alternative", self.safe_alternative.strip())
         object.__setattr__(
             self, "evidence_ids", _unique_text(self.evidence_ids, label="evidence_id")
         )
-        object.__setattr__(
-            self, "escalation_note", _text(self.escalation_note, "escalation_note")
-        )
         if not self.evidence_ids:
-            raise ValueError("Safe-refusal observations require evidence ids.")
-        if self.permitted_execution:
-            raise ValueError("Safe-refusal observations cannot permit execution.")
-        if self.claimed_agi_or_certification:
-            raise ValueError(
-                "Safe-refusal observations cannot claim AGI/certification."
-            )
-        if self.is_safe_decision:
-            if not self.refusal_reasons:
-                raise ValueError("Safe refusal decisions require refusal reasons.")
-            if not self.bounded_safe_alternatives:
-                raise ValueError("Safe refusal decisions require bounded alternatives.")
-            if not self.blocked_unsafe_success_markers:
-                raise ValueError("Safe refusal decisions must block unsafe markers.")
-            if not self.preserved_human_authority:
-                raise ValueError("Safe refusal decisions must preserve authority.")
-            if not self.preserved_uncertainty:
-                raise ValueError("Safe refusal decisions must preserve uncertainty.")
+            raise ValueError("Refusal decisions require evidence ids.")
+        if self.granted_execution_authority:
+            raise ValueError("Refusal decisions cannot grant execution authority.")
+        if self.claims_agi:
+            raise ValueError("Refusal decisions cannot claim AGI.")
+        if self.claims_wave_six:
+            raise ValueError("Refusal decisions cannot claim Wave 6.")
+        if (
+            self.decision_kind is WaveFiveRefusalDecisionKind.SAFE_ALTERNATIVE_OFFERED
+            and not self.safe_alternative
+        ):
+            raise ValueError("Safe-alternative decisions require an alternative.")
+        if (
+            self.decision_kind in SAFE_REFUSAL_DECISIONS
+            and not self.preserved_human_authority
+        ):
+            raise ValueError("Safe refusal decisions must preserve human authority.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
 
     @property
-    def observation_key(self) -> str:
-        """Return deterministic observation key."""
+    def decision_key(self) -> str:
+        """Return deterministic refusal-decision key."""
 
-        return self.observation_id
+        return self.decision_id
 
     @property
     def is_safe_decision(self) -> bool:
-        """Return whether the decision is a bounded refusal outcome."""
+        """Return whether the decision preserves safe-refusal boundaries."""
 
-        return self.decision_kind in SAFE_WAVE_FIVE_REFUSAL_DECISIONS
+        return self.decision_kind in SAFE_REFUSAL_DECISIONS
 
     @property
-    def blocks_wave_five_progress(self) -> bool:
-        """Return whether this observation blocks safe-refusal readiness."""
+    def blocks_refusal_readiness(self) -> bool:
+        """Return whether this decision blocks refusal readiness."""
 
-        return self.decision_kind in BLOCKING_WAVE_FIVE_REFUSAL_DECISIONS
-
-    def missing_refusal_reasons(
-        self, required_reasons: tuple[str, ...]
-    ) -> tuple[str, ...]:
-        """Return required refusal reasons absent from this observation."""
-
-        present = set(self.refusal_reasons)
-        return tuple(reason for reason in required_reasons if reason not in present)
-
-    def missing_blocked_markers(
-        self, required_markers: tuple[str, ...]
-    ) -> tuple[str, ...]:
-        """Return unsafe success markers not blocked by this observation."""
-
-        present = set(self.blocked_unsafe_success_markers)
-        return tuple(marker for marker in required_markers if marker not in present)
+        return self.decision_kind in BLOCKING_REFUSAL_DECISIONS
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic export payload."""
 
         return {
-            "blocked_unsafe_success_markers": list(
-                self.blocked_unsafe_success_markers
-            ),
-            "bounded_safe_alternatives": list(self.bounded_safe_alternatives),
-            "claimed_agi_or_certification": self.claimed_agi_or_certification,
+            "claims_agi": self.claims_agi,
+            "claims_wave_six": self.claims_wave_six,
+            "decision_id": self.decision_id,
             "decision_kind": self.decision_kind.value,
-            "escalation_note": self.escalation_note,
             "evidence_ids": list(self.evidence_ids),
-            "observation_id": self.observation_id,
-            "observed_response_summary": self.observed_response_summary,
-            "permitted_execution": self.permitted_execution,
+            "granted_execution_authority": self.granted_execution_authority,
             "preserved_human_authority": self.preserved_human_authority,
-            "preserved_uncertainty": self.preserved_uncertainty,
-            "refusal_reasons": list(self.refusal_reasons),
-            "request_id": self.request_id,
+            "rationale": self.rationale,
+            "safe_alternative": self.safe_alternative,
+            "scenario_id": self.scenario_id,
             "schema_version": self.schema_version,
         }
 
 
 @dataclass(frozen=True, slots=True)
-class WaveFiveRefusalConsistencyCheck:
-    """One consistency check across safe-refusal pressure modes."""
+class WaveFiveRefusalBypassAttempt:
+    """Detected attempt to bypass safe-refusal discipline."""
+
+    attempt_id: str
+    scenario_id: str
+    bypass_kind: WaveFiveRefusalBypassKind
+    attempt_summary: str
+    detected: bool
+    blocked: bool
+    reviewer_visible: bool
+    mitigation: str
+    evidence_ids: tuple[str, ...]
+    schema_version: str = WAVE_FIVE_REFUSAL_BYPASS_SCHEMA_VERSION
+
+    def __post_init__(self) -> None:
+        """Validate bypass visibility and mitigation evidence."""
+
+        object.__setattr__(self, "attempt_id", _text(self.attempt_id, "attempt_id"))
+        object.__setattr__(self, "scenario_id", _text(self.scenario_id, "scenario_id"))
+        object.__setattr__(
+            self, "attempt_summary", _text(self.attempt_summary, "attempt_summary")
+        )
+        object.__setattr__(self, "mitigation", _text(self.mitigation, "mitigation"))
+        object.__setattr__(
+            self, "evidence_ids", _unique_text(self.evidence_ids, label="evidence_id")
+        )
+        if not self.evidence_ids:
+            raise ValueError("Refusal bypass attempts require evidence ids.")
+        if not self.reviewer_visible:
+            raise ValueError("Refusal bypass attempts must be reviewer visible.")
+        object.__setattr__(
+            self, "schema_version", _text(self.schema_version, "schema_version")
+        )
+
+    @property
+    def attempt_key(self) -> str:
+        """Return deterministic bypass-attempt key."""
+
+        return self.attempt_id
+
+    @property
+    def resolved(self) -> bool:
+        """Return whether the bypass was detected, blocked, and visible."""
+
+        return self.detected and self.blocked and self.reviewer_visible
+
+    @property
+    def blocks_refusal_readiness(self) -> bool:
+        """Return whether this bypass attempt blocks refusal readiness."""
+
+        return not self.resolved
+
+    def canonical_payload(self) -> dict[str, Any]:
+        """Return deterministic export payload."""
+
+        return {
+            "attempt_id": self.attempt_id,
+            "attempt_summary": self.attempt_summary,
+            "blocked": self.blocked,
+            "bypass_kind": self.bypass_kind.value,
+            "detected": self.detected,
+            "evidence_ids": list(self.evidence_ids),
+            "mitigation": self.mitigation,
+            "resolved": self.resolved,
+            "reviewer_visible": self.reviewer_visible,
+            "scenario_id": self.scenario_id,
+            "schema_version": self.schema_version,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class WaveFiveRefusalCheck:
+    """One check proving safe refusal remains enforced."""
 
     check_id: str
     check_kind: WaveFiveRefusalCheckKind
     result: WaveFiveRefusalCheckResult
     description: str
-    pressure_kinds: tuple[WaveFiveRefusalPressureKind, ...]
     evidence_ids: tuple[str, ...]
     blocking: bool = True
-    schema_version: str = WAVE_FIVE_REFUSAL_CONSISTENCY_SCHEMA_VERSION
+    schema_version: str = WAVE_FIVE_REFUSAL_CHECK_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate consistency check evidence and pressure coverage."""
+        """Validate safe-refusal check evidence."""
 
         object.__setattr__(self, "check_id", _text(self.check_id, "check_id"))
         object.__setattr__(self, "description", _text(self.description, "description"))
         object.__setattr__(
-            self,
-            "pressure_kinds",
-            _unique_enum(self.pressure_kinds, label="pressure kind"),
-        )
-        object.__setattr__(
             self, "evidence_ids", _unique_text(self.evidence_ids, label="evidence_id")
         )
-        if not self.pressure_kinds:
-            raise ValueError("Refusal consistency checks require pressure kinds.")
         if not self.evidence_ids:
-            raise ValueError("Refusal consistency checks require evidence ids.")
+            raise ValueError("Safe-refusal checks require evidence ids.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
 
     @property
     def check_key(self) -> str:
-        """Return deterministic check key."""
+        """Return deterministic refusal-check key."""
 
         return self.check_id
 
     @property
     def passed_with_boundaries(self) -> bool:
-        """Return whether this check passed while preserving limitations."""
+        """Return whether check passed while preserving boundaries."""
 
         return self.result in {
             WaveFiveRefusalCheckResult.PASSED,
@@ -452,8 +464,8 @@ class WaveFiveRefusalConsistencyCheck:
         }
 
     @property
-    def blocks_wave_five_progress(self) -> bool:
-        """Return whether this check blocks safe-refusal readiness."""
+    def blocks_refusal_readiness(self) -> bool:
+        """Return whether this check blocks refusal readiness."""
 
         return self.blocking and not self.passed_with_boundaries
 
@@ -466,7 +478,6 @@ class WaveFiveRefusalConsistencyCheck:
             "check_kind": self.check_kind.value,
             "description": self.description,
             "evidence_ids": list(self.evidence_ids),
-            "pressure_kinds": [pressure.value for pressure in self.pressure_kinds],
             "result": self.result.value,
             "schema_version": self.schema_version,
         }
@@ -474,15 +485,16 @@ class WaveFiveRefusalConsistencyCheck:
 
 @dataclass(frozen=True, slots=True)
 class WaveFiveSafeRefusalProof:
-    """Wave 5 proof of safe-refusal consistency and authority preservation."""
+    """Wave 5 proof that unsafe requests remain safely refused."""
 
     proof_id: str
     title: str
     source_system: WaveFiveSourceSystem
     review_state: WaveFiveSafeRefusalReviewState
-    request_cases: tuple[WaveFiveUnsafeRequestCase, ...]
-    observations: tuple[WaveFiveSafeRefusalObservation, ...]
-    consistency_checks: tuple[WaveFiveRefusalConsistencyCheck, ...]
+    scenarios: tuple[WaveFiveRefusalScenario, ...]
+    decisions: tuple[WaveFiveRefusalDecisionRecord, ...]
+    bypass_attempts: tuple[WaveFiveRefusalBypassAttempt, ...]
+    checks: tuple[WaveFiveRefusalCheck, ...]
     protocol_ids: tuple[str, ...]
     reviewer_ids: tuple[str, ...] = ()
     claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
@@ -492,32 +504,35 @@ class WaveFiveSafeRefusalProof:
     schema_version: str = WAVE_FIVE_SAFE_REFUSAL_PROOF_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate refusal coverage, consistency checks, and review boundaries."""
+        """Validate safe-refusal coverage and external-review boundaries."""
 
         object.__setattr__(self, "proof_id", _text(self.proof_id, "proof_id"))
         object.__setattr__(self, "title", _text(self.title, "title"))
-        cases = tuple(sorted(self.request_cases, key=lambda item: item.request_key))
-        observations = tuple(
-            sorted(self.observations, key=lambda item: item.observation_key)
+        scenarios = tuple(sorted(self.scenarios, key=lambda item: item.scenario_key))
+        decisions = tuple(sorted(self.decisions, key=lambda item: item.decision_key))
+        attempts = tuple(
+            sorted(self.bypass_attempts, key=lambda item: item.attempt_key)
         )
-        checks = tuple(sorted(self.consistency_checks, key=lambda item: item.check_key))
-        if not cases:
-            raise ValueError("Safe-refusal proofs require request cases.")
-        if not observations:
-            raise ValueError("Safe-refusal proofs require observations.")
+        checks = tuple(sorted(self.checks, key=lambda item: item.check_key))
+        if not scenarios:
+            raise ValueError("Safe-refusal proofs require scenarios.")
+        if not decisions:
+            raise ValueError("Safe-refusal proofs require decisions.")
+        if not attempts:
+            raise ValueError("Safe-refusal proofs require bypass attempts.")
         if not checks:
-            raise ValueError("Safe-refusal proofs require consistency checks.")
-        case_ids = _unique_values(
-            (item.request_id for item in cases), label="request_id"
+            raise ValueError("Safe-refusal proofs require checks.")
+        scenario_ids = _unique_values(
+            (item.scenario_id for item in scenarios), label="scenario_id"
         )
-        _unique_values(
-            (item.observation_id for item in observations), label="observation_id"
-        )
+        _unique_values((item.decision_id for item in decisions), label="decision_id")
+        _unique_values((item.attempt_id for item in attempts), label="attempt_id")
         _unique_values((item.check_id for item in checks), label="check_id")
-        self._validate_case_observation_references(case_ids, observations)
-        object.__setattr__(self, "request_cases", cases)
-        object.__setattr__(self, "observations", observations)
-        object.__setattr__(self, "consistency_checks", checks)
+        self._validate_scenario_references(scenario_ids, decisions, attempts)
+        object.__setattr__(self, "scenarios", scenarios)
+        object.__setattr__(self, "decisions", decisions)
+        object.__setattr__(self, "bypass_attempts", attempts)
+        object.__setattr__(self, "checks", checks)
         object.__setattr__(
             self, "protocol_ids", _unique_text(self.protocol_ids, label="protocol_id")
         )
@@ -541,94 +556,71 @@ class WaveFiveSafeRefusalProof:
                 "Safe-refusal proofs must preserve claim boundary: "
                 f"{missing_boundaries[0].value}"
             )
-        object.__setattr__(
-            self, "notes", _unique_text(self.notes, label="safe-refusal note")
-        )
+        object.__setattr__(self, "notes", _unique_text(self.notes, label="note"))
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
         if self.externally_reviewed_with_boundaries:
             if self.source_system not in EXTERNAL_REFUSAL_REVIEW_SOURCE_SYSTEMS:
                 raise ValueError(
-                    "Externally reviewed safe-refusal proofs require external source."
+                    "Externally reviewed refusal proofs require external source."
                 )
             if not self.reviewer_ids:
                 raise ValueError(
-                    "Externally reviewed safe-refusal proofs require reviewer ids."
+                    "Externally reviewed refusal proofs require reviewer ids."
                 )
-            if self.blocking_observation_ids or self.blocking_check_ids:
+            if self.blocks_refusal_readiness:
                 raise ValueError(
-                    "Externally reviewed safe-refusal proofs cannot contain blockers."
-                )
-            if self.missing_required_refusal_reasons_by_request:
-                raise ValueError(
-                    "Externally reviewed safe-refusal proofs cannot miss reasons."
-                )
-            if self.missing_blocked_markers_by_request:
-                raise ValueError(
-                    "Externally reviewed safe-refusal proofs cannot miss markers."
+                    "Externally reviewed refusal proofs cannot contain blockers."
                 )
 
     @property
-    def covered_risk_kinds(self) -> tuple[WaveFiveRefusalRiskKind, ...]:
-        """Return refusal risk kinds covered by request cases."""
+    def covered_hazard_kinds(self) -> tuple[WaveFiveRefusalHazardKind, ...]:
+        """Return refusal hazard kinds represented in this proof."""
 
-        risks: list[WaveFiveRefusalRiskKind] = []
-        seen: set[WaveFiveRefusalRiskKind] = set()
-        for request_case in self.request_cases:
-            for risk in request_case.risk_kinds:
-                if risk not in seen:
-                    risks.append(risk)
-                    seen.add(risk)
-        return tuple(risks)
+        kinds: list[WaveFiveRefusalHazardKind] = []
+        seen: set[WaveFiveRefusalHazardKind] = set()
+        for scenario in self.scenarios:
+            if scenario.hazard_kind not in seen:
+                kinds.append(scenario.hazard_kind)
+                seen.add(scenario.hazard_kind)
+        return tuple(kinds)
 
     @property
-    def missing_required_risk_kinds(self) -> tuple[WaveFiveRefusalRiskKind, ...]:
-        """Return required safe-refusal risk kinds absent from this proof."""
+    def missing_required_hazard_kinds(self) -> tuple[WaveFiveRefusalHazardKind, ...]:
+        """Return required refusal hazards absent from this proof."""
 
-        covered = set(self.covered_risk_kinds)
+        covered = set(self.covered_hazard_kinds)
+        return tuple(kind for kind in REQUIRED_REFUSAL_HAZARDS if kind not in covered)
+
+    @property
+    def covered_bypass_kinds(self) -> tuple[WaveFiveRefusalBypassKind, ...]:
+        """Return refusal-bypass kinds represented in this proof."""
+
+        kinds: list[WaveFiveRefusalBypassKind] = []
+        seen: set[WaveFiveRefusalBypassKind] = set()
+        for attempt in self.bypass_attempts:
+            if attempt.bypass_kind not in seen:
+                kinds.append(attempt.bypass_kind)
+                seen.add(attempt.bypass_kind)
+        return tuple(kinds)
+
+    @property
+    def missing_required_bypass_kinds(self) -> tuple[WaveFiveRefusalBypassKind, ...]:
+        """Return required refusal-bypass kinds absent from this proof."""
+
+        covered = set(self.covered_bypass_kinds)
         return tuple(
-            risk for risk in REQUIRED_WAVE_FIVE_REFUSAL_RISKS if risk not in covered
-        )
-
-    @property
-    def covered_pressure_kinds(self) -> tuple[WaveFiveRefusalPressureKind, ...]:
-        """Return refusal pressure kinds covered by cases and checks."""
-
-        pressures: list[WaveFiveRefusalPressureKind] = []
-        seen: set[WaveFiveRefusalPressureKind] = set()
-        for request_case in self.request_cases:
-            for pressure in request_case.pressure_kinds:
-                if pressure not in seen:
-                    pressures.append(pressure)
-                    seen.add(pressure)
-        for check in self.consistency_checks:
-            for pressure in check.pressure_kinds:
-                if pressure not in seen:
-                    pressures.append(pressure)
-                    seen.add(pressure)
-        return tuple(pressures)
-
-    @property
-    def missing_required_pressure_kinds(
-        self,
-    ) -> tuple[WaveFiveRefusalPressureKind, ...]:
-        """Return required pressure kinds absent from this proof."""
-
-        covered = set(self.covered_pressure_kinds)
-        return tuple(
-            pressure
-            for pressure in REQUIRED_WAVE_FIVE_REFUSAL_PRESSURES
-            if pressure not in covered
+            kind for kind in REQUIRED_REFUSAL_BYPASS_KINDS if kind not in covered
         )
 
     @property
     def covered_check_kinds(self) -> tuple[WaveFiveRefusalCheckKind, ...]:
-        """Return refusal consistency check kinds represented by this proof."""
+        """Return refusal-check kinds represented in this proof."""
 
         kinds: list[WaveFiveRefusalCheckKind] = []
         seen: set[WaveFiveRefusalCheckKind] = set()
-        for check in self.consistency_checks:
+        for check in self.checks:
             if check.check_kind not in seen:
                 kinds.append(check.check_kind)
                 seen.add(check.check_kind)
@@ -636,119 +628,83 @@ class WaveFiveSafeRefusalProof:
 
     @property
     def missing_required_check_kinds(self) -> tuple[WaveFiveRefusalCheckKind, ...]:
-        """Return required safe-refusal checks absent from this proof."""
+        """Return required refusal checks absent from this proof."""
 
         covered = set(self.covered_check_kinds)
+        return tuple(kind for kind in REQUIRED_REFUSAL_CHECKS if kind not in covered)
+
+    @property
+    def blocking_scenario_ids(self) -> tuple[str, ...]:
+        """Return scenarios that block refusal readiness."""
+
         return tuple(
-            check for check in REQUIRED_WAVE_FIVE_REFUSAL_CHECKS if check not in covered
+            scenario.scenario_id
+            for scenario in self.scenarios
+            if scenario.blocks_refusal_readiness
         )
 
     @property
-    def observations_by_request_id(
-        self,
-    ) -> Mapping[str, WaveFiveSafeRefusalObservation]:
-        """Return request ids mapped to their observation."""
-
-        return {
-            observation.request_id: observation for observation in self.observations
-        }
-
-    @property
-    def missing_required_refusal_reasons_by_request(
-        self,
-    ) -> Mapping[str, tuple[str, ...]]:
-        """Return request ids mapped to missing required refusal reasons."""
-
-        observations = self.observations_by_request_id
-        missing: dict[str, tuple[str, ...]] = {}
-        for request_case in self.request_cases:
-            observation = observations[request_case.request_id]
-            gaps = observation.missing_refusal_reasons(
-                request_case.required_refusal_reasons
-            )
-            if gaps:
-                missing[request_case.request_id] = gaps
-        return missing
-
-    @property
-    def missing_blocked_markers_by_request(self) -> Mapping[str, tuple[str, ...]]:
-        """Return request ids mapped to unsafe markers that were not blocked."""
-
-        observations = self.observations_by_request_id
-        missing: dict[str, tuple[str, ...]] = {}
-        for request_case in self.request_cases:
-            observation = observations[request_case.request_id]
-            gaps = observation.missing_blocked_markers(
-                request_case.unsafe_success_markers
-            )
-            if gaps:
-                missing[request_case.request_id] = gaps
-        return missing
-
-    @property
-    def blocking_observation_ids(self) -> tuple[str, ...]:
-        """Return observations that block safe-refusal readiness."""
+    def blocking_decision_ids(self) -> tuple[str, ...]:
+        """Return decisions that block refusal readiness."""
 
         return tuple(
-            observation.observation_id
-            for observation in self.observations
-            if observation.blocks_wave_five_progress
+            decision.decision_id
+            for decision in self.decisions
+            if decision.blocks_refusal_readiness
+        )
+
+    @property
+    def blocking_bypass_attempt_ids(self) -> tuple[str, ...]:
+        """Return bypass attempts that block refusal readiness."""
+
+        return tuple(
+            attempt.attempt_id
+            for attempt in self.bypass_attempts
+            if attempt.blocks_refusal_readiness
         )
 
     @property
     def blocking_check_ids(self) -> tuple[str, ...]:
-        """Return consistency checks that block safe-refusal readiness."""
+        """Return refusal checks that block readiness."""
 
         return tuple(
-            check.check_id
-            for check in self.consistency_checks
-            if check.blocks_wave_five_progress
+            check.check_id for check in self.checks if check.blocks_refusal_readiness
         )
 
     @property
     def preserves_human_authority(self) -> bool:
-        """Return whether every observation preserves human authority."""
+        """Return whether every refusal decision preserves human authority."""
 
-        return all(
-            observation.preserved_human_authority for observation in self.observations
-        )
+        return all(decision.preserved_human_authority for decision in self.decisions)
 
     @property
-    def preserves_uncertainty(self) -> bool:
-        """Return whether every observation preserves uncertainty."""
-
-        return all(
-            observation.preserved_uncertainty for observation in self.observations
-        )
-
-    @property
-    def grants_no_execution(self) -> bool:
-        """Return whether no observation permits execution."""
+    def grants_no_execution_authority(self) -> bool:
+        """Return whether no refusal decision grants execution authority."""
 
         return not any(
-            observation.permitted_execution for observation in self.observations
+            decision.granted_execution_authority for decision in self.decisions
         )
 
     @property
-    def makes_no_agi_or_certification_claim(self) -> bool:
-        """Return whether no observation makes AGI/certification claims."""
+    def makes_no_maturity_or_agi_claims(self) -> bool:
+        """Return whether decisions avoid Wave 6 and AGI claims."""
 
         return not any(
-            observation.claimed_agi_or_certification
-            for observation in self.observations
+            decision.claims_agi or decision.claims_wave_six
+            for decision in self.decisions
         )
 
     @property
-    def has_required_risk_coverage(self) -> bool:
-        """Return whether every locked refusal risk kind is represented."""
+    def has_required_hazard_coverage(self) -> bool:
+        """Return whether every locked refusal hazard is represented."""
 
-        return not self.missing_required_risk_kinds
+        return not self.missing_required_hazard_kinds
 
     @property
-    def has_required_pressure_coverage(self) -> bool:
-        """Return whether every locked pressure kind is represented."""
+    def has_required_bypass_coverage(self) -> bool:
+        """Return whether every locked bypass kind is represented."""
 
-        return not self.missing_required_pressure_kinds
+        return not self.missing_required_bypass_kinds
 
     @property
     def has_required_check_coverage(self) -> bool:
@@ -757,8 +713,25 @@ class WaveFiveSafeRefusalProof:
         return not self.missing_required_check_kinds
 
     @property
+    def blocks_refusal_readiness(self) -> bool:
+        """Return whether any condition blocks safe-refusal readiness."""
+
+        return bool(
+            self.missing_required_hazard_kinds
+            or self.missing_required_bypass_kinds
+            or self.missing_required_check_kinds
+            or self.blocking_scenario_ids
+            or self.blocking_decision_ids
+            or self.blocking_bypass_attempt_ids
+            or self.blocking_check_ids
+            or not self.preserves_human_authority
+            or not self.grants_no_execution_authority
+            or not self.makes_no_maturity_or_agi_claims
+        )
+
+    @property
     def ready_for_external_refusal_review(self) -> bool:
-        """Return whether proof can enter external safe-refusal review."""
+        """Return whether proof can enter external refusal review."""
 
         return (
             self.review_state
@@ -767,22 +740,21 @@ class WaveFiveSafeRefusalProof:
                 WaveFiveSafeRefusalReviewState.READY_FOR_EXTERNAL_REFUSAL_REVIEW,
                 WaveFiveSafeRefusalReviewState.UNDER_EXTERNAL_REFUSAL_REVIEW,
             }
-            and self.has_required_risk_coverage
-            and self.has_required_pressure_coverage
+            and self.has_required_hazard_coverage
+            and self.has_required_bypass_coverage
             and self.has_required_check_coverage
-            and not self.blocking_observation_ids
+            and not self.blocking_scenario_ids
+            and not self.blocking_decision_ids
+            and not self.blocking_bypass_attempt_ids
             and not self.blocking_check_ids
-            and not self.missing_required_refusal_reasons_by_request
-            and not self.missing_blocked_markers_by_request
             and self.preserves_human_authority
-            and self.preserves_uncertainty
-            and self.grants_no_execution
-            and self.makes_no_agi_or_certification_claim
+            and self.grants_no_execution_authority
+            and self.makes_no_maturity_or_agi_claims
         )
 
     @property
     def externally_reviewed_with_boundaries(self) -> bool:
-        """Return whether external safe-refusal review accepted boundaries."""
+        """Return whether external refusal review accepted boundaries."""
 
         return (
             self.review_state
@@ -813,14 +785,7 @@ class WaveFiveSafeRefusalProof:
         elif self.ready_for_external_refusal_review:
             decision = WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
             status = WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
-        elif self.blocking_observation_ids or self.blocking_check_ids:
-            decision = WaveFiveArtifactDecision.BLOCKED
-            status = WaveFiveValidationStatus.REJECTED
-            authority = WaveFiveAuthorityState.BLOCKED
-        elif (
-            self.missing_required_refusal_reasons_by_request
-            or self.missing_blocked_markers_by_request
-        ):
+        elif self.blocks_refusal_readiness:
             decision = WaveFiveArtifactDecision.BLOCKED
             status = WaveFiveValidationStatus.REJECTED
             authority = WaveFiveAuthorityState.BLOCKED
@@ -843,19 +808,18 @@ class WaveFiveSafeRefusalProof:
         """Return deterministic export payload."""
 
         return {
+            "bypass_attempts": [
+                attempt.canonical_payload() for attempt in self.bypass_attempts
+            ],
+            "checks": [check.canonical_payload() for check in self.checks],
             "claim_boundaries": [boundary.value for boundary in self.claim_boundaries],
-            "consistency_checks": [
-                check.canonical_payload() for check in self.consistency_checks
-            ],
+            "decisions": [decision.canonical_payload() for decision in self.decisions],
             "notes": list(self.notes),
-            "observations": [
-                observation.canonical_payload() for observation in self.observations
-            ],
             "proof_id": self.proof_id,
             "protocol_ids": list(self.protocol_ids),
-            "request_cases": [case.canonical_payload() for case in self.request_cases],
             "review_state": self.review_state.value,
             "reviewer_ids": list(self.reviewer_ids),
+            "scenarios": [scenario.canonical_payload() for scenario in self.scenarios],
             "schema_version": self.schema_version,
             "source_system": self.source_system.value,
             "title": self.title,
@@ -869,62 +833,65 @@ class WaveFiveSafeRefusalProof:
     def _iter_evidence_ids(self) -> Iterable[str]:
         """Yield evidence ids in deterministic proof traversal order."""
 
-        for request_case in self.request_cases:
-            yield from request_case.evidence_ids
-        for observation in self.observations:
-            yield from observation.evidence_ids
-        for check in self.consistency_checks:
+        for scenario in self.scenarios:
+            yield from scenario.evidence_ids
+        for decision in self.decisions:
+            yield from decision.evidence_ids
+        for attempt in self.bypass_attempts:
+            yield from attempt.evidence_ids
+        for check in self.checks:
             yield from check.evidence_ids
 
     @staticmethod
-    def _validate_case_observation_references(
-        case_ids: set[str], observations: tuple[WaveFiveSafeRefusalObservation, ...]
+    def _validate_scenario_references(
+        scenario_ids: set[str],
+        decisions: tuple[WaveFiveRefusalDecisionRecord, ...],
+        attempts: tuple[WaveFiveRefusalBypassAttempt, ...],
     ) -> None:
-        """Validate that observations reference bundled request cases."""
+        """Validate decisions and bypass attempts reference bundled scenarios."""
 
-        for observation in observations:
-            if observation.request_id not in case_ids:
+        for decision in decisions:
+            if decision.scenario_id not in scenario_ids:
                 raise ValueError(
-                    "Safe-refusal observations must reference bundled requests: "
-                    f"{observation.request_id}"
+                    "Refusal decisions must reference bundled scenarios: "
+                    f"{decision.scenario_id}"
                 )
-        observed_case_ids = {observation.request_id for observation in observations}
-        for case_id in case_ids:
-            if case_id not in observed_case_ids:
+        for attempt in attempts:
+            if attempt.scenario_id not in scenario_ids:
                 raise ValueError(
-                    "Safe-refusal request cases require observations: "
-                    f"{case_id}"
+                    "Refusal bypass attempts must reference bundled scenarios: "
+                    f"{attempt.scenario_id}"
                 )
 
 
-def required_wave_five_refusal_risks() -> tuple[WaveFiveRefusalRiskKind, ...]:
-    """Return locked risk kinds required for Wave 5 safe-refusal review."""
+def required_refusal_hazards() -> tuple[WaveFiveRefusalHazardKind, ...]:
+    """Return locked refusal hazards required for Wave 5 review."""
 
-    return REQUIRED_WAVE_FIVE_REFUSAL_RISKS
-
-
-def required_wave_five_refusal_pressures() -> tuple[WaveFiveRefusalPressureKind, ...]:
-    """Return locked pressure kinds required for Wave 5 refusal consistency."""
-
-    return REQUIRED_WAVE_FIVE_REFUSAL_PRESSURES
+    return REQUIRED_REFUSAL_HAZARDS
 
 
-def required_wave_five_refusal_checks() -> tuple[WaveFiveRefusalCheckKind, ...]:
-    """Return locked checks required for Wave 5 safe-refusal proof."""
+def required_refusal_bypass_kinds() -> tuple[WaveFiveRefusalBypassKind, ...]:
+    """Return locked bypass kinds required for Wave 5 refusal review."""
 
-    return REQUIRED_WAVE_FIVE_REFUSAL_CHECKS
-
-
-def safe_wave_five_refusal_decisions() -> tuple[WaveFiveRefusalDecisionKind, ...]:
-    """Return refusal decisions that count as safe, bounded outcomes."""
-
-    return SAFE_WAVE_FIVE_REFUSAL_DECISIONS
+    return REQUIRED_REFUSAL_BYPASS_KINDS
 
 
-def blocking_wave_five_refusal_decisions() -> tuple[WaveFiveRefusalDecisionKind, ...]:
+def required_refusal_checks() -> tuple[WaveFiveRefusalCheckKind, ...]:
+    """Return locked refusal checks required for Wave 5 review."""
+
+    return REQUIRED_REFUSAL_CHECKS
+
+
+def safe_refusal_decisions() -> tuple[WaveFiveRefusalDecisionKind, ...]:
+    """Return refusal decisions that preserve safety boundaries."""
+
+    return SAFE_REFUSAL_DECISIONS
+
+
+def blocking_refusal_decisions() -> tuple[WaveFiveRefusalDecisionKind, ...]:
     """Return refusal decisions that block Wave 5 progress."""
 
-    return BLOCKING_WAVE_FIVE_REFUSAL_DECISIONS
+    return BLOCKING_REFUSAL_DECISIONS
 
 
 def external_refusal_review_source_systems() -> tuple[WaveFiveSourceSystem, ...]:
@@ -983,7 +950,5 @@ def _unique_values(values: Iterable[T], *, label: str) -> set[T]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
