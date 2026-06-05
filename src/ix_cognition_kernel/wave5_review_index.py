@@ -41,9 +41,7 @@ WAVE_FIVE_REVIEW_INDEX_CHECK_SCHEMA_VERSION = (
 WAVE_FIVE_REVIEW_INDEX_BLOCKER_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-review-index-blocker-v1"
 )
-WAVE_FIVE_REVIEW_INDEX_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-review-index-v1"
-)
+WAVE_FIVE_REVIEW_INDEX_SCHEMA_VERSION = "ix-cognition-kernel-wave5-review-index-v1"
 
 
 class WaveFiveReviewIndexEntryKind(StrEnum):
@@ -235,9 +233,11 @@ class WaveFiveReviewIndexEntry:
         )
         if not self.evidence_ids:
             raise ValueError("Review index entries require evidence ids.")
-        if self.status is WaveFiveReviewIndexEntryStatus.INDEXED_WITH_LIMITS:
-            if not self.limitations:
-                raise ValueError("Limited review index entries require limitations.")
+        if (
+            self.status is WaveFiveReviewIndexEntryStatus.INDEXED_WITH_LIMITS
+            and not self.limitations
+        ):
+            raise ValueError("Limited review index entries require limitations.")
         if self.status in BLOCKING_INDEX_ENTRY_STATUSES and not self.blocker_ids:
             raise ValueError("Blocking review index entries require blocker ids.")
         missing = tuple(
@@ -247,8 +247,7 @@ class WaveFiveReviewIndexEntry:
         )
         if missing:
             raise ValueError(
-                "Review index entries must preserve claim boundary: "
-                f"{missing[0].value}"
+                f"Review index entries must preserve claim boundary: {missing[0].value}"
             )
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
@@ -579,7 +578,8 @@ class WaveFiveReviewIndex:
         """Return unresolved blocking index blockers."""
 
         return tuple(
-            blocker.blocker_id for blocker in self.blockers
+            blocker.blocker_id
+            for blocker in self.blockers
             if blocker.blocks_index_readiness
         )
 
@@ -749,26 +749,28 @@ class WaveFiveReviewIndex:
         """Validate final manifest and declaration entries are referenced."""
 
         manifest_entries = tuple(
-            entry for entry in entries
+            entry
+            for entry in entries
             if entry.entry_kind is WaveFiveReviewIndexEntryKind.RELEASE_MANIFEST
         )
         declaration_entries = tuple(
-            entry for entry in entries
+            entry
+            for entry in entries
             if entry.entry_kind is WaveFiveReviewIndexEntryKind.BOUNDED_DECLARATION
         )
-        if manifest_entries:
-            if manifest_entries[0].artifact_id != self.release_manifest_artifact_id:
-                raise ValueError(
-                    "Review index release manifest reference must match entry."
-                )
-        if declaration_entries:
-            if (
-                declaration_entries[0].artifact_id
-                != self.bounded_declaration_artifact_id
-            ):
-                raise ValueError(
-                    "Review index bounded declaration reference must match entry."
-                )
+        if (
+            manifest_entries
+            and manifest_entries[0].artifact_id != self.release_manifest_artifact_id
+        ):
+            raise ValueError(
+                "Review index release manifest reference must match entry."
+            )
+        if declaration_entries and (
+            declaration_entries[0].artifact_id != self.bounded_declaration_artifact_id
+        ):
+            raise ValueError(
+                "Review index bounded declaration reference must match entry."
+            )
 
 
 def required_review_index_entry_kinds() -> tuple[WaveFiveReviewIndexEntryKind, ...]:
@@ -866,7 +868,5 @@ def _sha256(value: str, label: str) -> str:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
