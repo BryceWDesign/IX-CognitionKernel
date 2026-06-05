@@ -7,7 +7,6 @@ from ix_cognition_kernel.wave5_completion_gate import (
     WaveFiveCompletionBlockerKind,
     WaveFiveCompletionBlockerSeverity,
     WaveFiveCompletionCheck,
-    WaveFiveCompletionCheckKind,
     WaveFiveCompletionCheckResult,
     WaveFiveCompletionGate,
     WaveFiveCompletionState,
@@ -28,7 +27,9 @@ DIGEST = "a" * 64
 
 
 def _completion_artifacts(
-    status: WaveFiveCompletionArtifactStatus = WaveFiveCompletionArtifactStatus.COMPLETE,
+    status: WaveFiveCompletionArtifactStatus = (
+        WaveFiveCompletionArtifactStatus.COMPLETE
+    ),
 ) -> tuple[WaveFiveCompletionArtifactRecord, ...]:
     return tuple(
         WaveFiveCompletionArtifactRecord(
@@ -91,7 +92,9 @@ def _completion_gate(
         review_index_artifact_id="artifact-review-index",
         bounded_declaration_artifact_id="artifact-bounded-declaration",
         protocol_ids=("protocol-1",),
-        reviewer_ids=("reviewer-1",) if source_system != WaveFiveSourceSystem.IX_COGNITION_KERNEL else (),
+        reviewer_ids=("reviewer-1",)
+        if source_system != WaveFiveSourceSystem.IX_COGNITION_KERNEL
+        else (),
         human_signoff_ids=human_signoff_ids,
     )
 
@@ -99,7 +102,9 @@ def _completion_gate(
 def test_required_completion_sets_are_locked() -> None:
     assert len(required_completion_artifact_kinds()) >= 10
     assert len(required_completion_check_kinds()) >= 10
-    assert WaveFiveCompletionArtifactStatus.COMPLETE in safe_completion_artifact_statuses()
+    assert (
+        WaveFiveCompletionArtifactStatus.COMPLETE in safe_completion_artifact_statuses()
+    )
     assert (
         WaveFiveCompletionArtifactStatus.MISSING
         in blocking_completion_artifact_statuses()
@@ -123,9 +128,14 @@ def test_completion_gate_ready_for_external_review_when_all_inputs_pass() -> Non
     assert gate.unresolved_blocker_ids == ()
 
     artifact_ref = gate.to_artifact_ref()
-    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.evidence_ids == gate.all_evidence_ids
 
 
@@ -214,4 +224,7 @@ def test_externally_reviewed_completion_gate_exports_reviewed_artifact() -> None
     assert gate.externally_reviewed_with_boundaries
     artifact_ref = gate.to_artifact_ref()
     assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    )
