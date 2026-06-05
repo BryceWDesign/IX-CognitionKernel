@@ -101,9 +101,7 @@ class WaveFiveLongHorizonReviewState(StrEnum):
     """Review state of a long-horizon task record."""
 
     INTERNAL_REPLAY_READY = "internal-replay-ready"
-    READY_FOR_EXTERNAL_LONG_HORIZON_REVIEW = (
-        "ready-for-external-long-horizon-review"
-    )
+    READY_FOR_EXTERNAL_LONG_HORIZON_REVIEW = "ready-for-external-long-horizon-review"
     UNDER_EXTERNAL_LONG_HORIZON_REVIEW = "under-external-long-horizon-review"
     EXTERNALLY_REVIEWED_WITH_BOUNDARIES = "externally-reviewed-with-boundaries"
     BLOCKED_BY_LONG_HORIZON_FAILURE = "blocked-by-long-horizon-failure"
@@ -166,9 +164,7 @@ class WaveFiveLongHorizonPhase:
         object.__setattr__(
             self,
             "expected_state_elements",
-            _unique_enum(
-                self.expected_state_elements, label="expected state element"
-            ),
+            _unique_enum(self.expected_state_elements, label="expected state element"),
         )
         if not self.expected_state_elements:
             raise ValueError("Long-horizon phases require expected state elements.")
@@ -777,18 +773,16 @@ class WaveFiveLongHorizonTaskRecord:
         for phase_id in phase_ids:
             if phase_id not in snapshot_phase_ids:
                 raise ValueError(
-                    "Long-horizon phases require mission-state snapshots: "
-                    f"{phase_id}"
+                    f"Long-horizon phases require mission-state snapshots: {phase_id}"
                 )
             if phase_id not in observation_phase_ids:
                 raise ValueError(
-                    "Long-horizon phases require observations: "
-                    f"{phase_id}"
+                    f"Long-horizon phases require observations: {phase_id}"
                 )
 
     @staticmethod
     def _validate_phase_contiguity(
-        phases: tuple[WaveFiveLongHorizonPhase, ...]
+        phases: tuple[WaveFiveLongHorizonPhase, ...],
     ) -> None:
         """Validate phase sequence indexes are contiguous from zero."""
 
