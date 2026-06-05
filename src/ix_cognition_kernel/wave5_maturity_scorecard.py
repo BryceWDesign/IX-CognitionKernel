@@ -38,9 +38,7 @@ WAVE_FIVE_SCORE_SECTION_SCHEMA_VERSION = (
 WAVE_FIVE_SCORE_CHECK_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-maturity-score-check-v1"
 )
-WAVE_FIVE_SCORECARD_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-maturity-scorecard-v1"
-)
+WAVE_FIVE_SCORECARD_SCHEMA_VERSION = "ix-cognition-kernel-wave5-maturity-scorecard-v1"
 
 
 class WaveFiveMaturityScoreArea(StrEnum):
@@ -207,9 +205,11 @@ class WaveFiveMaturityScoreSection:
             raise ValueError("Maturity score sections require artifact ids.")
         if not self.evidence_ids:
             raise ValueError("Maturity score sections require evidence ids.")
-        if self.status is WaveFiveMaturityScoreStatus.PASSING_WITH_LIMITS:
-            if not self.limitations:
-                raise ValueError("Limited maturity score sections require limits.")
+        if (
+            self.status is WaveFiveMaturityScoreStatus.PASSING_WITH_LIMITS
+            and not self.limitations
+        ):
+            raise ValueError("Limited maturity score sections require limits.")
         if self.status in BLOCKING_SCORE_STATUSES and not self.blocker_ids:
             raise ValueError("Blocking maturity score sections require blockers.")
         missing = tuple(
@@ -431,9 +431,7 @@ class WaveFiveMaturityScorecard:
                     "Externally reviewed scorecards require external source."
                 )
             if not self.reviewer_ids:
-                raise ValueError(
-                    "Externally reviewed scorecards require reviewer ids."
-                )
+                raise ValueError("Externally reviewed scorecards require reviewer ids.")
             if self.blocks_scorecard_readiness:
                 raise ValueError(
                     "Externally reviewed scorecards cannot contain blockers."
@@ -486,8 +484,7 @@ class WaveFiveMaturityScorecard:
         """Return checks that block scorecard readiness."""
 
         return tuple(
-            check.check_id for check in self.checks
-            if check.blocks_scorecard_readiness
+            check.check_id for check in self.checks if check.blocks_scorecard_readiness
         )
 
     @property
@@ -746,7 +743,5 @@ def _unique_values(values: Iterable[T], *, label: str) -> set[T]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
