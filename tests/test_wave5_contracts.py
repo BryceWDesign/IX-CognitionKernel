@@ -70,8 +70,7 @@ def test_required_wave_five_contract_sets_are_locked() -> None:
     assert len(required_wave_five_capability_areas()) >= 10
     assert WaveFiveClaimBoundary.NO_AGI_CLAIM in required_wave_five_claim_boundaries()
     assert (
-        WaveFiveSourceSystem.INDEPENDENT_REVIEWER
-        in external_wave_five_source_systems()
+        WaveFiveSourceSystem.INDEPENDENT_REVIEWER in external_wave_five_source_systems()
     )
 
 
@@ -201,9 +200,7 @@ def test_artifact_bundle_reports_missing_required_coverage() -> None:
         ),
     )
 
-    assert bundle.missing_required_kinds == (
-        WaveFiveArtifactKind.REVIEWER_ATTESTATION,
-    )
+    assert bundle.missing_required_kinds == (WaveFiveArtifactKind.REVIEWER_ATTESTATION,)
     assert bundle.missing_required_capability_areas == (
         WaveFiveCapabilityArea.INDEPENDENT_REVIEW,
     )
