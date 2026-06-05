@@ -132,9 +132,14 @@ def test_reproducible_bundle_ready_for_external_reproduction_when_complete() -> 
     assert not bundle.has_blocking_reproduction_gap
 
     artifact_ref = bundle.to_artifact_ref()
-    assert artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.decision is WaveFiveArtifactDecision.READY_FOR_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.UNDER_INDEPENDENT_REVIEW
+    )
     assert artifact_ref.evidence_ids == bundle.all_evidence_ids
 
 
@@ -220,7 +225,9 @@ def test_externally_reproduced_bundle_exports_reviewed_artifact() -> None:
     assert bundle.externally_reproduced_with_boundaries
     artifact_ref = bundle.to_artifact_ref()
     assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.EXTERNALLY_REPRODUCED
+    assert (
+        artifact_ref.validation_status is WaveFiveValidationStatus.EXTERNALLY_REPRODUCED
+    )
 
 
 def test_command_record_rejects_passed_command_with_wrong_exit_code() -> None:
