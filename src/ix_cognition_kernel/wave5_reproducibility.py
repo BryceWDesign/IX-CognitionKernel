@@ -31,15 +31,9 @@ from ix_cognition_kernel.wave5_contracts import (
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_FIVE_COMMAND_RECORD_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-command-record-v1"
-)
-WAVE_FIVE_DIGEST_RECORD_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-digest-record-v1"
-)
-WAVE_FIVE_REPLAY_CHECK_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-replay-check-v1"
-)
+WAVE_FIVE_COMMAND_RECORD_SCHEMA_VERSION = "ix-cognition-kernel-wave5-command-record-v1"
+WAVE_FIVE_DIGEST_RECORD_SCHEMA_VERSION = "ix-cognition-kernel-wave5-digest-record-v1"
+WAVE_FIVE_REPLAY_CHECK_SCHEMA_VERSION = "ix-cognition-kernel-wave5-replay-check-v1"
 WAVE_FIVE_REPRODUCTION_GAP_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-reproduction-gap-v1"
 )
@@ -166,14 +160,16 @@ class WaveFiveCommandRecord:
         )
         if not self.evidence_ids:
             raise ValueError("Command records require evidence ids.")
-        if self.outcome is WaveFiveCommandOutcome.PASSED:
-            if self.observed_exit_code != self.expected_exit_code:
-                raise ValueError("Passed commands must match the expected exit code.")
-        if self.outcome is WaveFiveCommandOutcome.FAILED:
-            if self.observed_exit_code == self.expected_exit_code:
-                raise ValueError(
-                    "Failed commands must differ from the expected exit code."
-                )
+        if (
+            self.outcome is WaveFiveCommandOutcome.PASSED
+            and self.observed_exit_code != self.expected_exit_code
+        ):
+            raise ValueError("Passed commands must match the expected exit code.")
+        if (
+            self.outcome is WaveFiveCommandOutcome.FAILED
+            and self.observed_exit_code == self.expected_exit_code
+        ):
+            raise ValueError("Failed commands must differ from the expected exit code.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -329,9 +325,11 @@ class WaveFiveReproductionGap:
         object.__setattr__(
             self, "evidence_ids", _unique_text(self.evidence_ids, label="evidence_id")
         )
-        if self.severity is WaveFiveReproductionGapSeverity.BLOCKING:
-            if not self.evidence_ids:
-                raise ValueError("Blocking reproduction gaps require evidence ids.")
+        if (
+            self.severity is WaveFiveReproductionGapSeverity.BLOCKING
+            and not self.evidence_ids
+        ):
+            raise ValueError("Blocking reproduction gaps require evidence ids.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -446,11 +444,13 @@ class WaveFiveReproducibleEvidenceBundle:
                 raise ValueError(
                     "Externally reproduced bundles cannot include blocking failures."
                 )
-        if self.reproduction_status is WaveFiveReproductionStatus.REPRODUCTION_FAILED:
-            if not (self.has_blocking_reproduction_gap or self.has_failed_command):
-                raise ValueError(
-                    "Failed reproduction status requires a failed command or gap."
-                )
+        if (
+            self.reproduction_status is WaveFiveReproductionStatus.REPRODUCTION_FAILED
+            and not (self.has_blocking_reproduction_gap or self.has_failed_command)
+        ):
+            raise ValueError(
+                "Failed reproduction status requires a failed command or gap."
+            )
 
     @property
     def command_ids(self) -> tuple[str, ...]:
