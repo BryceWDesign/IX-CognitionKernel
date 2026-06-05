@@ -11,11 +11,11 @@ from ix_cognition_kernel.wave5_reviewers import (
     WaveFiveConflictKind,
     WaveFiveConflictSeverity,
     WaveFiveIndependenceStatus,
-    WaveFiveReviewPanel,
-    WaveFiveReviewScope,
     WaveFiveReviewerAttestation,
     WaveFiveReviewerDecision,
     WaveFiveReviewerRole,
+    WaveFiveReviewPanel,
+    WaveFiveReviewScope,
     blocking_wave_five_reviewer_decisions,
     required_wave_five_review_scopes,
 )
@@ -36,7 +36,9 @@ def _reviewer_attestation(
     *,
     attestation_id: str = "attestation-1",
     reviewer_id: str = "reviewer-1",
-    decision: WaveFiveReviewerDecision = WaveFiveReviewerDecision.ACCEPT_WITH_BOUNDARIES,
+    decision: WaveFiveReviewerDecision = (
+        WaveFiveReviewerDecision.ACCEPT_WITH_BOUNDARIES
+    ),
     independence_status: WaveFiveIndependenceStatus = (
         WaveFiveIndependenceStatus.INDEPENDENT
     ),
@@ -65,7 +67,9 @@ def _reviewer_attestation(
 
 def test_required_review_scope_and_blocking_decisions_are_locked() -> None:
     assert len(required_wave_five_review_scopes()) >= 8
-    assert WaveFiveReviewScope.WAVE_SIX_PRECONDITIONS in required_wave_five_review_scopes()
+    assert (
+        WaveFiveReviewScope.WAVE_SIX_PRECONDITIONS in required_wave_five_review_scopes()
+    )
     assert WaveFiveReviewerDecision.REJECT in blocking_wave_five_reviewer_decisions()
 
 
@@ -81,7 +85,10 @@ def test_reviewer_attestation_is_usable_when_independent_and_evidence_bound() ->
     artifact_ref = attestation.to_artifact_ref()
     assert artifact_ref.decision is WaveFiveArtifactDecision.EXTERNALLY_REVIEWED
     assert artifact_ref.authority_state is WaveFiveAuthorityState.HUMAN_REVIEW_REQUIRED
-    assert artifact_ref.validation_status is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    assert (
+        artifact_ref.validation_status
+        is WaveFiveValidationStatus.ACCEPTED_WITH_BOUNDARIES
+    )
     assert artifact_ref.source_system is WaveFiveSourceSystem.INDEPENDENT_REVIEWER
 
 
@@ -110,9 +117,7 @@ def test_limited_independence_accepts_stated_limitations() -> None:
 
 def test_reviewer_attestation_rejects_unknown_independence() -> None:
     with pytest.raises(ValueError, match="not independently usable"):
-        _reviewer_attestation(
-            independence_status=WaveFiveIndependenceStatus.UNKNOWN
-        )
+        _reviewer_attestation(independence_status=WaveFiveIndependenceStatus.UNKNOWN)
 
 
 def test_reviewer_attestation_rejects_authorship_conflict() -> None:
