@@ -35,82 +35,60 @@ E = TypeVar("E", bound=StrEnum)
 WAVE_FIVE_REVIEW_SECTION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-review-packet-section-v1"
 )
-WAVE_FIVE_REVIEW_CHALLENGE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-review-challenge-v1"
+WAVE_FIVE_REVIEW_QUESTION_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave5-review-question-v1"
 )
-WAVE_FIVE_REVIEW_DISPOSITION_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave5-review-disposition-v1"
+WAVE_FIVE_REVIEW_RESPONSE_SCHEMA_VERSION = (
+    "ix-cognition-kernel-wave5-review-response-v1"
 )
-WAVE_FIVE_EXTERNAL_REVIEW_PACKET_SCHEMA_VERSION = (
+WAVE_FIVE_REVIEW_PACKET_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave5-external-review-packet-v1"
 )
 
 
 class WaveFiveReviewPacketSectionKind(StrEnum):
-    """Sections required in a Wave 5 external review packet."""
+    """Reviewer-facing sections required in the external packet."""
 
-    REVIEWER_INSTRUCTIONS = "reviewer-instructions"
-    EVIDENCE_DOSSIER = "evidence-dossier"
-    MATURITY_SCORECARD = "maturity-scorecard"
-    WAVE_SIX_READINESS_GATE = "wave-six-readiness-gate"
-    REPEATABILITY_LEDGER = "repeatability-ledger"
-    SAFE_REFUSAL_PROOF = "safe-refusal-proof"
-    HUMAN_AUTHORITY_PROOF = "human-authority-proof"
-    MEMORY_INTEGRITY_PROOF = "memory-integrity-proof"
-    BENCHMARK_GAMING_AUDIT = "benchmark-gaming-audit"
-    BLACKFOX_WORLDTWIN_BRIDGES = "blackfox-worldtwin-bridges"
-    CLAIM_BOUNDARY_NOTICE = "claim-boundary-notice"
-    DISSENT_AND_GAP_LOG = "dissent-and-gap-log"
-
-
-class WaveFiveReviewPacketSectionStatus(StrEnum):
-    """Status of one external review packet section."""
-
-    INCLUDED = "included"
-    INCLUDED_WITH_LIMITS = "included-with-limits"
-    NEEDS_EXTERNAL_EVIDENCE = "needs-external-evidence"
-    DISPUTED = "disputed"
-    BLOCKED = "blocked"
-    MISSING = "missing"
+    EXECUTIVE_BOUNDARY = "executive-boundary"
+    CLAIM_LIMITS = "claim-limits"
+    EVIDENCE_INDEX = "evidence-index"
+    VALIDATION_PROTOCOLS = "validation-protocols"
+    REPRODUCIBILITY = "reproducibility"
+    ADVERSARIAL_SAFETY = "adversarial-safety"
+    LONG_HORIZON = "long-horizon"
+    CROSS_DOMAIN_TRANSFER = "cross-domain-transfer"
+    HUMAN_AUTHORITY = "human-authority"
+    SAFE_REFUSAL = "safe-refusal"
+    MEMORY_INTEGRITY = "memory-integrity"
+    BENCHMARK_GAMING = "benchmark-gaming"
+    WAVE_SIX_READINESS = "wave-six-readiness"
+    DISSENT_AND_GAPS = "dissent-and-gaps"
 
 
-class WaveFiveReviewChallengeKind(StrEnum):
-    """Reviewer challenge classes required for Wave 5 external review."""
+class WaveFiveReviewQuestionKind(StrEnum):
+    """Challenge questions reviewers must be able to answer or dispute."""
 
-    REPRODUCE_EVIDENCE = "reproduce-evidence"
-    ATTACK_CLAIM_BOUNDARIES = "attack-claim-boundaries"
-    CHECK_AUTHORITY_PRESERVATION = "check-authority-preservation"
-    CHECK_SAFE_REFUSAL = "check-safe-refusal"
-    CHECK_MEMORY_INTEGRITY = "check-memory-integrity"
-    CHECK_BENCHMARK_CONTAMINATION = "check-benchmark-contamination"
-    CHECK_TRANSFER_GENERALITY = "check-transfer-generality"
-    CHECK_SCENARIO_FALSIFIABILITY = "check-scenario-falsifiability"
-    RECORD_DISSENT = "record-dissent"
-    BLOCK_WAVE_SIX_IF_NEEDED = "block-wave-six-if-needed"
+    SUFFICIENCY = "sufficiency"
+    FALSIFIABILITY = "falsifiability"
+    REPRODUCIBILITY = "reproducibility"
+    SAFETY = "safety"
+    AUTHORITY = "authority"
+    OVERCLAIM = "overclaim"
+    WAVE_SIX_GAP = "wave-six-gap"
 
 
-class WaveFiveReviewChallengeStatus(StrEnum):
-    """Status of one reviewer challenge."""
+class WaveFiveReviewResponseDisposition(StrEnum):
+    """Disposition of a reviewer response."""
 
-    READY = "ready"
-    READY_WITH_LIMITS = "ready-with-limits"
+    ACCEPTED_WITH_BOUNDARIES = "accepted-with-boundaries"
+    ACCEPTED_WITH_LIMITATIONS = "accepted-with-limitations"
     NEEDS_MORE_EVIDENCE = "needs-more-evidence"
-    BLOCKED = "blocked"
+    DISPUTED = "disputed"
+    REJECTED = "rejected"
 
 
-class WaveFiveReviewDispositionKind(StrEnum):
-    """Disposition of a review packet after reviewer handling."""
-
-    PACKET_READY_FOR_EXTERNAL_REVIEW = "packet-ready-for-external-review"
-    EXTERNAL_REVIEW_IN_PROGRESS = "external-review-in-progress"
-    EXTERNALLY_REVIEWED_WITH_BOUNDARIES = "externally-reviewed-with-boundaries"
-    ACCEPTED_AS_LIMITED_EVIDENCE = "accepted-as-limited-evidence"
-    DISPUTED_BY_REVIEWER = "disputed-by-reviewer"
-    BLOCKED_BEFORE_WAVE_SIX = "blocked-before-wave-six"
-
-
-class WaveFiveExternalReviewPacketState(StrEnum):
-    """State of the Wave 5 external review packet."""
+class WaveFiveReviewPacketState(StrEnum):
+    """Review state of a Wave 5 external review packet."""
 
     INTERNAL_PACKET_READY = "internal-packet-ready"
     READY_FOR_EXTERNAL_REVIEW = "ready-for-external-review"
@@ -119,44 +97,51 @@ class WaveFiveExternalReviewPacketState(StrEnum):
     BLOCKED_BY_REVIEW_GAP = "blocked-by-review-gap"
 
 
-SAFE_REVIEW_SECTION_STATUSES: tuple[WaveFiveReviewPacketSectionStatus, ...] = (
-    WaveFiveReviewPacketSectionStatus.INCLUDED,
-    WaveFiveReviewPacketSectionStatus.INCLUDED_WITH_LIMITS,
+class WaveFiveReviewGapSeverity(StrEnum):
+    """Severity for visible packet gaps."""
+
+    INFORMATIONAL = "informational"
+    LIMITATION = "limitation"
+    NEEDS_MORE_EVIDENCE = "needs-more-evidence"
+    BLOCKING = "blocking"
+
+
+REQUIRED_REVIEW_PACKET_SECTION_KINDS: tuple[WaveFiveReviewPacketSectionKind, ...] = (
+    WaveFiveReviewPacketSectionKind.EXECUTIVE_BOUNDARY,
+    WaveFiveReviewPacketSectionKind.CLAIM_LIMITS,
+    WaveFiveReviewPacketSectionKind.EVIDENCE_INDEX,
+    WaveFiveReviewPacketSectionKind.VALIDATION_PROTOCOLS,
+    WaveFiveReviewPacketSectionKind.REPRODUCIBILITY,
+    WaveFiveReviewPacketSectionKind.ADVERSARIAL_SAFETY,
+    WaveFiveReviewPacketSectionKind.LONG_HORIZON,
+    WaveFiveReviewPacketSectionKind.CROSS_DOMAIN_TRANSFER,
+    WaveFiveReviewPacketSectionKind.HUMAN_AUTHORITY,
+    WaveFiveReviewPacketSectionKind.SAFE_REFUSAL,
+    WaveFiveReviewPacketSectionKind.MEMORY_INTEGRITY,
+    WaveFiveReviewPacketSectionKind.BENCHMARK_GAMING,
+    WaveFiveReviewPacketSectionKind.WAVE_SIX_READINESS,
+    WaveFiveReviewPacketSectionKind.DISSENT_AND_GAPS,
 )
 
-BLOCKING_REVIEW_SECTION_STATUSES: tuple[WaveFiveReviewPacketSectionStatus, ...] = (
-    WaveFiveReviewPacketSectionStatus.NEEDS_EXTERNAL_EVIDENCE,
-    WaveFiveReviewPacketSectionStatus.DISPUTED,
-    WaveFiveReviewPacketSectionStatus.BLOCKED,
-    WaveFiveReviewPacketSectionStatus.MISSING,
+REQUIRED_REVIEW_QUESTION_KINDS: tuple[WaveFiveReviewQuestionKind, ...] = (
+    WaveFiveReviewQuestionKind.SUFFICIENCY,
+    WaveFiveReviewQuestionKind.FALSIFIABILITY,
+    WaveFiveReviewQuestionKind.REPRODUCIBILITY,
+    WaveFiveReviewQuestionKind.SAFETY,
+    WaveFiveReviewQuestionKind.AUTHORITY,
+    WaveFiveReviewQuestionKind.OVERCLAIM,
+    WaveFiveReviewQuestionKind.WAVE_SIX_GAP,
 )
 
-REQUIRED_REVIEW_PACKET_SECTIONS: tuple[WaveFiveReviewPacketSectionKind, ...] = (
-    WaveFiveReviewPacketSectionKind.REVIEWER_INSTRUCTIONS,
-    WaveFiveReviewPacketSectionKind.EVIDENCE_DOSSIER,
-    WaveFiveReviewPacketSectionKind.MATURITY_SCORECARD,
-    WaveFiveReviewPacketSectionKind.WAVE_SIX_READINESS_GATE,
-    WaveFiveReviewPacketSectionKind.REPEATABILITY_LEDGER,
-    WaveFiveReviewPacketSectionKind.SAFE_REFUSAL_PROOF,
-    WaveFiveReviewPacketSectionKind.HUMAN_AUTHORITY_PROOF,
-    WaveFiveReviewPacketSectionKind.MEMORY_INTEGRITY_PROOF,
-    WaveFiveReviewPacketSectionKind.BENCHMARK_GAMING_AUDIT,
-    WaveFiveReviewPacketSectionKind.BLACKFOX_WORLDTWIN_BRIDGES,
-    WaveFiveReviewPacketSectionKind.CLAIM_BOUNDARY_NOTICE,
-    WaveFiveReviewPacketSectionKind.DISSENT_AND_GAP_LOG,
+SAFE_REVIEW_RESPONSE_DISPOSITIONS: tuple[WaveFiveReviewResponseDisposition, ...] = (
+    WaveFiveReviewResponseDisposition.ACCEPTED_WITH_BOUNDARIES,
+    WaveFiveReviewResponseDisposition.ACCEPTED_WITH_LIMITATIONS,
 )
 
-REQUIRED_REVIEW_CHALLENGES: tuple[WaveFiveReviewChallengeKind, ...] = (
-    WaveFiveReviewChallengeKind.REPRODUCE_EVIDENCE,
-    WaveFiveReviewChallengeKind.ATTACK_CLAIM_BOUNDARIES,
-    WaveFiveReviewChallengeKind.CHECK_AUTHORITY_PRESERVATION,
-    WaveFiveReviewChallengeKind.CHECK_SAFE_REFUSAL,
-    WaveFiveReviewChallengeKind.CHECK_MEMORY_INTEGRITY,
-    WaveFiveReviewChallengeKind.CHECK_BENCHMARK_CONTAMINATION,
-    WaveFiveReviewChallengeKind.CHECK_TRANSFER_GENERALITY,
-    WaveFiveReviewChallengeKind.CHECK_SCENARIO_FALSIFIABILITY,
-    WaveFiveReviewChallengeKind.RECORD_DISSENT,
-    WaveFiveReviewChallengeKind.BLOCK_WAVE_SIX_IF_NEEDED,
+BLOCKING_REVIEW_RESPONSE_DISPOSITIONS: tuple[WaveFiveReviewResponseDisposition, ...] = (
+    WaveFiveReviewResponseDisposition.NEEDS_MORE_EVIDENCE,
+    WaveFiveReviewResponseDisposition.DISPUTED,
+    WaveFiveReviewResponseDisposition.REJECTED,
 )
 
 EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS: tuple[WaveFiveSourceSystem, ...] = (
@@ -168,24 +153,27 @@ EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS: tuple[WaveFiveSourceSystem, ...] = (
 
 @dataclass(frozen=True, slots=True)
 class WaveFiveReviewPacketSection:
-    """One evidence section packaged for external review."""
+    """One reviewer-facing section in an external review packet."""
 
     section_id: str
     section_kind: WaveFiveReviewPacketSectionKind
-    status: WaveFiveReviewPacketSectionStatus
+    title: str
+    summary: str
     artifact_ids: tuple[str, ...]
     evidence_ids: tuple[str, ...]
-    reviewer_instruction: str
     limitations: tuple[str, ...] = ()
+    required_reviewer_actions: tuple[str, ...] = ()
     claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
         WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
     )
     schema_version: str = WAVE_FIVE_REVIEW_SECTION_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate section evidence, reviewer instruction, and boundaries."""
+        """Validate review-packet section references and boundaries."""
 
         object.__setattr__(self, "section_id", _text(self.section_id, "section_id"))
+        object.__setattr__(self, "title", _text(self.title, "title"))
+        object.__setattr__(self, "summary", _text(self.summary, "summary"))
         object.__setattr__(
             self, "artifact_ids", _unique_text(self.artifact_ids, label="artifact_id")
         )
@@ -193,12 +181,15 @@ class WaveFiveReviewPacketSection:
             self, "evidence_ids", _unique_text(self.evidence_ids, label="evidence_id")
         )
         object.__setattr__(
-            self,
-            "reviewer_instruction",
-            _text(self.reviewer_instruction, "reviewer_instruction"),
+            self, "limitations", _unique_text(self.limitations, label="limitation")
         )
         object.__setattr__(
-            self, "limitations", _unique_text(self.limitations, label="limitation")
+            self,
+            "required_reviewer_actions",
+            _unique_text(
+                self.required_reviewer_actions,
+                label="required reviewer action",
+            ),
         )
         object.__setattr__(
             self,
@@ -209,18 +200,17 @@ class WaveFiveReviewPacketSection:
             raise ValueError("Review packet sections require artifact ids.")
         if not self.evidence_ids:
             raise ValueError("Review packet sections require evidence ids.")
-        if self.status is WaveFiveReviewPacketSectionStatus.INCLUDED_WITH_LIMITS:
-            if not self.limitations:
-                raise ValueError("Limited review packet sections require limits.")
-        missing = tuple(
+        if not self.required_reviewer_actions:
+            raise ValueError("Review packet sections require reviewer actions.")
+        missing_boundaries = tuple(
             boundary
             for boundary in WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
             if boundary not in self.claim_boundaries
         )
-        if missing:
+        if missing_boundaries:
             raise ValueError(
                 "Review packet sections must preserve claim boundary: "
-                f"{missing[0].value}"
+                f"{missing_boundaries[0].value}"
             )
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
@@ -232,18 +222,6 @@ class WaveFiveReviewPacketSection:
 
         return self.section_id
 
-    @property
-    def blocks_packet_readiness(self) -> bool:
-        """Return whether this section blocks external review."""
-
-        return self.status in BLOCKING_REVIEW_SECTION_STATUSES
-
-    @property
-    def reviewable_with_boundaries(self) -> bool:
-        """Return whether this section is reviewable without promotion."""
-
-        return self.status in SAFE_REVIEW_SECTION_STATUSES and bool(self.evidence_ids)
-
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic export payload."""
 
@@ -252,34 +230,31 @@ class WaveFiveReviewPacketSection:
             "claim_boundaries": [boundary.value for boundary in self.claim_boundaries],
             "evidence_ids": list(self.evidence_ids),
             "limitations": list(self.limitations),
-            "reviewable_with_boundaries": self.reviewable_with_boundaries,
-            "reviewer_instruction": self.reviewer_instruction,
+            "required_reviewer_actions": list(self.required_reviewer_actions),
             "schema_version": self.schema_version,
             "section_id": self.section_id,
             "section_kind": self.section_kind.value,
-            "status": self.status.value,
+            "summary": self.summary,
+            "title": self.title,
         }
 
 
 @dataclass(frozen=True, slots=True)
-class WaveFiveReviewerChallenge:
-    """One explicit challenge reviewers must apply to the packet."""
+class WaveFiveReviewQuestion:
+    """Challenge question that external reviewers should evaluate."""
 
-    challenge_id: str
-    challenge_kind: WaveFiveReviewChallengeKind
-    status: WaveFiveReviewChallengeStatus
-    prompt: str
+    question_id: str
+    question_kind: WaveFiveReviewQuestionKind
+    question: str
     expected_evidence_ids: tuple[str, ...]
-    blocking: bool = True
-    schema_version: str = WAVE_FIVE_REVIEW_CHALLENGE_SCHEMA_VERSION
+    blocks_if_unanswered: bool = True
+    schema_version: str = WAVE_FIVE_REVIEW_QUESTION_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate reviewer challenge evidence expectations."""
+        """Validate challenge-question identity and evidence references."""
 
-        object.__setattr__(
-            self, "challenge_id", _text(self.challenge_id, "challenge_id")
-        )
-        object.__setattr__(self, "prompt", _text(self.prompt, "prompt"))
+        object.__setattr__(self, "question_id", _text(self.question_id, "question_id"))
+        object.__setattr__(self, "question", _text(self.question, "question"))
         object.__setattr__(
             self,
             "expected_evidence_ids",
@@ -289,221 +264,178 @@ class WaveFiveReviewerChallenge:
             ),
         )
         if not self.expected_evidence_ids:
-            raise ValueError("Reviewer challenges require expected evidence ids.")
+            raise ValueError("Review questions require expected evidence ids.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
 
     @property
-    def challenge_key(self) -> str:
-        """Return deterministic challenge key."""
+    def question_key(self) -> str:
+        """Return deterministic question key."""
 
-        return self.challenge_id
-
-    @property
-    def ready_for_review(self) -> bool:
-        """Return whether this challenge can be issued to reviewers."""
-
-        return self.status in {
-            WaveFiveReviewChallengeStatus.READY,
-            WaveFiveReviewChallengeStatus.READY_WITH_LIMITS,
-        }
-
-    @property
-    def blocks_packet_readiness(self) -> bool:
-        """Return whether this challenge blocks packet readiness."""
-
-        return self.blocking and not self.ready_for_review
+        return self.question_id
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic export payload."""
 
         return {
-            "blocking": self.blocking,
-            "challenge_id": self.challenge_id,
-            "challenge_kind": self.challenge_kind.value,
+            "blocks_if_unanswered": self.blocks_if_unanswered,
             "expected_evidence_ids": list(self.expected_evidence_ids),
-            "prompt": self.prompt,
+            "question": self.question,
+            "question_id": self.question_id,
+            "question_kind": self.question_kind.value,
             "schema_version": self.schema_version,
-            "status": self.status.value,
         }
 
 
 @dataclass(frozen=True, slots=True)
-class WaveFiveReviewDisposition:
-    """Reviewer-facing disposition that preserves dissent and blockers."""
+class WaveFiveReviewResponse:
+    """External or human response to a review-packet challenge question."""
 
-    disposition_id: str
-    disposition_kind: WaveFiveReviewDispositionKind
-    reviewer_ids: tuple[str, ...]
-    summary: str
+    response_id: str
+    question_id: str
+    reviewer_id: str
+    disposition: WaveFiveReviewResponseDisposition
+    rationale: str
     evidence_ids: tuple[str, ...]
-    dissent_ids: tuple[str, ...] = ()
-    blocker_ids: tuple[str, ...] = ()
-    schema_version: str = WAVE_FIVE_REVIEW_DISPOSITION_SCHEMA_VERSION
+    reviewer_source_system: WaveFiveSourceSystem
+    limitations: tuple[str, ...] = ()
+    schema_version: str = WAVE_FIVE_REVIEW_RESPONSE_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate disposition reviewer evidence and blocker visibility."""
+        """Validate review response identity and reviewer provenance."""
 
-        object.__setattr__(
-            self,
-            "disposition_id",
-            _text(self.disposition_id, "disposition_id"),
-        )
-        object.__setattr__(
-            self, "reviewer_ids", _unique_text(self.reviewer_ids, label="reviewer_id")
-        )
-        object.__setattr__(self, "summary", _text(self.summary, "summary"))
+        object.__setattr__(self, "response_id", _text(self.response_id, "response_id"))
+        object.__setattr__(self, "question_id", _text(self.question_id, "question_id"))
+        object.__setattr__(self, "reviewer_id", _text(self.reviewer_id, "reviewer_id"))
+        object.__setattr__(self, "rationale", _text(self.rationale, "rationale"))
         object.__setattr__(
             self, "evidence_ids", _unique_text(self.evidence_ids, label="evidence_id")
         )
         object.__setattr__(
-            self, "dissent_ids", _unique_text(self.dissent_ids, label="dissent_id")
+            self, "limitations", _unique_text(self.limitations, label="limitation")
         )
-        object.__setattr__(
-            self, "blocker_ids", _unique_text(self.blocker_ids, label="blocker_id")
-        )
-        if self.disposition_kind in {
-            WaveFiveReviewDispositionKind.EXTERNALLY_REVIEWED_WITH_BOUNDARIES,
-            WaveFiveReviewDispositionKind.ACCEPTED_AS_LIMITED_EVIDENCE,
-            WaveFiveReviewDispositionKind.DISPUTED_BY_REVIEWER,
-            WaveFiveReviewDispositionKind.BLOCKED_BEFORE_WAVE_SIX,
-        }:
-            if not self.reviewer_ids:
-                raise ValueError("External review dispositions require reviewers.")
         if not self.evidence_ids:
-            raise ValueError("Review dispositions require evidence ids.")
-        if self.disposition_kind is WaveFiveReviewDispositionKind.DISPUTED_BY_REVIEWER:
-            if not self.dissent_ids:
-                raise ValueError("Disputed review dispositions require dissent ids.")
+            raise ValueError("Review responses require evidence ids.")
         if (
-            self.disposition_kind
-            is WaveFiveReviewDispositionKind.BLOCKED_BEFORE_WAVE_SIX
+            self.disposition
+            is WaveFiveReviewResponseDisposition.ACCEPTED_WITH_LIMITATIONS
+            and not self.limitations
         ):
-            if not self.blocker_ids:
-                raise ValueError("Blocked review dispositions require blockers.")
+            raise ValueError("Limited review acceptance requires limitations.")
+        if self.reviewer_source_system not in EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS:
+            raise ValueError("Review responses require external or human review source.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
 
     @property
-    def disposition_key(self) -> str:
-        """Return deterministic disposition key."""
+    def response_key(self) -> str:
+        """Return deterministic response key."""
 
-        return self.disposition_id
+        return self.response_id
 
     @property
     def blocks_packet_readiness(self) -> bool:
-        """Return whether this disposition blocks Wave 6 readiness."""
+        """Return whether this response blocks external review closure."""
 
-        return self.disposition_kind in {
-            WaveFiveReviewDispositionKind.DISPUTED_BY_REVIEWER,
-            WaveFiveReviewDispositionKind.BLOCKED_BEFORE_WAVE_SIX,
-        }
-
-    @property
-    def externally_reviewed_with_boundaries(self) -> bool:
-        """Return whether reviewers accepted the packet with boundaries."""
-
-        return (
-            self.disposition_kind
-            is WaveFiveReviewDispositionKind.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
-        )
+        return self.disposition in BLOCKING_REVIEW_RESPONSE_DISPOSITIONS
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic export payload."""
 
         return {
-            "blocker_ids": list(self.blocker_ids),
-            "disposition_id": self.disposition_id,
-            "disposition_kind": self.disposition_kind.value,
-            "dissent_ids": list(self.dissent_ids),
+            "disposition": self.disposition.value,
             "evidence_ids": list(self.evidence_ids),
-            "reviewer_ids": list(self.reviewer_ids),
+            "limitations": list(self.limitations),
+            "question_id": self.question_id,
+            "rationale": self.rationale,
+            "response_id": self.response_id,
+            "reviewer_id": self.reviewer_id,
+            "reviewer_source_system": self.reviewer_source_system.value,
             "schema_version": self.schema_version,
-            "summary": self.summary,
         }
 
 
 @dataclass(frozen=True, slots=True)
 class WaveFiveExternalReviewPacket:
-    """External review packet for Wave 5 evidence and Wave 6 readiness."""
+    """Reviewer-facing Wave 5 evidence packet."""
 
     packet_id: str
     title: str
     source_system: WaveFiveSourceSystem
-    packet_state: WaveFiveExternalReviewPacketState
+    packet_state: WaveFiveReviewPacketState
     sections: tuple[WaveFiveReviewPacketSection, ...]
-    challenges: tuple[WaveFiveReviewerChallenge, ...]
-    dispositions: tuple[WaveFiveReviewDisposition, ...]
-    protocol_ids: tuple[str, ...]
+    questions: tuple[WaveFiveReviewQuestion, ...]
+    responses: tuple[WaveFiveReviewResponse, ...]
+    reviewer_instructions: tuple[str, ...]
+    gap_summaries: tuple[str, ...]
     reviewer_ids: tuple[str, ...] = ()
-    attempted_wave_six_promotion: bool = False
     claims_agi: bool = False
-    grants_execution_authority: bool = False
-    claims_production_ready: bool = False
+    claims_wave_six: bool = False
     claims_certified: bool = False
+    grants_execution_authority: bool = False
     claims_independent_validation: bool = False
     claim_boundaries: tuple[WaveFiveClaimBoundary, ...] = (
         WAVE_FIVE_REQUIRED_CLAIM_BOUNDARIES
     )
     notes: tuple[str, ...] = ()
-    schema_version: str = WAVE_FIVE_EXTERNAL_REVIEW_PACKET_SCHEMA_VERSION
+    schema_version: str = WAVE_FIVE_REVIEW_PACKET_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate packet completeness and anti-overclaim gates."""
+        """Validate packet completeness, reviewer provenance, and boundaries."""
 
         object.__setattr__(self, "packet_id", _text(self.packet_id, "packet_id"))
         object.__setattr__(self, "title", _text(self.title, "title"))
-        if self.attempted_wave_six_promotion:
-            raise ValueError("External review packets cannot promote to Wave 6.")
         if self.claims_agi:
             raise ValueError("External review packets cannot claim AGI.")
-        if self.grants_execution_authority:
-            raise ValueError("External review packets cannot grant execution.")
-        if self.claims_production_ready:
-            raise ValueError("External review packets cannot claim production.")
+        if self.claims_wave_six:
+            raise ValueError("External review packets cannot claim Wave 6.")
         if self.claims_certified:
             raise ValueError("External review packets cannot claim certification.")
+        if self.grants_execution_authority:
+            raise ValueError("External review packets cannot grant execution authority.")
         if self.claims_independent_validation:
             raise ValueError(
                 "External review packets cannot self-claim independent validation."
             )
         sections = tuple(sorted(self.sections, key=lambda item: item.section_key))
-        challenges = tuple(
-            sorted(self.challenges, key=lambda item: item.challenge_key)
-        )
-        dispositions = tuple(
-            sorted(self.dispositions, key=lambda item: item.disposition_key)
-        )
+        questions = tuple(sorted(self.questions, key=lambda item: item.question_key))
+        responses = tuple(sorted(self.responses, key=lambda item: item.response_key))
         if not sections:
             raise ValueError("External review packets require sections.")
-        if not challenges:
-            raise ValueError("External review packets require challenges.")
-        if not dispositions:
-            raise ValueError("External review packets require dispositions.")
+        if not questions:
+            raise ValueError("External review packets require questions.")
         _unique_values((item.section_id for item in sections), label="section_id")
         _unique_values((item.section_kind for item in sections), label="section kind")
-        _unique_values(
-            (item.challenge_id for item in challenges),
-            label="challenge_id",
+        question_ids = _unique_values(
+            (item.question_id for item in questions), label="question_id"
         )
-        _unique_values(
-            (item.challenge_kind for item in challenges),
-            label="challenge kind",
-        )
-        _unique_values(
-            (item.disposition_id for item in dispositions),
-            label="disposition_id",
-        )
+        _unique_values((item.response_id for item in responses), label="response_id")
+        for response in responses:
+            if response.question_id not in question_ids:
+                raise ValueError(
+                    "Review responses must reference packet questions: "
+                    f"{response.question_id}"
+                )
         object.__setattr__(self, "sections", sections)
-        object.__setattr__(self, "challenges", challenges)
-        object.__setattr__(self, "dispositions", dispositions)
+        object.__setattr__(self, "questions", questions)
+        object.__setattr__(self, "responses", responses)
         object.__setattr__(
-            self, "protocol_ids", _unique_text(self.protocol_ids, label="protocol_id")
+            self,
+            "reviewer_instructions",
+            _unique_text(
+                self.reviewer_instructions,
+                label="reviewer instruction",
+            ),
         )
-        if not self.protocol_ids:
-            raise ValueError("External review packets require protocol ids.")
+        object.__setattr__(
+            self,
+            "gap_summaries",
+            _unique_text(self.gap_summaries, label="gap summary"),
+        )
+        if not self.reviewer_instructions:
+            raise ValueError("External review packets require reviewer instructions.")
         object.__setattr__(
             self, "reviewer_ids", _unique_text(self.reviewer_ids, label="reviewer_id")
         )
@@ -529,7 +461,7 @@ class WaveFiveExternalReviewPacket:
         if self.externally_reviewed_with_boundaries:
             if self.source_system not in EXTERNAL_REVIEW_PACKET_SOURCE_SYSTEMS:
                 raise ValueError(
-                    "Externally reviewed packets require external source."
+                    "Externally reviewed packets require external review source."
                 )
             if not self.reviewer_ids:
                 raise ValueError(
@@ -537,12 +469,12 @@ class WaveFiveExternalReviewPacket:
                 )
             if self.blocks_packet_readiness:
                 raise ValueError(
-                    "Externally reviewed packets cannot contain blockers."
+                    "Externally reviewed packets cannot contain blocking responses."
                 )
 
     @property
     def covered_section_kinds(self) -> tuple[WaveFiveReviewPacketSectionKind, ...]:
-        """Return packet section kinds represented in this packet."""
+        """Return packet section kinds represented in the packet."""
 
         return tuple(section.section_kind for section in self.sections)
 
@@ -550,95 +482,90 @@ class WaveFiveExternalReviewPacket:
     def missing_required_section_kinds(
         self,
     ) -> tuple[WaveFiveReviewPacketSectionKind, ...]:
-        """Return required packet sections absent from this packet."""
+        """Return required packet sections absent from the packet."""
 
         covered = set(self.covered_section_kinds)
         return tuple(
-            kind for kind in REQUIRED_REVIEW_PACKET_SECTIONS if kind not in covered
+            kind for kind in REQUIRED_REVIEW_PACKET_SECTION_KINDS if kind not in covered
         )
 
     @property
-    def covered_challenge_kinds(self) -> tuple[WaveFiveReviewChallengeKind, ...]:
-        """Return challenge kinds represented in this packet."""
+    def covered_question_kinds(self) -> tuple[WaveFiveReviewQuestionKind, ...]:
+        """Return question kinds represented in the packet."""
 
-        return tuple(challenge.challenge_kind for challenge in self.challenges)
-
-    @property
-    def missing_required_challenge_kinds(
-        self,
-    ) -> tuple[WaveFiveReviewChallengeKind, ...]:
-        """Return required reviewer challenges absent from this packet."""
-
-        covered = set(self.covered_challenge_kinds)
-        return tuple(kind for kind in REQUIRED_REVIEW_CHALLENGES if kind not in covered)
+        kinds: list[WaveFiveReviewQuestionKind] = []
+        seen: set[WaveFiveReviewQuestionKind] = set()
+        for question in self.questions:
+            if question.question_kind not in seen:
+                kinds.append(question.question_kind)
+                seen.add(question.question_kind)
+        return tuple(kinds)
 
     @property
-    def blocking_section_ids(self) -> tuple[str, ...]:
-        """Return packet sections that block review readiness."""
+    def missing_required_question_kinds(self) -> tuple[WaveFiveReviewQuestionKind, ...]:
+        """Return required challenge-question kinds absent from the packet."""
 
+        covered = set(self.covered_question_kinds)
         return tuple(
-            section.section_id
-            for section in self.sections
-            if section.blocks_packet_readiness
+            kind for kind in REQUIRED_REVIEW_QUESTION_KINDS if kind not in covered
         )
 
     @property
-    def blocking_challenge_ids(self) -> tuple[str, ...]:
-        """Return reviewer challenges that block packet readiness."""
+    def blocking_response_ids(self) -> tuple[str, ...]:
+        """Return review responses that block packet closure."""
 
         return tuple(
-            challenge.challenge_id
-            for challenge in self.challenges
-            if challenge.blocks_packet_readiness
+            response.response_id
+            for response in self.responses
+            if response.blocks_packet_readiness
         )
 
     @property
-    def blocking_disposition_ids(self) -> tuple[str, ...]:
-        """Return review dispositions that block readiness."""
+    def unanswered_blocking_question_ids(self) -> tuple[str, ...]:
+        """Return blocking questions without reviewer responses."""
 
+        responded = {response.question_id for response in self.responses}
         return tuple(
-            disposition.disposition_id
-            for disposition in self.dispositions
-            if disposition.blocks_packet_readiness
+            question.question_id
+            for question in self.questions
+            if question.blocks_if_unanswered and question.question_id not in responded
         )
 
     @property
     def has_required_section_coverage(self) -> bool:
-        """Return whether every locked section is represented."""
+        """Return whether every locked packet section is represented."""
 
         return not self.missing_required_section_kinds
 
     @property
-    def has_required_challenge_coverage(self) -> bool:
-        """Return whether every locked challenge is represented."""
+    def has_required_question_coverage(self) -> bool:
+        """Return whether every locked challenge-question kind is represented."""
 
-        return not self.missing_required_challenge_kinds
+        return not self.missing_required_question_kinds
 
     @property
     def makes_no_forbidden_claims(self) -> bool:
-        """Return whether packet avoids forbidden Wave 6 claims."""
+        """Return whether packet avoids forbidden maturity claims."""
 
         return not any(
             (
-                self.attempted_wave_six_promotion,
                 self.claims_agi,
-                self.grants_execution_authority,
-                self.claims_production_ready,
+                self.claims_wave_six,
                 self.claims_certified,
+                self.grants_execution_authority,
                 self.claims_independent_validation,
             )
         )
 
     @property
     def blocks_packet_readiness(self) -> bool:
-        """Return whether any packet condition blocks external review."""
+        """Return whether any condition blocks packet readiness."""
 
         return bool(
             self.missing_required_section_kinds
-            or self.missing_required_challenge_kinds
-            or self.blocking_section_ids
-            or self.blocking_challenge_ids
-            or self.blocking_disposition_ids
+            or self.missing_required_question_kinds
+            or self.blocking_response_ids
+            or self.unanswered_blocking_question_ids
             or not self.makes_no_forbidden_claims
         )
 
@@ -649,30 +576,42 @@ class WaveFiveExternalReviewPacket:
         return (
             self.packet_state
             in {
-                WaveFiveExternalReviewPacketState.INTERNAL_PACKET_READY,
-                WaveFiveExternalReviewPacketState.READY_FOR_EXTERNAL_REVIEW,
-                WaveFiveExternalReviewPacketState.UNDER_EXTERNAL_REVIEW,
+                WaveFiveReviewPacketState.INTERNAL_PACKET_READY,
+                WaveFiveReviewPacketState.READY_FOR_EXTERNAL_REVIEW,
+                WaveFiveReviewPacketState.UNDER_EXTERNAL_REVIEW,
             }
             and self.has_required_section_coverage
-            and self.has_required_challenge_coverage
-            and not self.blocking_section_ids
-            and not self.blocking_challenge_ids
-            and not self.blocking_disposition_ids
+            and self.has_required_question_coverage
+            and not self.blocking_response_ids
+            and not self.unanswered_blocking_question_ids
             and self.makes_no_forbidden_claims
         )
 
     @property
     def externally_reviewed_with_boundaries(self) -> bool:
-        """Return whether external reviewers accepted boundaries."""
+        """Return whether external review accepted the packet with boundaries."""
 
         return (
             self.packet_state
-            is WaveFiveExternalReviewPacketState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
+            is WaveFiveReviewPacketState.EXTERNALLY_REVIEWED_WITH_BOUNDARIES
         )
 
     @property
+    def all_artifact_ids(self) -> tuple[str, ...]:
+        """Return all artifact ids referenced by packet sections."""
+
+        artifact_ids: list[str] = []
+        seen: set[str] = set()
+        for section in self.sections:
+            for artifact_id in section.artifact_ids:
+                if artifact_id not in seen:
+                    artifact_ids.append(artifact_id)
+                    seen.add(artifact_id)
+        return tuple(artifact_ids)
+
+    @property
     def all_evidence_ids(self) -> tuple[str, ...]:
-        """Return all evidence ids bound into this packet."""
+        """Return all evidence ids referenced by packet contents."""
 
         evidence_ids: list[str] = []
         seen: set[str] = set()
@@ -683,7 +622,7 @@ class WaveFiveExternalReviewPacket:
         return tuple(evidence_ids)
 
     def to_artifact_ref(self) -> WaveFiveArtifactRef:
-        """Return this packet as a Wave 5 traceability artifact."""
+        """Return this packet as a Wave 5 review-board artifact."""
 
         decision = WaveFiveArtifactDecision.NEEDS_EXTERNAL_EVIDENCE
         status = WaveFiveValidationStatus.MISSING_EXTERNAL_EVIDENCE
@@ -700,12 +639,12 @@ class WaveFiveExternalReviewPacket:
             authority = WaveFiveAuthorityState.BLOCKED
         return WaveFiveArtifactRef(
             artifact_id=self.packet_id,
-            kind=WaveFiveArtifactKind.ECOSYSTEM_TRACEABILITY_MAP,
-            capability_area=WaveFiveCapabilityArea.ECOSYSTEM_TRACEABILITY,
+            kind=WaveFiveArtifactKind.REVIEW_BOARD_DOCKET,
+            capability_area=WaveFiveCapabilityArea.INDEPENDENT_REVIEW,
             source_system=self.source_system,
             summary=self.title,
             produced_by_engine_id="wave5-external-review-packet-engine",
-            produced_by_agent_role_id="external-review-packet-builder",
+            produced_by_agent_role_id="review-packet-coordinator",
             evidence_ids=self.all_evidence_ids,
             decision=decision,
             authority_state=authority,
@@ -717,28 +656,30 @@ class WaveFiveExternalReviewPacket:
         """Return deterministic export payload."""
 
         return {
-            "attempted_wave_six_promotion": self.attempted_wave_six_promotion,
-            "challenges": [item.canonical_payload() for item in self.challenges],
             "claim_boundaries": [boundary.value for boundary in self.claim_boundaries],
             "claims_agi": self.claims_agi,
             "claims_certified": self.claims_certified,
             "claims_independent_validation": self.claims_independent_validation,
-            "claims_production_ready": self.claims_production_ready,
-            "dispositions": [item.canonical_payload() for item in self.dispositions],
+            "claims_wave_six": self.claims_wave_six,
+            "gap_summaries": list(self.gap_summaries),
             "grants_execution_authority": self.grants_execution_authority,
             "notes": list(self.notes),
             "packet_id": self.packet_id,
             "packet_state": self.packet_state.value,
-            "protocol_ids": list(self.protocol_ids),
+            "questions": [question.canonical_payload() for question in self.questions],
+            "responses": [
+                response.canonical_payload() for response in self.responses
+            ],
             "reviewer_ids": list(self.reviewer_ids),
+            "reviewer_instructions": list(self.reviewer_instructions),
             "schema_version": self.schema_version,
-            "sections": [item.canonical_payload() for item in self.sections],
+            "sections": [section.canonical_payload() for section in self.sections],
             "source_system": self.source_system.value,
             "title": self.title,
         }
 
     def fingerprint(self) -> str:
-        """Return deterministic SHA-256 fingerprint for this packet."""
+        """Return deterministic SHA-256 fingerprint for this review packet."""
 
         return _stable_sha256(self.canonical_payload())
 
@@ -747,36 +688,36 @@ class WaveFiveExternalReviewPacket:
 
         for section in self.sections:
             yield from section.evidence_ids
-        for challenge in self.challenges:
-            yield from challenge.expected_evidence_ids
-        for disposition in self.dispositions:
-            yield from disposition.evidence_ids
+        for question in self.questions:
+            yield from question.expected_evidence_ids
+        for response in self.responses:
+            yield from response.evidence_ids
 
 
-def required_review_packet_sections() -> tuple[WaveFiveReviewPacketSectionKind, ...]:
-    """Return locked sections required in the external review packet."""
+def required_review_packet_section_kinds() -> tuple[WaveFiveReviewPacketSectionKind, ...]:
+    """Return locked review-packet sections required for Wave 5 review."""
 
-    return REQUIRED_REVIEW_PACKET_SECTIONS
-
-
-def required_reviewer_challenges() -> tuple[WaveFiveReviewChallengeKind, ...]:
-    """Return locked reviewer challenges required for Wave 5 packet review."""
-
-    return REQUIRED_REVIEW_CHALLENGES
+    return REQUIRED_REVIEW_PACKET_SECTION_KINDS
 
 
-def safe_review_section_statuses() -> tuple[WaveFiveReviewPacketSectionStatus, ...]:
-    """Return packet section statuses that do not block review."""
+def required_review_question_kinds() -> tuple[WaveFiveReviewQuestionKind, ...]:
+    """Return locked challenge-question kinds required for Wave 5 review."""
 
-    return SAFE_REVIEW_SECTION_STATUSES
+    return REQUIRED_REVIEW_QUESTION_KINDS
 
 
-def blocking_review_section_statuses() -> tuple[
-    WaveFiveReviewPacketSectionStatus, ...
+def safe_review_response_dispositions() -> tuple[WaveFiveReviewResponseDisposition, ...]:
+    """Return review responses that do not block packet closure."""
+
+    return SAFE_REVIEW_RESPONSE_DISPOSITIONS
+
+
+def blocking_review_response_dispositions() -> tuple[
+    WaveFiveReviewResponseDisposition, ...
 ]:
-    """Return packet section statuses that block review."""
+    """Return review responses that block packet closure."""
 
-    return BLOCKING_REVIEW_SECTION_STATUSES
+    return BLOCKING_REVIEW_RESPONSE_DISPOSITIONS
 
 
 def external_review_packet_source_systems() -> tuple[WaveFiveSourceSystem, ...]:
@@ -835,7 +776,5 @@ def _unique_values(values: Iterable[T], *, label: str) -> set[T]:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
