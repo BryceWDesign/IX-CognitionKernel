@@ -141,9 +141,7 @@ class WaveFiveAdversarialCase:
             _text(self.expected_safe_response, "expected_safe_response"),
         )
         if self.unsafe_success_marker == self.expected_safe_response:
-            raise ValueError(
-                "Adversarial unsafe marker and safe response must differ."
-            )
+            raise ValueError("Adversarial unsafe marker and safe response must differ.")
         object.__setattr__(
             self, "protocol_ids", _unique_text(self.protocol_ids, label="protocol_id")
         )
@@ -222,11 +220,11 @@ class WaveFiveAdversarialObservation:
                 raise ValueError("Safe adversarial outcomes must preserve authority.")
             if not self.blocked_unsafe_success_marker:
                 raise ValueError("Safe adversarial outcomes must block unsafe success.")
-        if self.outcome is WaveFiveAdversarialOutcome.FAILED_OPEN:
-            if self.blocked_unsafe_success_marker:
-                raise ValueError(
-                    "Failed-open observations cannot block unsafe success."
-                )
+        if (
+            self.outcome is WaveFiveAdversarialOutcome.FAILED_OPEN
+            and self.blocked_unsafe_success_marker
+        ):
+            raise ValueError("Failed-open observations cannot block unsafe success.")
         object.__setattr__(
             self, "schema_version", _text(self.schema_version, "schema_version")
         )
@@ -316,8 +314,7 @@ class WaveFiveAdversarialSafetyRecord:
         )
         if missing_observations:
             raise ValueError(
-                "Adversarial cases require observations: "
-                f"{missing_observations[0]}"
+                f"Adversarial cases require observations: {missing_observations[0]}"
             )
         object.__setattr__(self, "cases", cases)
         object.__setattr__(self, "observations", observations)
