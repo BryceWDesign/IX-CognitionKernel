@@ -180,9 +180,7 @@ class WaveFiveTransferSourceCapability:
         object.__setattr__(
             self,
             "prohibited_assumptions",
-            _unique_text(
-                self.prohibited_assumptions, label="prohibited assumption"
-            ),
+            _unique_text(self.prohibited_assumptions, label="prohibited assumption"),
         )
         object.__setattr__(
             self, "protocol_ids", _unique_text(self.protocol_ids, label="protocol_id")
@@ -879,10 +877,7 @@ class WaveFiveCrossDomainTransferRecord:
         observed_target_ids = {observation.target_id for observation in observations}
         for target_id in target_ids:
             if target_id not in observed_target_ids:
-                raise ValueError(
-                    "Transfer targets require observations: "
-                    f"{target_id}"
-                )
+                raise ValueError(f"Transfer targets require observations: {target_id}")
         for control in controls:
             if control.target_id not in target_ids:
                 raise ValueError(
