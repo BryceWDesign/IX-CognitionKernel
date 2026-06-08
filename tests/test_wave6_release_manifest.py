@@ -39,7 +39,7 @@ def _artifact(
         summary=f"Release artifact for {kind.value}.",
         evidence_ids=(f"evidence-{kind.value}",),
         finding=finding,
-        reviewer_questions=(f"Can {kind.value} be reviewed without overclaiming?",),
+        reviewer_questions=(f"Can {kind.value} be released for bounded review?",),
         requires_follow_up=requires_follow_up,
         blocks_release=blocks_release,
     )
@@ -52,9 +52,7 @@ def _complete_artifacts() -> tuple[WaveSixReleaseArtifact, ...]:
 def _manifest(
     *,
     artifacts: tuple[WaveSixReleaseArtifact, ...] | None = None,
-    allowed_audiences: tuple[WaveSixReleaseAudience, ...] = (
-        WAVE_SIX_REQUIRED_RELEASE_AUDIENCES
-    ),
+    allowed_audiences: tuple[WaveSixReleaseAudience, ...] | None = None,
     decision: WaveSixReleaseDecision = (
         WaveSixReleaseDecision.RELEASE_FOR_BOUNDED_REVIEW
     ),
@@ -63,25 +61,19 @@ def _manifest(
 ) -> WaveSixReleaseManifest:
     return WaveSixReleaseManifest(
         manifest_id="release-manifest-1",
-        release_version="wave6-review-v1",
+        release_version="wave6-bounded-review-v1",
         artifacts=artifacts or _complete_artifacts(),
-        allowed_audiences=allowed_audiences,
+        allowed_audiences=allowed_audiences or WAVE_SIX_REQUIRED_RELEASE_AUDIENCES,
         decision=decision,
         claim_boundary_statement=claim_boundary_statement or _boundary_statement(),
         generated_by_engine_id="wave6-release-manifest-engine",
         human_authority_id="human-authority-1",
         claims_agi=claims_agi,
-        notes=("Release is for bounded review only, not deployment or AGI.",),
+        notes=("Release is bounded review handoff, not production deployment.",),
     )
 
 
-def test_required_release_sets_are_locked() -> None:
-    assert required_wave_six_release_audiences() == (
-        WaveSixReleaseAudience.HUMAN_AUTHORITY,
-        WaveSixReleaseAudience.INDEPENDENT_EVALUATOR,
-        WaveSixReleaseAudience.REPLICATION_REVIEWER,
-        WaveSixReleaseAudience.AUDIT_REVIEWER,
-    )
+def test_required_release_artifacts_and_audiences_are_locked() -> None:
     assert required_wave_six_release_artifact_kinds() == (
         WaveSixReleaseArtifactKind.AUDIT_MANIFEST,
         WaveSixReleaseArtifactKind.MATURITY_DECISION_RECORD,
@@ -93,9 +85,15 @@ def test_required_release_sets_are_locked() -> None:
         WaveSixReleaseArtifactKind.CLAIM_BOUNDARY_DECLARATION,
         WaveSixReleaseArtifactKind.README_SUMMARY,
     )
+    assert required_wave_six_release_audiences() == (
+        WaveSixReleaseAudience.HUMAN_AUTHORITY,
+        WaveSixReleaseAudience.INDEPENDENT_EVALUATOR,
+        WaveSixReleaseAudience.REPLICATION_REVIEWER,
+        WaveSixReleaseAudience.AUDIT_REVIEWER,
+    )
 
 
-def test_release_artifact_is_evidence_bound_and_fingerprinted() -> None:
+def test_release_artifact_is_included_and_fingerprinted() -> None:
     artifact = _artifact(WaveSixReleaseArtifactKind.AUDIT_MANIFEST)
 
     assert artifact.included
@@ -108,7 +106,7 @@ def test_release_artifact_is_evidence_bound_and_fingerprinted() -> None:
 def test_release_artifact_enforces_finding_semantics() -> None:
     with pytest.raises(ValueError, match="cannot require follow-up"):
         _artifact(
-            WaveSixReleaseArtifactKind.REVIEW_SCORECARD,
+            WaveSixReleaseArtifactKind.AUDIT_MANIFEST,
             finding=WaveSixReleaseFinding.INCLUDED,
             requires_follow_up=True,
         )
@@ -121,22 +119,34 @@ def test_release_artifact_enforces_finding_semantics() -> None:
 
     with pytest.raises(ValueError, match="must block release"):
         _artifact(
-            WaveSixReleaseArtifactKind.EXTERNAL_VALIDATION_GATE,
+            WaveSixReleaseArtifactKind.CLAIM_BOUNDARY_DECLARATION,
             finding=WaveSixReleaseFinding.BLOCKS_RELEASE,
+        )
+
+
+def test_release_artifact_requires_evidence_ids() -> None:
+    with pytest.raises(ValueError, match="require evidence ids"):
+        WaveSixReleaseArtifact(
+            artifact_id="artifact-no-evidence",
+            kind=WaveSixReleaseArtifactKind.AUDIT_MANIFEST,
+            artifact_fingerprint="fingerprint",
+            source_path="artifacts/wave6/audit.json",
+            summary="Invalid release artifact.",
+            evidence_ids=(),
         )
 
 
 def test_release_manifest_is_ready_when_complete_and_bounded() -> None:
     manifest = build_wave_six_release_manifest(
         manifest_id="release-manifest-ready",
-        release_version="wave6-review-v1",
+        release_version="wave6-bounded-review-v1",
         artifacts=_complete_artifacts(),
         allowed_audiences=WAVE_SIX_REQUIRED_RELEASE_AUDIENCES,
         decision=WaveSixReleaseDecision.RELEASE_FOR_BOUNDED_REVIEW,
         claim_boundary_statement=_boundary_statement(),
         generated_by_engine_id="wave6-release-manifest-engine",
         human_authority_id="human-authority-1",
-        notes=("Every release artifact is included for bounded review.",),
+        notes=("All required release artifacts are included.",),
     )
 
     assert manifest.present_artifact_kinds == WAVE_SIX_REQUIRED_RELEASE_ARTIFACT_KINDS
@@ -144,12 +154,10 @@ def test_release_manifest_is_ready_when_complete_and_bounded() -> None:
     assert manifest.missing_required_audiences == ()
     assert manifest.follow_up_artifact_ids == ()
     assert manifest.blocking_artifact_ids == ()
-    assert manifest.claim_boundary_statement_valid
     assert manifest.status is WaveSixReleaseStatus.READY_FOR_BOUNDED_REVIEW_RELEASE
     assert manifest.ready_for_bounded_review_release
-    assert len(manifest.included_artifact_ids) == len(
-        WAVE_SIX_REQUIRED_RELEASE_ARTIFACT_KINDS
-    )
+    assert manifest.claim_boundary_statement_valid
+    assert not manifest.overclaim_present
     assert manifest.fingerprint() == manifest.fingerprint()
     assert len(manifest.fingerprint()) == 64
 
@@ -169,34 +177,41 @@ def test_release_manifest_reports_missing_artifact_kind() -> None:
 
 def test_release_manifest_reports_missing_required_audience() -> None:
     manifest = _manifest(
-        allowed_audiences=(WaveSixReleaseAudience.HUMAN_AUTHORITY,),
+        allowed_audiences=(
+            WaveSixReleaseAudience.HUMAN_AUTHORITY,
+            WaveSixReleaseAudience.INDEPENDENT_EVALUATOR,
+        ),
         decision=WaveSixReleaseDecision.HOLD_FOR_MORE_EVIDENCE,
     )
 
-    assert WaveSixReleaseAudience.INDEPENDENT_EVALUATOR in (
-        manifest.missing_required_audiences
+    assert manifest.missing_required_audiences == (
+        WaveSixReleaseAudience.REPLICATION_REVIEWER,
+        WaveSixReleaseAudience.AUDIT_REVIEWER,
     )
     assert manifest.status is WaveSixReleaseStatus.NEEDS_MORE_EVIDENCE
 
 
-def test_release_ready_manifest_rejects_missing_or_follow_up_artifacts() -> None:
-    with pytest.raises(ValueError, match="require every artifact kind"):
-        _manifest(artifacts=_complete_artifacts()[:-1])
-
+def test_release_manifest_tracks_follow_up_artifact() -> None:
     artifacts = list(_complete_artifacts())
     artifacts[4] = _artifact(
         WaveSixReleaseArtifactKind.REVIEW_SCORECARD,
         finding=WaveSixReleaseFinding.NEEDS_MORE_EVIDENCE,
         requires_follow_up=True,
     )
-    with pytest.raises(ValueError, match="cannot require follow-up"):
-        _manifest(artifacts=tuple(artifacts))
+    manifest = _manifest(
+        artifacts=tuple(artifacts),
+        decision=WaveSixReleaseDecision.HOLD_FOR_MORE_EVIDENCE,
+    )
+
+    assert manifest.follow_up_artifact_ids == ("artifact-review-scorecard",)
+    assert manifest.status is WaveSixReleaseStatus.NEEDS_MORE_EVIDENCE
+    assert not manifest.ready_for_bounded_review_release
 
 
 def test_release_manifest_blocks_on_blocking_artifact_or_overclaim() -> None:
     artifacts = list(_complete_artifacts())
-    artifacts[2] = _artifact(
-        WaveSixReleaseArtifactKind.EXTERNAL_VALIDATION_GATE,
+    artifacts[7] = _artifact(
+        WaveSixReleaseArtifactKind.CLAIM_BOUNDARY_DECLARATION,
         finding=WaveSixReleaseFinding.BLOCKS_RELEASE,
         blocks_release=True,
     )
@@ -205,9 +220,10 @@ def test_release_manifest_blocks_on_blocking_artifact_or_overclaim() -> None:
         decision=WaveSixReleaseDecision.BLOCK_RELEASE,
     )
 
-    assert blocked.blocking_artifact_ids == ("artifact-external-validation-gate",)
+    assert blocked.blocking_artifact_ids == (
+        "artifact-claim-boundary-declaration",
+    )
     assert blocked.status is WaveSixReleaseStatus.BLOCKED
-    assert not blocked.ready_for_bounded_review_release
 
     overclaim = _manifest(
         decision=WaveSixReleaseDecision.BLOCK_RELEASE,
@@ -218,6 +234,21 @@ def test_release_manifest_blocks_on_blocking_artifact_or_overclaim() -> None:
     assert overclaim.status is WaveSixReleaseStatus.BLOCKED
 
 
+def test_ready_release_manifest_rejects_missing_or_follow_up_artifacts() -> None:
+    with pytest.raises(ValueError, match="require every artifact kind"):
+        _manifest(artifacts=_complete_artifacts()[:-1])
+
+    artifacts = list(_complete_artifacts())
+    artifacts[5] = _artifact(
+        WaveSixReleaseArtifactKind.REPLICATION_PROTOCOL,
+        finding=WaveSixReleaseFinding.NEEDS_MORE_EVIDENCE,
+        requires_follow_up=True,
+    )
+
+    with pytest.raises(ValueError, match="cannot require follow-up"):
+        _manifest(artifacts=tuple(artifacts))
+
+
 def test_blocked_release_manifest_requires_blocker_or_overclaim() -> None:
     with pytest.raises(ValueError, match="require blocker or overclaim"):
         _manifest(decision=WaveSixReleaseDecision.BLOCK_RELEASE)
@@ -226,14 +257,14 @@ def test_blocked_release_manifest_requires_blocker_or_overclaim() -> None:
 def test_release_manifest_reports_invalid_claim_boundary_statement() -> None:
     manifest = _manifest(
         decision=WaveSixReleaseDecision.HOLD_FOR_MORE_EVIDENCE,
-        claim_boundary_statement="Wave 6 is ready.",
+        claim_boundary_statement="Wave 6 release is ready.",
     )
 
     assert not manifest.claim_boundary_statement_valid
     assert manifest.status is WaveSixReleaseStatus.NEEDS_MORE_EVIDENCE
 
 
-def test_release_manifest_lookup_returns_present_artifact_only() -> None:
+def test_release_manifest_lookup_and_duplicate_rejection() -> None:
     manifest = _manifest(
         artifacts=(_artifact(WaveSixReleaseArtifactKind.AUDIT_MANIFEST),),
         decision=WaveSixReleaseDecision.HOLD_FOR_MORE_EVIDENCE,
@@ -244,24 +275,20 @@ def test_release_manifest_lookup_returns_present_artifact_only() -> None:
     assert artifact is not None
     assert artifact.artifact_id == "artifact-audit-manifest"
     assert (
-        manifest.artifact_for_kind(WaveSixReleaseArtifactKind.CHALLENGE_SUITE)
-        is None
+        manifest.artifact_for_kind(WaveSixReleaseArtifactKind.REVIEW_SCORECARD) is None
     )
 
-
-def test_release_manifest_rejects_duplicate_artifact_ids_or_kinds() -> None:
-    artifact = _artifact(WaveSixReleaseArtifactKind.AUDIT_MANIFEST)
-
+    duplicate = _artifact(WaveSixReleaseArtifactKind.AUDIT_MANIFEST)
     with pytest.raises(ValueError, match="Duplicate artifact_id"):
         _manifest(
-            artifacts=(artifact, artifact),
+            artifacts=(duplicate, duplicate),
             decision=WaveSixReleaseDecision.HOLD_FOR_MORE_EVIDENCE,
         )
 
     with pytest.raises(ValueError, match="Duplicate artifact kind"):
         _manifest(
             artifacts=(
-                artifact,
+                duplicate,
                 _artifact(
                     WaveSixReleaseArtifactKind.AUDIT_MANIFEST,
                     artifact_id="different-artifact-id",
