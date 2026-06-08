@@ -286,9 +286,7 @@ def test_external_validation_gate_blocks_on_failed_replication_step() -> None:
 
     assert WaveSixExternalValidationBlocker.REPLICATION_STEP_BLOCKED in gate.blockers
     assert gate.status is WaveSixExternalValidationStatus.BLOCKED
-    assert gate.blocking_summary_ids == (
-        "summary-independent-replication-protocol",
-    )
+    assert gate.blocking_summary_ids == ("summary-independent-replication-protocol",)
 
 
 def test_external_validation_gate_reports_replay_not_ready() -> None:
