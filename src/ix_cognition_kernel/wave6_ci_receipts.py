@@ -306,9 +306,12 @@ class WaveSixCIReceiptLedger:
                 raise ValueError("Ready CI ledgers cannot contain overclaims.")
             if not self.claim_boundary_statement_valid:
                 raise ValueError("Ready CI ledgers require valid claim boundary.")
-        if self.decision is WaveSixCIReceiptLedgerDecision.BLOCK_REVIEW:
-            if not self.blocking_receipt_ids and not self.overclaim_present:
-                raise ValueError("Blocked CI ledgers require blocker or overclaim.")
+        if (
+            self.decision is WaveSixCIReceiptLedgerDecision.BLOCK_REVIEW
+            and not self.blocking_receipt_ids
+            and not self.overclaim_present
+        ):
+            raise ValueError("Blocked CI ledgers require blocker or overclaim.")
 
     @property
     def receipt_ids(self) -> tuple[str, ...]:
@@ -328,7 +331,9 @@ class WaveSixCIReceiptLedger:
         """Return required CI command kinds missing from the ledger."""
 
         present = {receipt.command_kind for receipt in self.receipts}
-        return tuple(kind for kind in self.required_command_kinds if kind not in present)
+        return tuple(
+            kind for kind in self.required_command_kinds if kind not in present
+        )
 
     @property
     def passed_receipt_ids(self) -> tuple[str, ...]:
