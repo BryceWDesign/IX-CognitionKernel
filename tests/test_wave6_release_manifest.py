@@ -220,9 +220,7 @@ def test_release_manifest_blocks_on_blocking_artifact_or_overclaim() -> None:
         decision=WaveSixReleaseDecision.BLOCK_RELEASE,
     )
 
-    assert blocked.blocking_artifact_ids == (
-        "artifact-claim-boundary-declaration",
-    )
+    assert blocked.blocking_artifact_ids == ("artifact-claim-boundary-declaration",)
     assert blocked.status is WaveSixReleaseStatus.BLOCKED
 
     overclaim = _manifest(
