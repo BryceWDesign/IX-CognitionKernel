@@ -231,9 +231,7 @@ class WaveSixFutureReasoningChangeProof:
         if not self.evidence_ids:
             raise ValueError("Reasoning-change proofs require evidence ids.")
         if self.expected_future_behavior == self.counterfactual_old_behavior:
-            raise ValueError(
-                "Expected future behavior must differ from old behavior."
-            )
+            raise ValueError("Expected future behavior must differ from old behavior.")
 
     @property
     def snapshot_fingerprints_differ(self) -> bool:
@@ -304,9 +302,7 @@ class WaveSixFutureReasoningChangeProof:
             "evidence_ids": list(self.evidence_ids),
             "expected_future_behavior": self.expected_future_behavior,
             "proof_id": self.proof_id,
-            "reality_correction_record_ids": list(
-                self.reality_correction_record_ids
-            ),
+            "reality_correction_record_ids": list(self.reality_correction_record_ids),
             "requires_human_review": self.requires_human_review,
             "schema_version": self.schema_version,
         }
