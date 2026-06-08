@@ -192,9 +192,11 @@ def test_public_claim_report_is_ready_when_all_required_surfaces_are_clean() -> 
 
     assert report.present_surfaces == WAVE_SIX_REQUIRED_PUBLIC_CLAIM_SURFACES
     assert report.missing_surfaces == ()
-    assert report.accepted_statement_ids == tuple(
-        f"statement-{surface.value}"
-        for surface in WAVE_SIX_REQUIRED_PUBLIC_CLAIM_SURFACES
+    assert report.accepted_statement_ids == (
+        "statement-github-about",
+        "statement-independent-review-packet",
+        "statement-readme",
+        "statement-release-summary",
     )
     assert report.follow_up_statement_ids == ()
     assert report.blocking_statement_ids == ()
