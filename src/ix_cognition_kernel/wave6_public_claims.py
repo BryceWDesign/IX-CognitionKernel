@@ -18,9 +18,7 @@ from typing import Any, TypeVar
 
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_SIX_PUBLIC_CLAIM_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-public-claim-v1"
-)
+WAVE_SIX_PUBLIC_CLAIM_SCHEMA_VERSION = "ix-cognition-kernel-wave6-public-claim-v1"
 WAVE_SIX_PUBLIC_CLAIM_REPORT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-public-claim-report-v1"
 )
@@ -231,9 +229,8 @@ class WaveSixPublicClaimStatement:
     def needs_more_evidence(self) -> bool:
         """Return whether this statement still needs evidence or boundary text."""
 
-        return (
-            self.finding is WaveSixPublicClaimFinding.NEEDS_MORE_EVIDENCE
-            or bool(self.missing_required_fragments)
+        return self.finding is WaveSixPublicClaimFinding.NEEDS_MORE_EVIDENCE or bool(
+            self.missing_required_fragments
         )
 
     @property
@@ -360,9 +357,11 @@ class WaveSixPublicClaimReport:
                 raise ValueError(
                     "Approved public-claim reports cannot include blockers."
                 )
-        if self.decision is WaveSixPublicClaimDecision.BLOCK_PUBLICATION:
-            if not self.blocking_statement_ids:
-                raise ValueError("Blocked public-claim reports require a blocker.")
+        if (
+            self.decision is WaveSixPublicClaimDecision.BLOCK_PUBLICATION
+            and not self.blocking_statement_ids
+        ):
+            raise ValueError("Blocked public-claim reports require a blocker.")
 
     @property
     def statement_ids(self) -> tuple[str, ...]:
