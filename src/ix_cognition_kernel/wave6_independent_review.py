@@ -151,13 +151,15 @@ class WaveSixIndependentReviewArtifact:
         if not self.evidence_ids:
             raise ValueError("Independent-review artifacts require evidence ids.")
         if not self.reviewer_questions:
-            raise ValueError(
-                "Independent-review artifacts require reviewer questions."
-            )
-        if self.finding in {
-            WaveSixIndependentReviewFinding.CONTRADICTED,
-            WaveSixIndependentReviewFinding.BLOCKS_EXTERNAL_REVIEW,
-        } and not self.blocks_external_review:
+            raise ValueError("Independent-review artifacts require reviewer questions.")
+        if (
+            self.finding
+            in {
+                WaveSixIndependentReviewFinding.CONTRADICTED,
+                WaveSixIndependentReviewFinding.BLOCKS_EXTERNAL_REVIEW,
+            }
+            and not self.blocks_external_review
+        ):
             raise ValueError(
                 "Contradicting or blocking review artifacts must block review."
             )
@@ -174,8 +176,7 @@ class WaveSixIndependentReviewArtifact:
         """Return whether this artifact is accepted for external review."""
 
         return (
-            self.finding
-            is WaveSixIndependentReviewFinding.ACCEPTED_FOR_EXTERNAL_REVIEW
+            self.finding is WaveSixIndependentReviewFinding.ACCEPTED_FOR_EXTERNAL_REVIEW
         )
 
     @property
@@ -404,9 +405,8 @@ class WaveSixIndependentReviewPacket:
     def blocks_external_review(self) -> bool:
         """Return whether the packet blocks external review."""
 
-        return (
-            self.decision is WaveSixIndependentReviewDecision.BLOCKED
-            or bool(self.blocking_artifact_ids)
+        return self.decision is WaveSixIndependentReviewDecision.BLOCKED or bool(
+            self.blocking_artifact_ids
         )
 
     def artifact_for_kind(
