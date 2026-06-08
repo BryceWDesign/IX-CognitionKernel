@@ -162,9 +162,7 @@ class WaveSixReadinessAssessment:
         if self.missing_donor_source_systems:
             blockers.append(WaveSixReadinessBlocker.DONOR_TRACEABILITY_INCOMPLETE)
         if not self.has_reality_corrected_reasoning_proof:
-            blockers.append(
-                WaveSixReadinessBlocker.REALITY_CORRECTED_REASONING_MISSING
-            )
+            blockers.append(WaveSixReadinessBlocker.REALITY_CORRECTED_REASONING_MISSING)
         if not self.has_falsification_stage:
             blockers.append(WaveSixReadinessBlocker.FALSIFICATION_STAGE_MISSING)
         if not self.has_falsification_artifact:
@@ -192,10 +190,7 @@ class WaveSixReadinessAssessment:
     def ready_for_measured_cognition_review(self) -> bool:
         """Return whether Wave 6 may enter measured-cognition review."""
 
-        return (
-            self.status
-            is WaveSixReadinessStatus.READY_FOR_MEASURED_COGNITION_REVIEW
-        )
+        return self.status is WaveSixReadinessStatus.READY_FOR_MEASURED_COGNITION_REVIEW
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic payload for review and hashing."""
