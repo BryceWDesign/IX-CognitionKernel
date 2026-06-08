@@ -81,9 +81,7 @@ WAVE_SIX_REQUIRED_RELEASE_AUDIENCES: tuple[WaveSixReleaseAudience, ...] = (
     WaveSixReleaseAudience.AUDIT_REVIEWER,
 )
 
-WAVE_SIX_REQUIRED_RELEASE_ARTIFACT_KINDS: tuple[
-    WaveSixReleaseArtifactKind, ...
-] = (
+WAVE_SIX_REQUIRED_RELEASE_ARTIFACT_KINDS: tuple[WaveSixReleaseArtifactKind, ...] = (
     WaveSixReleaseArtifactKind.AUDIT_MANIFEST,
     WaveSixReleaseArtifactKind.MATURITY_DECISION_RECORD,
     WaveSixReleaseArtifactKind.EXTERNAL_VALIDATION_GATE,
@@ -184,8 +182,7 @@ class WaveSixReleaseArtifact:
         """Return whether this artifact blocks bounded review release."""
 
         return (
-            self.blocks_release
-            or self.finding is WaveSixReleaseFinding.BLOCKS_RELEASE
+            self.blocks_release or self.finding is WaveSixReleaseFinding.BLOCKS_RELEASE
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -332,11 +329,12 @@ class WaveSixReleaseManifest:
                 raise ValueError(
                     "Release-ready manifests require valid claim boundary."
                 )
-        if self.decision is WaveSixReleaseDecision.BLOCK_RELEASE:
-            if not self.blocking_artifact_ids and not self.overclaim_present:
-                raise ValueError(
-                    "Blocked release manifests require blocker or overclaim."
-                )
+        if (
+            self.decision is WaveSixReleaseDecision.BLOCK_RELEASE
+            and not self.blocking_artifact_ids
+            and not self.overclaim_present
+        ):
+            raise ValueError("Blocked release manifests require blocker or overclaim.")
 
     @property
     def artifact_ids(self) -> tuple[str, ...]:
@@ -366,9 +364,7 @@ class WaveSixReleaseManifest:
 
         present = set(self.allowed_audiences)
         return tuple(
-            audience
-            for audience in self.required_audiences
-            if audience not in present
+            audience for audience in self.required_audiences if audience not in present
         )
 
     @property
