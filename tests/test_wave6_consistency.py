@@ -237,8 +237,7 @@ def test_consistency_report_lookup_returns_present_check_only() -> None:
     assert check is not None
     assert check.check_id == "check-claim-boundary-alignment"
     assert (
-        report.check_for_kind(WaveSixConsistencyCheckKind.NO_OVERCLAIM_PRESENT)
-        is None
+        report.check_for_kind(WaveSixConsistencyCheckKind.NO_OVERCLAIM_PRESENT) is None
     )
 
 
