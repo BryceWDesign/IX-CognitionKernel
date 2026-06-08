@@ -15,19 +15,21 @@ class _EvidencePackage:
         self,
         *,
         ready: bool = True,
-        blockers: tuple[str, ...] = (),
+        blockers: tuple[object, ...] = (),
         overclaim_present: bool = False,
+        fingerprint: str = "evidence-package-fingerprint",
     ) -> None:
         self._ready = ready
         self._blockers = blockers
         self._overclaim_present = overclaim_present
+        self._fingerprint = fingerprint
 
     @property
     def ready_for_external_review(self) -> bool:
         return self._ready
 
     @property
-    def blockers(self) -> tuple[str, ...]:
+    def blockers(self) -> tuple[object, ...]:
         return self._blockers
 
     @property
@@ -35,7 +37,7 @@ class _EvidencePackage:
         return self._overclaim_present
 
     def fingerprint(self) -> str:
-        return "evidence-package-fingerprint"
+        return self._fingerprint
 
 
 class _ReviewScorecard:
@@ -46,11 +48,13 @@ class _ReviewScorecard:
         blocking_item_ids: tuple[str, ...] = (),
         follow_up_item_ids: tuple[str, ...] = (),
         overclaim_present: bool = False,
+        fingerprint: str = "review-scorecard-fingerprint",
     ) -> None:
         self._ready = ready
         self._blocking_item_ids = blocking_item_ids
         self._follow_up_item_ids = follow_up_item_ids
         self._overclaim_present = overclaim_present
+        self._fingerprint = fingerprint
 
     @property
     def ready_for_external_review(self) -> bool:
@@ -69,7 +73,7 @@ class _ReviewScorecard:
         return self._overclaim_present
 
     def fingerprint(self) -> str:
-        return "review-scorecard-fingerprint"
+        return self._fingerprint
 
 
 class _ExternalValidationGate:
@@ -77,19 +81,21 @@ class _ExternalValidationGate:
         self,
         *,
         ready: bool = True,
-        blockers: tuple[str, ...] = (),
+        blockers: tuple[object, ...] = (),
         overclaim_present: bool = False,
+        fingerprint: str = "external-validation-fingerprint",
     ) -> None:
         self._ready = ready
         self._blockers = blockers
         self._overclaim_present = overclaim_present
+        self._fingerprint = fingerprint
 
     @property
     def ready_for_external_validation_review(self) -> bool:
         return self._ready
 
     @property
-    def blockers(self) -> tuple[str, ...]:
+    def blockers(self) -> tuple[object, ...]:
         return self._blockers
 
     @property
@@ -97,13 +103,14 @@ class _ExternalValidationGate:
         return self._overclaim_present
 
     def fingerprint(self) -> str:
-        return "external-validation-fingerprint"
+        return self._fingerprint
 
 
 def _boundary_statement() -> str:
     return (
-        "This is a Wave-6 measured system-level cognition attempt under human "
-        "authority and independent review. It is not an AGI claim."
+        "This Wave-6 measured system-level cognition package is ready for "
+        "bounded review under human authority and independent review. It is not "
+        "an AGI claim."
     )
 
 
@@ -119,16 +126,17 @@ def _gate(
         gate_id="maturity-gate-1",
         evidence_package=evidence_package or _EvidencePackage(),
         review_scorecard=review_scorecard or _ReviewScorecard(),
-        external_validation_gate=external_validation_gate or _ExternalValidationGate(),
+        external_validation_gate=external_validation_gate
+        or _ExternalValidationGate(),
         claim_boundary_statement=claim_boundary_statement or _boundary_statement(),
         human_authority_id="human-authority-1",
         independent_reviewer_id="independent-reviewer-1",
         claims_agi=claims_agi,
-        notes=("Ready means bounded review, not AGI achieved.",),
+        notes=("This is bounded review readiness, not AGI achieved.",),
     )
 
 
-def test_maturity_gate_enters_bounded_review_when_every_surface_is_ready() -> None:
+def test_maturity_gate_is_ready_when_all_inputs_are_ready_and_bounded() -> None:
     gate = build_wave_six_maturity_gate(
         gate_id="maturity-gate-ready",
         evidence_package=_EvidencePackage(),
@@ -137,7 +145,7 @@ def test_maturity_gate_enters_bounded_review_when_every_surface_is_ready() -> No
         claim_boundary_statement=_boundary_statement(),
         human_authority_id="human-authority-1",
         independent_reviewer_id="independent-reviewer-1",
-        notes=("External reviewers still decide whether evidence survives.",),
+        notes=("All late-stage Wave 6 inputs are ready for bounded review.",),
     )
 
     assert gate.blockers == ()
@@ -152,7 +160,7 @@ def test_maturity_gate_enters_bounded_review_when_every_surface_is_ready() -> No
     assert len(gate.fingerprint()) == 64
 
 
-def test_maturity_gate_needs_more_evidence_when_package_is_not_ready() -> None:
+def test_maturity_gate_needs_evidence_when_package_is_not_ready() -> None:
     gate = _gate(evidence_package=_EvidencePackage(ready=False))
 
     assert gate.blockers == (WaveSixMaturityBlocker.EVIDENCE_PACKAGE_NOT_READY,)
@@ -161,84 +169,142 @@ def test_maturity_gate_needs_more_evidence_when_package_is_not_ready() -> None:
     assert not gate.ready_for_bounded_wave_six_review
 
 
-def test_maturity_gate_blocks_when_package_reports_blockers() -> None:
+def test_maturity_gate_blocks_when_package_has_blockers() -> None:
     gate = _gate(
         evidence_package=_EvidencePackage(
             ready=False,
-            blockers=("claim-blocked",),
+            blockers=("missing-required-surface",),
         )
     )
 
-    assert WaveSixMaturityBlocker.EVIDENCE_PACKAGE_BLOCKED in gate.blockers
+    assert gate.evidence_package_blocked
+    assert gate.blockers == (WaveSixMaturityBlocker.EVIDENCE_PACKAGE_BLOCKED,)
     assert gate.status is WaveSixMaturityStatus.BLOCKED
     assert gate.decision is WaveSixMaturityDecision.BLOCK_WAVE_SIX_INTERPRETATION
 
 
-def test_maturity_gate_blocks_on_scorecard_blocking_item() -> None:
-    gate = _gate(
-        review_scorecard=_ReviewScorecard(
-            ready=False,
-            blocking_item_ids=("item-falsification-survival",),
-        )
-    )
+def test_maturity_gate_needs_evidence_when_scorecard_is_not_ready() -> None:
+    gate = _gate(review_scorecard=_ReviewScorecard(ready=False))
 
-    assert WaveSixMaturityBlocker.REVIEW_SCORECARD_BLOCKED in gate.blockers
-    assert gate.status is WaveSixMaturityStatus.BLOCKED
-
-
-def test_maturity_gate_needs_more_evidence_on_scorecard_follow_up() -> None:
-    gate = _gate(
-        review_scorecard=_ReviewScorecard(
-            ready=False,
-            follow_up_item_ids=("item-cross-domain-transfer",),
-        )
-    )
-
-    assert WaveSixMaturityBlocker.REVIEW_SCORECARD_NOT_READY in gate.blockers
+    assert gate.blockers == (WaveSixMaturityBlocker.REVIEW_SCORECARD_NOT_READY,)
     assert gate.status is WaveSixMaturityStatus.NEEDS_MORE_EVIDENCE
+    assert gate.decision is WaveSixMaturityDecision.CONTINUE_EVIDENCE_COLLECTION
 
 
-def test_maturity_gate_blocks_on_external_validation_blocker() -> None:
+def test_maturity_gate_blocks_when_scorecard_has_blocking_items() -> None:
+    gate = _gate(
+        review_scorecard=_ReviewScorecard(
+            ready=False,
+            blocking_item_ids=("scorecard-blocker-1",),
+        )
+    )
+
+    assert gate.review_scorecard_blocked
+    assert gate.blockers == (WaveSixMaturityBlocker.REVIEW_SCORECARD_BLOCKED,)
+    assert gate.status is WaveSixMaturityStatus.BLOCKED
+    assert gate.decision is WaveSixMaturityDecision.BLOCK_WAVE_SIX_INTERPRETATION
+
+
+def test_maturity_gate_needs_evidence_when_external_validation_not_ready() -> None:
+    gate = _gate(external_validation_gate=_ExternalValidationGate(ready=False))
+
+    assert gate.blockers == (WaveSixMaturityBlocker.EXTERNAL_VALIDATION_NOT_READY,)
+    assert gate.status is WaveSixMaturityStatus.NEEDS_MORE_EVIDENCE
+    assert gate.decision is WaveSixMaturityDecision.CONTINUE_EVIDENCE_COLLECTION
+
+
+def test_maturity_gate_blocks_when_external_validation_has_blockers() -> None:
     gate = _gate(
         external_validation_gate=_ExternalValidationGate(
             ready=False,
-            blockers=("replication-step-blocked",),
+            blockers=("external-validation-blocker-1",),
         )
     )
 
-    assert WaveSixMaturityBlocker.EXTERNAL_VALIDATION_BLOCKED in gate.blockers
+    assert gate.external_validation_blocked
+    assert gate.blockers == (WaveSixMaturityBlocker.EXTERNAL_VALIDATION_BLOCKED,)
     assert gate.status is WaveSixMaturityStatus.BLOCKED
+    assert gate.decision is WaveSixMaturityDecision.BLOCK_WAVE_SIX_INTERPRETATION
 
 
-def test_maturity_gate_needs_more_evidence_when_external_validation_not_ready() -> None:
-    gate = _gate(external_validation_gate=_ExternalValidationGate(ready=False))
+def test_maturity_gate_blocks_on_overclaim_from_gate_or_inputs() -> None:
+    direct_overclaim = _gate(claims_agi=True)
 
-    assert WaveSixMaturityBlocker.EXTERNAL_VALIDATION_NOT_READY in gate.blockers
-    assert gate.status is WaveSixMaturityStatus.NEEDS_MORE_EVIDENCE
+    assert direct_overclaim.overclaim_present
+    assert WaveSixMaturityBlocker.OVERCLAIM_PRESENT in direct_overclaim.blockers
+    assert direct_overclaim.status is WaveSixMaturityStatus.BLOCKED
 
-
-def test_maturity_gate_blocks_on_overclaim_from_any_surface() -> None:
-    assert _gate(claims_agi=True).status is WaveSixMaturityStatus.BLOCKED
-    assert _gate(evidence_package=_EvidencePackage(overclaim_present=True)).status is (
-        WaveSixMaturityStatus.BLOCKED
+    package_overclaim = _gate(
+        evidence_package=_EvidencePackage(overclaim_present=True)
     )
-    assert _gate(review_scorecard=_ReviewScorecard(overclaim_present=True)).status is (
-        WaveSixMaturityStatus.BLOCKED
-    )
-    assert _gate(
-        external_validation_gate=_ExternalValidationGate(overclaim_present=True)
-    ).status is WaveSixMaturityStatus.BLOCKED
+
+    assert package_overclaim.overclaim_present
+    assert WaveSixMaturityBlocker.OVERCLAIM_PRESENT in package_overclaim.blockers
+    assert package_overclaim.status is WaveSixMaturityStatus.BLOCKED
 
 
-def test_maturity_gate_blocks_invalid_claim_boundary_statement() -> None:
-    gate = _gate(claim_boundary_statement="Wave 6 is ready.")
+def test_maturity_gate_blocks_on_invalid_claim_boundary_statement() -> None:
+    gate = _gate(claim_boundary_statement="Wave 6 is done.")
 
-    assert WaveSixMaturityBlocker.CLAIM_BOUNDARY_STATEMENT_INVALID in gate.blockers
-    assert gate.status is WaveSixMaturityStatus.BLOCKED
     assert not gate.claim_boundary_statement_valid
+    assert gate.blockers == (
+        WaveSixMaturityBlocker.CLAIM_BOUNDARY_STATEMENT_INVALID,
+    )
+    assert gate.status is WaveSixMaturityStatus.BLOCKED
+    assert gate.decision is WaveSixMaturityDecision.BLOCK_WAVE_SIX_INTERPRETATION
 
 
-def test_maturity_gate_rejects_empty_identity_fields() -> None:
+def test_maturity_gate_canonical_payload_indexes_input_fingerprints() -> None:
+    gate = _gate(
+        evidence_package=_EvidencePackage(fingerprint="package-fingerprint-1"),
+        review_scorecard=_ReviewScorecard(fingerprint="scorecard-fingerprint-1"),
+        external_validation_gate=_ExternalValidationGate(
+            fingerprint="external-validation-fingerprint-1"
+        ),
+    )
+    payload = gate.canonical_payload()
+
+    assert payload["evidence_package_fingerprint"] == "package-fingerprint-1"
+    assert payload["review_scorecard_fingerprint"] == "scorecard-fingerprint-1"
+    assert (
+        payload["external_validation_gate_fingerprint"]
+        == "external-validation-fingerprint-1"
+    )
+    assert payload["status"] == "ready-for-bounded-wave-six-review"
+
+
+def test_maturity_decision_record_wraps_ready_gate() -> None:
+    gate = _gate()
+    record = WaveSixMaturityDecisionRecord(
+        record_id="maturity-decision-record-1",
+        maturity_gate=gate,
+        decision_rationale="All required gates are ready for bounded review.",
+        reviewer_notes=("Human authority remains required.",),
+    )
+
+    assert record.ready_for_bounded_review
+    assert not record.blocks_wave_six_interpretation
+    assert record.fingerprint() == record.fingerprint()
+    assert len(record.fingerprint()) == 64
+    assert record.canonical_payload()["decision"] == (
+        WaveSixMaturityDecision.ENTER_BOUNDED_MEASURED_COGNITION_REVIEW.value
+    )
+
+
+def test_maturity_decision_record_wraps_blocked_gate() -> None:
+    gate = _gate(claim_boundary_statement="Wave 6 is done.")
+    record = WaveSixMaturityDecisionRecord(
+        record_id="maturity-decision-record-blocked",
+        maturity_gate=gate,
+        decision_rationale="Invalid boundary statement blocks interpretation.",
+        reviewer_notes=("No AGI claim may be made.",),
+    )
+
+    assert not record.ready_for_bounded_review
+    assert record.blocks_wave_six_interpretation
+
+
+def test_maturity_gate_requires_non_empty_authority_and_review_metadata() -> None:
     with pytest.raises(ValueError, match="gate_id must not be empty"):
         WaveSixMaturityGate(
             gate_id=" ",
@@ -252,7 +318,7 @@ def test_maturity_gate_rejects_empty_identity_fields() -> None:
 
     with pytest.raises(ValueError, match="human_authority_id must not be empty"):
         WaveSixMaturityGate(
-            gate_id="maturity-gate",
+            gate_id="maturity-gate-invalid",
             evidence_package=_EvidencePackage(),
             review_scorecard=_ReviewScorecard(),
             external_validation_gate=_ExternalValidationGate(),
@@ -262,27 +328,11 @@ def test_maturity_gate_rejects_empty_identity_fields() -> None:
         )
 
 
-def test_maturity_decision_record_captures_final_gate_decision() -> None:
-    record = WaveSixMaturityDecisionRecord(
-        record_id="decision-record-1",
-        maturity_gate=_gate(),
-        decision_rationale=(
-            "All required evidence surfaces are ready for bounded Wave 6 review."
-        ),
-        reviewer_notes=("This remains a review decision, not an AGI claim.",),
-    )
-
-    assert record.ready_for_bounded_review
-    assert not record.blocks_wave_six_interpretation
-    assert record.fingerprint() == record.fingerprint()
-    assert len(record.fingerprint()) == 64
-
-
 def test_maturity_decision_record_requires_reviewer_notes() -> None:
     with pytest.raises(ValueError, match="require reviewer notes"):
         WaveSixMaturityDecisionRecord(
-            record_id="decision-record-no-notes",
+            record_id="maturity-decision-record-no-notes",
             maturity_gate=_gate(),
-            decision_rationale="Missing reviewer notes is invalid.",
+            decision_rationale="Missing reviewer notes should fail.",
             reviewer_notes=(),
         )
