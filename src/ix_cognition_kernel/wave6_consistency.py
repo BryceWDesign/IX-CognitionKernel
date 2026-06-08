@@ -155,9 +155,11 @@ class WaveSixConsistencyCheck:
             and not self.blocks_review
         ):
             raise ValueError("Blocking consistency checks must block review.")
-        if self.expected_value != self.observed_value:
-            if self.finding is WaveSixConsistencyFinding.PASSED:
-                raise ValueError("Mismatched consistency checks cannot pass.")
+        if (
+            self.expected_value != self.observed_value
+            and self.finding is WaveSixConsistencyFinding.PASSED
+        ):
+            raise ValueError("Mismatched consistency checks cannot pass.")
 
     @property
     def passed(self) -> bool:
@@ -301,11 +303,14 @@ class WaveSixConsistencyReport:
                 raise ValueError("Accepted consistency reports cannot overclaim.")
             if not self.claim_boundary_statement_valid:
                 raise ValueError("Accepted reports require a valid claim boundary.")
-        if self.decision is WaveSixConsistencyDecision.BLOCK_REVIEW:
-            if not self.blocking_check_ids and not self.overclaim_present:
-                raise ValueError(
-                    "Blocked consistency reports require blocker or overclaim."
-                )
+        if (
+            self.decision is WaveSixConsistencyDecision.BLOCK_REVIEW
+            and not self.blocking_check_ids
+            and not self.overclaim_present
+        ):
+            raise ValueError(
+                "Blocked consistency reports require blocker or overclaim."
+            )
 
     @property
     def check_ids(self) -> tuple[str, ...]:
