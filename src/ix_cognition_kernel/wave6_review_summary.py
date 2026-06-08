@@ -21,9 +21,7 @@ E = TypeVar("E", bound=StrEnum)
 WAVE_SIX_REVIEW_SUMMARY_SECTION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-review-summary-section-v1"
 )
-WAVE_SIX_REVIEW_SUMMARY_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-review-summary-v1"
-)
+WAVE_SIX_REVIEW_SUMMARY_SCHEMA_VERSION = "ix-cognition-kernel-wave6-review-summary-v1"
 
 
 class WaveSixReviewSummarySectionKind(StrEnum):
@@ -297,9 +295,12 @@ class WaveSixReviewSummaryArtifact:
                 raise ValueError("Ready review summaries cannot contain overclaims.")
             if not self.claim_boundary_statement_valid:
                 raise ValueError("Ready review summaries need valid claim boundary.")
-        if self.decision is WaveSixReviewSummaryDecision.BLOCK_SUMMARY:
-            if not self.blocking_section_ids and not self.overclaim_present:
-                raise ValueError("Blocked summaries require blocker or overclaim.")
+        if (
+            self.decision is WaveSixReviewSummaryDecision.BLOCK_SUMMARY
+            and not self.blocking_section_ids
+            and not self.overclaim_present
+        ):
+            raise ValueError("Blocked summaries require blocker or overclaim.")
 
     @property
     def section_ids(self) -> tuple[str, ...]:
@@ -325,14 +326,18 @@ class WaveSixReviewSummaryArtifact:
     def included_section_ids(self) -> tuple[str, ...]:
         """Return included section ids."""
 
-        return tuple(section.section_id for section in self.sections if section.included)
+        return tuple(
+            section.section_id for section in self.sections if section.included
+        )
 
     @property
     def follow_up_section_ids(self) -> tuple[str, ...]:
         """Return section ids requiring follow-up evidence."""
 
         return tuple(
-            section.section_id for section in self.sections if section.needs_more_evidence
+            section.section_id
+            for section in self.sections
+            if section.needs_more_evidence
         )
 
     @property
@@ -404,12 +409,10 @@ class WaveSixReviewSummaryArtifact:
     def render_markdown(self) -> str:
         """Return deterministic markdown for release-summary review."""
 
-        section_blocks = "\n\n".join(section.markdown_block() for section in self.sections)
-        return (
-            f"# {self.title}\n\n"
-            f"{self.claim_boundary_statement}\n\n"
-            f"{section_blocks}"
+        section_blocks = "\n\n".join(
+            section.markdown_block() for section in self.sections
         )
+        return f"# {self.title}\n\n{self.claim_boundary_statement}\n\n{section_blocks}"
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic summary payload for hashing and review."""
