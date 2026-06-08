@@ -19,12 +19,8 @@ from typing import Any, TypeVar
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_SIX_AUDIT_ARTIFACT_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-audit-artifact-v1"
-)
-WAVE_SIX_AUDIT_MANIFEST_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-audit-manifest-v1"
-)
+WAVE_SIX_AUDIT_ARTIFACT_SCHEMA_VERSION = "ix-cognition-kernel-wave6-audit-artifact-v1"
+WAVE_SIX_AUDIT_MANIFEST_SCHEMA_VERSION = "ix-cognition-kernel-wave6-audit-manifest-v1"
 
 
 class WaveSixAuditArtifactKind(StrEnum):
@@ -323,7 +319,9 @@ class WaveSixAuditManifest:
         """Return required artifact kinds missing from the manifest."""
 
         present = {artifact.kind for artifact in self.artifacts}
-        return tuple(kind for kind in self.required_artifact_kinds if kind not in present)
+        return tuple(
+            kind for kind in self.required_artifact_kinds if kind not in present
+        )
 
     @property
     def accepted_artifact_ids(self) -> tuple[str, ...]:
