@@ -149,7 +149,7 @@ def test_replication_step_requires_artifacts_fingerprints_and_evidence() -> None
             instruction="Invalid step without expected artifacts.",
             expected_artifact_ids=(),
             expected_fingerprints=("fingerprint",),
-            pass_criteria=("Pass criterion."),
+            pass_criteria=("Pass criterion.",),
             evidence_ids=("evidence",),
         )
 
@@ -160,7 +160,7 @@ def test_replication_step_requires_artifacts_fingerprints_and_evidence() -> None
             instruction="Invalid step without expected fingerprints.",
             expected_artifact_ids=("artifact",),
             expected_fingerprints=(),
-            pass_criteria=("Pass criterion."),
+            pass_criteria=("Pass criterion.",),
             evidence_ids=("evidence",),
         )
 
@@ -171,7 +171,7 @@ def test_replication_step_requires_artifacts_fingerprints_and_evidence() -> None
             instruction="Invalid step without evidence.",
             expected_artifact_ids=("artifact",),
             expected_fingerprints=("fingerprint",),
-            pass_criteria=("Pass criterion."),
+            pass_criteria=("Pass criterion.",),
             evidence_ids=(),
         )
 
