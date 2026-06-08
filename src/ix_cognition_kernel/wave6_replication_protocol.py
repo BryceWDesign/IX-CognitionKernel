@@ -150,10 +150,14 @@ class WaveSixReplicationStep:
             raise ValueError("Replication steps require pass criteria.")
         if not self.evidence_ids:
             raise ValueError("Replication steps require evidence ids.")
-        if self.status in {
-            WaveSixReplicationStepStatus.FAILED,
-            WaveSixReplicationStepStatus.BLOCKED,
-        } and not self.blocks_claim:
+        if (
+            self.status
+            in {
+                WaveSixReplicationStepStatus.FAILED,
+                WaveSixReplicationStepStatus.BLOCKED,
+            }
+            and not self.blocks_claim
+        ):
             raise ValueError(
                 "Failed or blocked replication steps must block the claim."
             )
@@ -362,9 +366,8 @@ class WaveSixReplicationProtocol:
     def blocks_claim(self) -> bool:
         """Return whether the protocol blocks the replicated claim."""
 
-        return (
-            self.decision is WaveSixReplicationDecision.BLOCK_CLAIM
-            or bool(self.blocking_step_ids)
+        return self.decision is WaveSixReplicationDecision.BLOCK_CLAIM or bool(
+            self.blocking_step_ids
         )
 
     def step_for_kind(
