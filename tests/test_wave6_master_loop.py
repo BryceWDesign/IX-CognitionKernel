@@ -102,7 +102,9 @@ def test_master_loop_step_rejects_empty_identity_and_evidence() -> None:
         )
 
 
-def test_master_loop_step_rejects_future_reasoning_change_without_reality_signal() -> None:
+def test_master_loop_step_rejects_future_reasoning_change_without_reality_signal() -> (
+    None
+):
     with pytest.raises(ValueError, match="requires measured reality correction"):
         _step(
             step_id="step-invalid-future-change",
@@ -123,7 +125,9 @@ def test_master_loop_step_blocks_progress_when_decision_is_blocked() -> None:
     assert not step.review_ready
 
 
-def test_master_loop_trace_is_ready_when_stage_order_and_evidence_are_complete() -> None:
+def test_master_loop_trace_is_ready_when_stage_order_and_evidence_are_complete() -> (
+    None
+):
     trace = build_wave_six_master_loop_trace(
         trace_id="wave6-trace-ready",
         objective=(
@@ -142,9 +146,7 @@ def test_master_loop_trace_is_ready_when_stage_order_and_evidence_are_complete()
     assert trace.invalid_prior_links == ()
     assert trace.evidence_missing_step_ids == ()
     assert trace.blocked_step_ids == ()
-    assert trace.reality_corrected_reasoning_step_ids == (
-        "step-07-memory-update",
-    )
+    assert trace.reality_corrected_reasoning_step_ids == ("step-07-memory-update",)
     assert trace.readiness is WaveSixLoopReadiness.READY_FOR_HUMAN_REVIEW
     assert trace.ready_for_human_review
     assert trace.fingerprint() == trace.fingerprint()
