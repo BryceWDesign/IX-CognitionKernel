@@ -369,9 +369,7 @@ class WaveSixEvidencePackage:
         if self.blocked_by_ledgers:
             blockers.append(WaveSixEvidencePackageBlocker.CLAIM_BLOCKED)
         if not self.reality_correction_ledger.ready_for_wave_six_memory_update:
-            blockers.append(
-                WaveSixEvidencePackageBlocker.REALITY_CORRECTION_NOT_READY
-            )
+            blockers.append(WaveSixEvidencePackageBlocker.REALITY_CORRECTION_NOT_READY)
         if not self.future_reasoning_ledger.ready_for_wave_six_review:
             blockers.append(WaveSixEvidencePackageBlocker.FUTURE_REASONING_NOT_READY)
         if not self.transfer_novelty_ledger.ready_for_wave_six_review:
