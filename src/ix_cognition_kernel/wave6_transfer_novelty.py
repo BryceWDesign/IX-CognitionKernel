@@ -19,9 +19,7 @@ from typing import Any, TypeVar
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_SIX_TRANSFER_DOMAIN_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-transfer-domain-v1"
-)
+WAVE_SIX_TRANSFER_DOMAIN_SCHEMA_VERSION = "ix-cognition-kernel-wave6-transfer-domain-v1"
 WAVE_SIX_TRANSFER_RECORD_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-transfer-novelty-record-v1"
 )
@@ -501,9 +499,7 @@ def _normalize_unique_text_tuple(
     return tuple(normalized)
 
 
-def _normalize_unique_enum_tuple(
-    values: Iterable[E], *, label: str
-) -> tuple[E, ...]:
+def _normalize_unique_enum_tuple(values: Iterable[E], *, label: str) -> tuple[E, ...]:
     """Return enum values as a tuple while rejecting duplicates."""
 
     normalized: list[E] = []
