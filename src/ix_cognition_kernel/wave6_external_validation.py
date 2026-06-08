@@ -283,7 +283,9 @@ class WaveSixExternalValidationGate:
     def blocking_summary_ids(self) -> tuple[str, ...]:
         """Return validation summaries that block interpretation."""
 
-        return tuple(summary.summary_id for summary in self.summaries if summary.blocked)
+        return tuple(
+            summary.summary_id for summary in self.summaries if summary.blocked
+        )
 
     @property
     def needs_more_evidence_summary_ids(self) -> tuple[str, ...]:
