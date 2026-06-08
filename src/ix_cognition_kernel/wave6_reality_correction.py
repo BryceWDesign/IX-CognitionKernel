@@ -354,8 +354,7 @@ class WaveSixRealityCorrectionLedger:
         """Return whether the ledger can support a Wave 6 memory update."""
 
         return (
-            self.has_required_reality_correction_proof
-            and not self.blocking_record_ids
+            self.has_required_reality_correction_proof and not self.blocking_record_ids
         )
 
     def canonical_payload(self) -> dict[str, Any]:
