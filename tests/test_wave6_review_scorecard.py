@@ -161,9 +161,7 @@ def test_review_scorecard_tracks_follow_up_items() -> None:
     )
     scorecard = _scorecard(items=tuple(items))
 
-    assert scorecard.follow_up_item_ids == (
-        "item-reality-corrected-reasoning",
-    )
+    assert scorecard.follow_up_item_ids == ("item-reality-corrected-reasoning",)
     assert scorecard.status is WaveSixReviewScorecardStatus.NEEDS_MORE_EVIDENCE
     assert not scorecard.ready_for_external_review
 
