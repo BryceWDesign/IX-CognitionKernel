@@ -424,8 +424,7 @@ def build_canonical_wave_six_donor_traceability_map() -> WaveSixDonorTraceabilit
     return build_wave_six_donor_traceability_map(
         map_id=WAVE_SIX_CANONICAL_DONOR_MAP_ID,
         contributions=(
-            profile.to_contribution()
-            for profile in canonical_wave_six_donor_profiles()
+            profile.to_contribution() for profile in canonical_wave_six_donor_profiles()
         ),
         notes=(
             "Canonical donor map for the Wave 6 measured system-level cognition "
