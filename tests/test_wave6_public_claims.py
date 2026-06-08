@@ -49,7 +49,9 @@ def _statement(
 
 
 def _complete_statements() -> tuple[WaveSixPublicClaimStatement, ...]:
-    return tuple(_statement(surface) for surface in WAVE_SIX_REQUIRED_PUBLIC_CLAIM_SURFACES)
+    return tuple(
+        _statement(surface) for surface in WAVE_SIX_REQUIRED_PUBLIC_CLAIM_SURFACES
+    )
 
 
 def _report(
@@ -77,11 +79,13 @@ def test_required_public_claim_surfaces_and_fragments_are_locked() -> None:
         WaveSixPublicClaimSurface.RELEASE_SUMMARY,
         WaveSixPublicClaimSurface.INDEPENDENT_REVIEW_PACKET,
     )
-    assert required_wave_six_public_claim_fragments() == (
-        WAVE_SIX_REQUIRED_PUBLIC_CLAIM_FRAGMENTS
+    assert (
+        required_wave_six_public_claim_fragments()
+        == WAVE_SIX_REQUIRED_PUBLIC_CLAIM_FRAGMENTS
     )
-    assert prohibited_wave_six_public_claim_fragments() == (
-        WAVE_SIX_PROHIBITED_PUBLIC_CLAIM_FRAGMENTS
+    assert (
+        prohibited_wave_six_public_claim_fragments()
+        == WAVE_SIX_PROHIBITED_PUBLIC_CLAIM_FRAGMENTS
     )
     assert "measured system-level cognition" in (
         required_wave_six_public_claim_fragments()
