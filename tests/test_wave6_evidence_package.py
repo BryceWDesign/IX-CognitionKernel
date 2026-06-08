@@ -104,9 +104,7 @@ def _future_reasoning_ledger() -> WaveSixFutureReasoningProofLedger:
         evidence_ids=("future-proof-evidence",),
         decision=WaveSixReasoningProofDecision.ACCEPT_FOR_WAVE_SIX_REVIEW,
     )
-    return WaveSixFutureReasoningProofLedger(
-        ledger_id="future-ledger", proofs=(proof,)
-    )
+    return WaveSixFutureReasoningProofLedger(ledger_id="future-ledger", proofs=(proof,))
 
 
 def _domain(domain_id: str, family: str) -> WaveSixTransferDomain:
@@ -138,9 +136,7 @@ def _transfer_ledger() -> WaveSixTransferNoveltyLedger:
         evidence_ids=("transfer-evidence",),
         decision=WaveSixTransferDecision.ACCEPT_FOR_WAVE_SIX_REVIEW,
     )
-    return WaveSixTransferNoveltyLedger(
-        ledger_id="transfer-ledger", records=(record,)
-    )
+    return WaveSixTransferNoveltyLedger(ledger_id="transfer-ledger", records=(record,))
 
 
 def _falsification_ledger() -> WaveSixFalsificationLedger:
