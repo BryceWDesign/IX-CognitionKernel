@@ -190,8 +190,16 @@ def test_replication_protocol_passes_when_all_required_steps_pass() -> None:
     assert protocol.missing_step_kinds == ()
     assert protocol.needs_evidence_step_ids == ()
     assert protocol.blocking_step_ids == ()
-    assert protocol.passed_step_ids == tuple(
-        f"step-{kind.value}" for kind in WAVE_SIX_REQUIRED_REPLICATION_STEP_KINDS
+    assert protocol.passed_step_ids == (
+        "step-artifact-fingerprint-replay",
+        "step-claim-boundary-replay",
+        "step-environment-check",
+        "step-falsification-replay",
+        "step-future-reasoning-replay",
+        "step-human-review-replay",
+        "step-master-loop-replay",
+        "step-reality-correction-replay",
+        "step-transfer-novelty-replay",
     )
     assert protocol.replication_passed
     assert not protocol.blocks_claim
@@ -211,8 +219,16 @@ def test_replication_protocol_reports_ready_to_run_before_steps_pass() -> None:
 
     assert protocol.ready_to_run
     assert not protocol.replication_passed
-    assert protocol.needs_evidence_step_ids == tuple(
-        f"step-{kind.value}" for kind in WAVE_SIX_REQUIRED_REPLICATION_STEP_KINDS
+    assert protocol.needs_evidence_step_ids == (
+        "step-artifact-fingerprint-replay",
+        "step-claim-boundary-replay",
+        "step-environment-check",
+        "step-falsification-replay",
+        "step-future-reasoning-replay",
+        "step-human-review-replay",
+        "step-master-loop-replay",
+        "step-reality-correction-replay",
+        "step-transfer-novelty-replay",
     )
 
 
