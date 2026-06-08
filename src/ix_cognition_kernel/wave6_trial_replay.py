@@ -96,7 +96,9 @@ class WaveSixTrialReplayRecord:
         if not self.requires_human_review:
             raise ValueError("Trial replay records must require human review.")
         if self.allows_autonomous_execution:
-            raise ValueError("Trial replay records must not allow autonomous execution.")
+            raise ValueError(
+                "Trial replay records must not allow autonomous execution."
+            )
         if self.claims_agi:
             raise ValueError("Trial replay records must not claim AGI.")
         object.__setattr__(
@@ -161,12 +163,15 @@ class WaveSixTrialReplayRecord:
                 raise ValueError("Matched replay requires identical fingerprints.")
             if self.decision is not WaveSixReplayDecision.ACCEPT_FOR_REVIEW:
                 raise ValueError("Matched replay must be accepted for review.")
-        if self.outcome in {
-            WaveSixReplayOutcome.DIVERGED,
-            WaveSixReplayOutcome.BLOCKED_BY_SAFETY_GATE,
-        }:
-            if self.decision is not WaveSixReplayDecision.BLOCK_CLAIM:
-                raise ValueError("Diverged or safety-blocked replay must block claim.")
+        if (
+            self.outcome
+            in {
+                WaveSixReplayOutcome.DIVERGED,
+                WaveSixReplayOutcome.BLOCKED_BY_SAFETY_GATE,
+            }
+            and self.decision is not WaveSixReplayDecision.BLOCK_CLAIM
+        ):
+            raise ValueError("Diverged or safety-blocked replay must block claim.")
 
     @property
     def replay_matched(self) -> bool:
@@ -256,7 +261,9 @@ class WaveSixTrialReplayLedger:
         )
         if not self.records:
             raise ValueError("Trial replay ledgers require at least one record.")
-        sorted_records = tuple(sorted(self.records, key=lambda record: record.replay_id))
+        sorted_records = tuple(
+            sorted(self.records, key=lambda record: record.replay_id)
+        )
         _unique_ids((record.replay_id for record in sorted_records), label="replay_id")
         _unique_ids((record.stage for record in sorted_records), label="replay stage")
         object.__setattr__(self, "records", sorted_records)
@@ -300,7 +307,9 @@ class WaveSixTrialReplayLedger:
     def matched_replay_ids(self) -> tuple[str, ...]:
         """Return replay ids that matched and were accepted for review."""
 
-        return tuple(record.replay_id for record in self.records if record.replay_matched)
+        return tuple(
+            record.replay_id for record in self.records if record.replay_matched
+        )
 
     @property
     def blocking_replay_ids(self) -> tuple[str, ...]:
@@ -338,9 +347,9 @@ class WaveSixTrialReplayLedger:
             return False
         if self.needs_more_evidence_replay_ids:
             return False
-        if self.require_all_stages_matched and self.missing_matched_required_stages:
-            return False
-        return True
+        return not (
+            self.require_all_stages_matched and self.missing_matched_required_stages
+        )
 
     def record_for_stage(
         self,
@@ -368,9 +377,7 @@ class WaveSixTrialReplayLedger:
                 stage.value for stage in self.missing_matched_required_stages
             ],
             "missing_stages": [stage.value for stage in self.missing_stages],
-            "needs_more_evidence_replay_ids": list(
-                self.needs_more_evidence_replay_ids
-            ),
+            "needs_more_evidence_replay_ids": list(self.needs_more_evidence_replay_ids),
             "notes": list(self.notes),
             "present_stages": [stage.value for stage in self.present_stages],
             "ready_for_replay_review": self.ready_for_replay_review,
