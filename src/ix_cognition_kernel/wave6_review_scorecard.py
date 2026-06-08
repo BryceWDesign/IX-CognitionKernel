@@ -250,9 +250,7 @@ class WaveSixReviewScorecard:
 
         present = {item.criterion for item in self.items}
         return tuple(
-            criterion
-            for criterion in self.required_criteria
-            if criterion in present
+            criterion for criterion in self.required_criteria if criterion in present
         )
 
     @property
