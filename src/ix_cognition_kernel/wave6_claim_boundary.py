@@ -19,9 +19,7 @@ from typing import Any, TypeVar
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_SIX_CLAIM_BOUNDARY_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-claim-boundary-v1"
-)
+WAVE_SIX_CLAIM_BOUNDARY_SCHEMA_VERSION = "ix-cognition-kernel-wave6-claim-boundary-v1"
 WAVE_SIX_CLAIM_BOUNDARY_ASSESSMENT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-claim-boundary-assessment-v1"
 )
@@ -30,9 +28,7 @@ WAVE_SIX_CLAIM_BOUNDARY_ASSESSMENT_SCHEMA_VERSION = (
 class WaveSixAllowedClaim(StrEnum):
     """Claims allowed for a bounded Wave 6 package."""
 
-    MEASURED_SYSTEM_LEVEL_COGNITION_ATTEMPT = (
-        "measured-system-level-cognition-attempt"
-    )
+    MEASURED_SYSTEM_LEVEL_COGNITION_ATTEMPT = "measured-system-level-cognition-attempt"
     BOUNDED_WAVE_SIX_REVIEW_READY = "bounded-wave-six-review-ready"
     EVIDENCE_PACKAGE_ASSEMBLED = "evidence-package-assembled"
     EXTERNAL_REVIEW_CANDIDATE = "external-review-candidate"
@@ -416,8 +412,7 @@ class WaveSixClaimBoundaryAssessment:
             "assessment_id": self.assessment_id,
             "blocked_declaration_ids": list(self.blocked_declaration_ids),
             "declarations": [
-                declaration.canonical_payload()
-                for declaration in self.declarations
+                declaration.canonical_payload() for declaration in self.declarations
             ],
             "declarations_missing_prerequisites": list(
                 self.declarations_missing_prerequisites
