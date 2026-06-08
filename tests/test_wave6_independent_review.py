@@ -38,8 +38,7 @@ def _artifact(
 
 def _complete_artifacts() -> tuple[WaveSixIndependentReviewArtifact, ...]:
     return tuple(
-        _artifact(kind)
-        for kind in WAVE_SIX_REQUIRED_INDEPENDENT_REVIEW_ARTIFACT_KINDS
+        _artifact(kind) for kind in WAVE_SIX_REQUIRED_INDEPENDENT_REVIEW_ARTIFACT_KINDS
     )
 
 
