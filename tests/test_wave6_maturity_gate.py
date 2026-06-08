@@ -126,8 +126,7 @@ def _gate(
         gate_id="maturity-gate-1",
         evidence_package=evidence_package or _EvidencePackage(),
         review_scorecard=review_scorecard or _ReviewScorecard(),
-        external_validation_gate=external_validation_gate
-        or _ExternalValidationGate(),
+        external_validation_gate=external_validation_gate or _ExternalValidationGate(),
         claim_boundary_statement=claim_boundary_statement or _boundary_statement(),
         human_authority_id="human-authority-1",
         independent_reviewer_id="independent-reviewer-1",
@@ -234,9 +233,7 @@ def test_maturity_gate_blocks_on_overclaim_from_gate_or_inputs() -> None:
     assert WaveSixMaturityBlocker.OVERCLAIM_PRESENT in direct_overclaim.blockers
     assert direct_overclaim.status is WaveSixMaturityStatus.BLOCKED
 
-    package_overclaim = _gate(
-        evidence_package=_EvidencePackage(overclaim_present=True)
-    )
+    package_overclaim = _gate(evidence_package=_EvidencePackage(overclaim_present=True))
 
     assert package_overclaim.overclaim_present
     assert WaveSixMaturityBlocker.OVERCLAIM_PRESENT in package_overclaim.blockers
@@ -247,9 +244,7 @@ def test_maturity_gate_blocks_on_invalid_claim_boundary_statement() -> None:
     gate = _gate(claim_boundary_statement="Wave 6 is done.")
 
     assert not gate.claim_boundary_statement_valid
-    assert gate.blockers == (
-        WaveSixMaturityBlocker.CLAIM_BOUNDARY_STATEMENT_INVALID,
-    )
+    assert gate.blockers == (WaveSixMaturityBlocker.CLAIM_BOUNDARY_STATEMENT_INVALID,)
     assert gate.status is WaveSixMaturityStatus.BLOCKED
     assert gate.decision is WaveSixMaturityDecision.BLOCK_WAVE_SIX_INTERPRETATION
 
