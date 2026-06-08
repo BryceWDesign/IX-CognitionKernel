@@ -18,9 +18,7 @@ from typing import Any, TypeVar
 
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_SIX_CLOSURE_ITEM_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-closure-item-v1"
-)
+WAVE_SIX_CLOSURE_ITEM_SCHEMA_VERSION = "ix-cognition-kernel-wave6-closure-item-v1"
 WAVE_SIX_CLOSURE_CHECKLIST_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-closure-checklist-v1"
 )
@@ -155,8 +153,7 @@ class WaveSixClosureItem:
         """Return whether this item blocks final bounded closure."""
 
         return (
-            self.blocks_closure
-            or self.finding is WaveSixClosureFinding.BLOCKS_CLOSURE
+            self.blocks_closure or self.finding is WaveSixClosureFinding.BLOCKS_CLOSURE
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -192,9 +189,7 @@ class WaveSixClosureChecklist:
     generated_by_engine_id: str
     human_authority_id: str
     independent_reviewer_id: str
-    required_items: tuple[WaveSixClosureItemKind, ...] = (
-        WAVE_SIX_REQUIRED_CLOSURE_ITEMS
-    )
+    required_items: tuple[WaveSixClosureItemKind, ...] = WAVE_SIX_REQUIRED_CLOSURE_ITEMS
     claims_agi: bool = False
     claims_production_ready: bool = False
     claims_certified: bool = False
@@ -271,11 +266,12 @@ class WaveSixClosureChecklist:
                 raise ValueError("Ready closure checklists cannot contain overclaims.")
             if not self.claim_boundary_statement_valid:
                 raise ValueError("Ready closure checklists require valid boundary.")
-        if self.decision is WaveSixClosureDecision.BLOCK_README_UPDATE:
-            if not self.blocking_item_ids and not self.overclaim_present:
-                raise ValueError(
-                    "Blocked closure checklists require blocker or overclaim."
-                )
+        if (
+            self.decision is WaveSixClosureDecision.BLOCK_README_UPDATE
+            and not self.blocking_item_ids
+            and not self.overclaim_present
+        ):
+            raise ValueError("Blocked closure checklists require blocker or overclaim.")
 
     @property
     def item_ids(self) -> tuple[str, ...]:
@@ -313,9 +309,7 @@ class WaveSixClosureChecklist:
     def blocking_item_ids(self) -> tuple[str, ...]:
         """Return item ids that block final closure."""
 
-        return tuple(
-            item.item_id for item in self.items if item.blocks_bounded_closure
-        )
+        return tuple(item.item_id for item in self.items if item.blocks_bounded_closure)
 
     @property
     def overclaim_present(self) -> bool:
@@ -510,7 +504,5 @@ def _require_unique_enum(values: Iterable[E], *, label: str) -> None:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
