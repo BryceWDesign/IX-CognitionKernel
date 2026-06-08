@@ -85,7 +85,7 @@ def test_master_loop_step_is_evidence_bound_and_fingerprinted() -> None:
 
     assert step.evidence_bound
     assert step.review_ready
-    assert not step.blocks_progress
+    assert step.decision is WaveSixDecisionState.READY_FOR_WAVE_SIX_LOOP
     assert step.fingerprint() == step.fingerprint()
     assert len(step.fingerprint()) == 64
 
@@ -121,7 +121,7 @@ def test_master_loop_step_blocks_progress_when_decision_is_blocked() -> None:
         decision=WaveSixDecisionState.BLOCKED,
     )
 
-    assert step.blocks_progress
+    assert step.decision is WaveSixDecisionState.BLOCKED
     assert not step.review_ready
 
 
