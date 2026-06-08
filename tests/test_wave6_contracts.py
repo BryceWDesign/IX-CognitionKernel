@@ -160,8 +160,7 @@ def test_contract_bundle_reports_missing_coverage_without_pretending_ready() -> 
     assert bundle.covered_loop_stages == (WaveSixLoopStage.INTENT,)
     assert WaveSixLoopStage.PERMISSION in bundle.missing_loop_stages
     assert (
-        WaveSixCapabilityArea.CROSS_DOMAIN_TRANSFER
-        in bundle.missing_capability_areas
+        WaveSixCapabilityArea.CROSS_DOMAIN_TRANSFER in bundle.missing_capability_areas
     )
     assert WaveSixArtifactKind.FALSIFICATION_RECORD in bundle.missing_artifact_kinds
     assert bundle.missing_claim_boundaries == ()
