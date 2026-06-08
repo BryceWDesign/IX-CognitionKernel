@@ -221,9 +221,7 @@ def test_master_loop_trace_blocks_when_any_step_blocks_progress() -> None:
     assert not trace.ready_for_human_review
 
 
-def test_master_loop_trace_exposes_missing_reality_corrected_future_reasoning_step() -> (
-    None
-):
+def test_master_loop_trace_reports_no_reality_corrected_reasoning() -> None:
     steps = tuple(
         _step(
             step_id=step.step_id,
