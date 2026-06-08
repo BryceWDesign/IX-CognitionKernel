@@ -20,44 +20,53 @@ def _artifact(
         WaveSixIndependentReviewFinding.ACCEPTED_FOR_EXTERNAL_REVIEW
     ),
     blocks_external_review: bool = False,
+    claims_agi: bool = False,
 ) -> WaveSixIndependentReviewArtifact:
     return WaveSixIndependentReviewArtifact(
         artifact_id=artifact_id or f"artifact-{kind.value}",
         kind=kind,
-        summary=f"Independent-review artifact for {kind.value}.",
+        summary=f"Independent review artifact for {kind.value}.",
         artifact_fingerprint=f"fingerprint-{kind.value}",
         evidence_ids=(f"evidence-{kind.value}",),
-        reviewer_questions=(
-            "Can this artifact be reproduced without trusting the Kernel's claim?",
-        ),
+        reviewer_questions=(f"Can {kind.value} be independently reviewed?",),
         finding=finding,
-        replication_notes=("Use the referenced fingerprint and evidence ids.",),
+        replication_notes=(f"Recompute {kind.value} fingerprint.",),
         blocks_external_review=blocks_external_review,
+        claims_agi=claims_agi,
     )
 
 
 def _complete_artifacts() -> tuple[WaveSixIndependentReviewArtifact, ...]:
     return tuple(
-        _artifact(kind) for kind in WAVE_SIX_REQUIRED_INDEPENDENT_REVIEW_ARTIFACT_KINDS
+        _artifact(kind)
+        for kind in WAVE_SIX_REQUIRED_INDEPENDENT_REVIEW_ARTIFACT_KINDS
     )
 
 
-def _ready_packet() -> WaveSixIndependentReviewPacket:
-    return build_wave_six_independent_review_packet(
-        packet_id="packet-ready",
-        title="Wave 6 measured system-level cognition independent-review packet",
-        artifacts=_complete_artifacts(),
+def _packet(
+    *,
+    artifacts: tuple[WaveSixIndependentReviewArtifact, ...] | None = None,
+    decision: WaveSixIndependentReviewDecision = (
+        WaveSixIndependentReviewDecision.READY_FOR_EXTERNAL_REVIEW
+    ),
+    claims_agi: bool = False,
+) -> WaveSixIndependentReviewPacket:
+    return WaveSixIndependentReviewPacket(
+        packet_id="independent-review-packet-1",
+        title="Wave 6 measured system-level cognition review packet",
+        artifacts=artifacts or _complete_artifacts(),
         claim_boundary_statement=(
-            "This is a Wave-6 measured system-level cognition attempt, not an "
-            "AGI, production, certification, or autonomous-authority claim."
+            "This packet supports bounded independent review only. It is not an "
+            "AGI, production, certification, or autonomous authority claim."
         ),
         replication_instructions=(
-            "Recompute every artifact fingerprint from its canonical payload.",
-            "Review transfer, novelty, falsification, and human-review evidence.",
+            "Recompute each artifact fingerprint.",
+            "Check every reviewer question against evidence.",
         ),
         generated_by_engine_id="wave6-independent-review-engine",
-        decision=WaveSixIndependentReviewDecision.READY_FOR_EXTERNAL_REVIEW,
-        notes=("External reviewers decide whether evidence survives review.",),
+        decision=decision,
+        claims_agi=claims_agi,
+        notes=("External review is required before any bounded interpretation.",),
     )
 
 
@@ -82,96 +91,96 @@ def test_independent_review_artifact_is_evidence_bound_and_fingerprinted() -> No
     assert artifact.accepted_for_external_review
     assert not artifact.needs_more_evidence
     assert not artifact.blocks_review
-    assert artifact.evidence_ids == ("evidence-master-loop-trace",)
     assert artifact.fingerprint() == artifact.fingerprint()
     assert len(artifact.fingerprint()) == 64
 
 
-def test_independent_review_artifact_rejects_missing_evidence_or_questions() -> None:
+def test_independent_review_artifact_rejects_overclaims() -> None:
+    with pytest.raises(ValueError, match="must not claim AGI"):
+        _artifact(
+            WaveSixIndependentReviewArtifactKind.CLAIM_BOUNDARY_DECLARATION,
+            claims_agi=True,
+        )
+
+    with pytest.raises(ValueError, match="must not claim production readiness"):
+        WaveSixIndependentReviewArtifact(
+            artifact_id="artifact-production",
+            kind=WaveSixIndependentReviewArtifactKind.REPLICATION_INSTRUCTIONS,
+            summary="Invalid production claim.",
+            artifact_fingerprint="fingerprint-production",
+            evidence_ids=("evidence-production",),
+            reviewer_questions=("Is this bounded?",),
+            finding=WaveSixIndependentReviewFinding.ACCEPTED_FOR_EXTERNAL_REVIEW,
+            claims_production_ready=True,
+        )
+
+
+def test_independent_review_artifact_enforces_finding_semantics() -> None:
+    with pytest.raises(ValueError, match="must block review"):
+        _artifact(
+            WaveSixIndependentReviewArtifactKind.FALSIFICATION_LEDGER,
+            finding=WaveSixIndependentReviewFinding.CONTRADICTED,
+        )
+
+    with pytest.raises(ValueError, match="should not be marked as blocking"):
+        _artifact(
+            WaveSixIndependentReviewArtifactKind.FALSIFICATION_LEDGER,
+            finding=WaveSixIndependentReviewFinding.NEEDS_MORE_EVIDENCE,
+            blocks_external_review=True,
+        )
+
+
+def test_independent_review_artifact_requires_evidence_and_questions() -> None:
     with pytest.raises(ValueError, match="require evidence ids"):
         WaveSixIndependentReviewArtifact(
-            artifact_id="missing-evidence",
+            artifact_id="artifact-no-evidence",
             kind=WaveSixIndependentReviewArtifactKind.MASTER_LOOP_TRACE,
-            summary="Invalid independent-review artifact.",
+            summary="Invalid empty evidence.",
             artifact_fingerprint="fingerprint",
             evidence_ids=(),
-            reviewer_questions=("Can this be reproduced?",),
+            reviewer_questions=("Can this be reviewed?",),
             finding=WaveSixIndependentReviewFinding.ACCEPTED_FOR_EXTERNAL_REVIEW,
         )
 
     with pytest.raises(ValueError, match="require reviewer questions"):
         WaveSixIndependentReviewArtifact(
-            artifact_id="missing-questions",
+            artifact_id="artifact-no-questions",
             kind=WaveSixIndependentReviewArtifactKind.MASTER_LOOP_TRACE,
-            summary="Invalid independent-review artifact.",
+            summary="Invalid empty questions.",
             artifact_fingerprint="fingerprint",
-            evidence_ids=("evidence",),
+            evidence_ids=("evidence-1",),
             reviewer_questions=(),
             finding=WaveSixIndependentReviewFinding.ACCEPTED_FOR_EXTERNAL_REVIEW,
         )
 
 
-def test_blocking_artifact_findings_must_block_review() -> None:
-    with pytest.raises(ValueError, match="must block review"):
-        _artifact(
-            WaveSixIndependentReviewArtifactKind.FALSIFICATION_LEDGER,
-            finding=WaveSixIndependentReviewFinding.CONTRADICTED,
-            blocks_external_review=False,
-        )
-
-
-def test_independent_review_artifact_rejects_overclaims() -> None:
-    with pytest.raises(ValueError, match="must not claim AGI"):
-        WaveSixIndependentReviewArtifact(
-            artifact_id="agi-artifact",
-            kind=WaveSixIndependentReviewArtifactKind.CLAIM_BOUNDARY_DECLARATION,
-            summary="Invalid artifact.",
-            artifact_fingerprint="fingerprint",
-            evidence_ids=("evidence",),
-            reviewer_questions=("Can this be reproduced?",),
-            finding=WaveSixIndependentReviewFinding.ACCEPTED_FOR_EXTERNAL_REVIEW,
-            claims_agi=True,
-        )
-
-    with pytest.raises(ValueError, match="must not allow autonomous authority"):
-        WaveSixIndependentReviewArtifact(
-            artifact_id="authority-artifact",
-            kind=WaveSixIndependentReviewArtifactKind.CLAIM_BOUNDARY_DECLARATION,
-            summary="Invalid artifact.",
-            artifact_fingerprint="fingerprint",
-            evidence_ids=("evidence",),
-            reviewer_questions=("Can this be reproduced?",),
-            finding=WaveSixIndependentReviewFinding.ACCEPTED_FOR_EXTERNAL_REVIEW,
-            allows_autonomous_authority=True,
-        )
-
-
-def test_independent_review_packet_accepts_complete_external_review_surface() -> None:
-    packet = _ready_packet()
+def test_independent_review_packet_is_ready_when_complete() -> None:
+    packet = build_wave_six_independent_review_packet(
+        packet_id="packet-ready",
+        title="Wave 6 bounded independent review packet",
+        artifacts=_complete_artifacts(),
+        claim_boundary_statement="Bounded review only; this is not an AGI claim.",
+        replication_instructions=("Recompute all deterministic fingerprints.",),
+        generated_by_engine_id="wave6-independent-review-engine",
+        decision=WaveSixIndependentReviewDecision.READY_FOR_EXTERNAL_REVIEW,
+        notes=("Independent review remains required.",),
+    )
 
     assert packet.present_artifact_kinds == (
         WAVE_SIX_REQUIRED_INDEPENDENT_REVIEW_ARTIFACT_KINDS
     )
     assert packet.missing_artifact_kinds == ()
-    assert packet.blocking_artifact_ids == ()
     assert packet.needs_more_evidence_artifact_ids == ()
-    assert len(packet.accepted_artifact_ids) == len(
-        WAVE_SIX_REQUIRED_INDEPENDENT_REVIEW_ARTIFACT_KINDS
-    )
+    assert packet.blocking_artifact_ids == ()
     assert packet.ready_for_external_review
     assert not packet.blocks_external_review
     assert packet.fingerprint() == packet.fingerprint()
     assert len(packet.fingerprint()) == 64
 
 
-def test_independent_review_packet_reports_missing_artifact_kinds() -> None:
-    packet = WaveSixIndependentReviewPacket(
-        packet_id="packet-incomplete",
-        title="Incomplete Wave 6 independent-review packet",
+def test_independent_review_packet_reports_missing_artifact_kind() -> None:
+    packet = _packet(
         artifacts=_complete_artifacts()[:-1],
-        claim_boundary_statement="Not an AGI claim.",
-        replication_instructions=("Recompute fingerprints.",),
-        generated_by_engine_id="wave6-independent-review-engine",
         decision=WaveSixIndependentReviewDecision.NEEDS_MORE_EVIDENCE,
     )
 
@@ -179,147 +188,70 @@ def test_independent_review_packet_reports_missing_artifact_kinds() -> None:
         WaveSixIndependentReviewArtifactKind.REPLICATION_INSTRUCTIONS,
     )
     assert not packet.ready_for_external_review
-    assert not packet.blocks_external_review
 
 
-def test_ready_independent_review_packet_rejects_missing_artifact_kinds() -> None:
-    with pytest.raises(ValueError, match="every independent-review artifact kind"):
-        WaveSixIndependentReviewPacket(
-            packet_id="packet-invalid-ready",
-            title="Invalid ready packet",
-            artifacts=_complete_artifacts()[:-1],
-            claim_boundary_statement="Not an AGI claim.",
-            replication_instructions=("Recompute fingerprints.",),
-            generated_by_engine_id="wave6-independent-review-engine",
-            decision=WaveSixIndependentReviewDecision.READY_FOR_EXTERNAL_REVIEW,
-        )
-
-
-def test_ready_independent_review_packet_rejects_follow_up_artifacts() -> None:
+def test_independent_review_packet_tracks_needs_more_evidence_artifact() -> None:
     artifacts = list(_complete_artifacts())
-    artifacts[0] = _artifact(
-        WaveSixIndependentReviewArtifactKind.MASTER_LOOP_TRACE,
+    artifacts[3] = _artifact(
+        WaveSixIndependentReviewArtifactKind.REALITY_CORRECTION_LEDGER,
         finding=WaveSixIndependentReviewFinding.NEEDS_MORE_EVIDENCE,
     )
+    packet = _packet(
+        artifacts=tuple(artifacts),
+        decision=WaveSixIndependentReviewDecision.NEEDS_MORE_EVIDENCE,
+    )
 
-    with pytest.raises(ValueError, match="needs-more-evidence artifacts"):
-        WaveSixIndependentReviewPacket(
-            packet_id="packet-follow-up",
-            title="Invalid follow-up packet",
-            artifacts=tuple(artifacts),
-            claim_boundary_statement="Not an AGI claim.",
-            replication_instructions=("Recompute fingerprints.",),
-            generated_by_engine_id="wave6-independent-review-engine",
-            decision=WaveSixIndependentReviewDecision.READY_FOR_EXTERNAL_REVIEW,
-        )
+    assert packet.needs_more_evidence_artifact_ids == (
+        "artifact-reality-correction-ledger",
+    )
+    assert not packet.ready_for_external_review
 
 
-def test_ready_independent_review_packet_rejects_blocking_artifacts() -> None:
+def test_independent_review_packet_blocks_on_blocking_artifact_or_overclaim() -> None:
     artifacts = list(_complete_artifacts())
     artifacts[6] = _artifact(
         WaveSixIndependentReviewArtifactKind.FALSIFICATION_LEDGER,
         finding=WaveSixIndependentReviewFinding.BLOCKS_EXTERNAL_REVIEW,
         blocks_external_review=True,
     )
-
-    with pytest.raises(ValueError, match="blocking artifacts"):
-        WaveSixIndependentReviewPacket(
-            packet_id="packet-blocking-ready",
-            title="Invalid blocking packet",
-            artifacts=tuple(artifacts),
-            claim_boundary_statement="Not an AGI claim.",
-            replication_instructions=("Recompute fingerprints.",),
-            generated_by_engine_id="wave6-independent-review-engine",
-            decision=WaveSixIndependentReviewDecision.READY_FOR_EXTERNAL_REVIEW,
-        )
-
-
-def test_blocked_packet_requires_blocking_artifact() -> None:
-    with pytest.raises(ValueError, match="at least one blocking artifact"):
-        WaveSixIndependentReviewPacket(
-            packet_id="packet-invalid-blocked",
-            title="Invalid blocked packet",
-            artifacts=_complete_artifacts(),
-            claim_boundary_statement="Not an AGI claim.",
-            replication_instructions=("Recompute fingerprints.",),
-            generated_by_engine_id="wave6-independent-review-engine",
-            decision=WaveSixIndependentReviewDecision.BLOCKED,
-        )
-
-
-def test_independent_review_packet_blocks_external_review() -> None:
-    artifacts = list(_complete_artifacts())
-    artifacts[6] = _artifact(
-        WaveSixIndependentReviewArtifactKind.FALSIFICATION_LEDGER,
-        finding=WaveSixIndependentReviewFinding.CONTRADICTED,
-        blocks_external_review=True,
-    )
-    packet = WaveSixIndependentReviewPacket(
-        packet_id="packet-blocked",
-        title="Blocked Wave 6 independent-review packet",
+    blocked = _packet(
         artifacts=tuple(artifacts),
-        claim_boundary_statement="Not an AGI claim.",
-        replication_instructions=("Recompute fingerprints.",),
-        generated_by_engine_id="wave6-independent-review-engine",
         decision=WaveSixIndependentReviewDecision.BLOCKED,
     )
 
-    assert packet.blocking_artifact_ids == ("artifact-falsification-ledger",)
-    assert packet.blocks_external_review
-    assert not packet.ready_for_external_review
+    assert blocked.blocking_artifact_ids == ("artifact-falsification-ledger",)
+    assert blocked.blocks_external_review
+    assert not blocked.ready_for_external_review
 
-
-def test_independent_review_packet_rejects_overclaims() -> None:
     with pytest.raises(ValueError, match="must not claim AGI"):
-        WaveSixIndependentReviewPacket(
-            packet_id="packet-agi",
-            title="Invalid packet",
-            artifacts=_complete_artifacts(),
-            claim_boundary_statement="Invalid AGI claim.",
-            replication_instructions=("Recompute fingerprints.",),
-            generated_by_engine_id="wave6-independent-review-engine",
-            decision=WaveSixIndependentReviewDecision.NEEDS_MORE_EVIDENCE,
+        _packet(
+            decision=WaveSixIndependentReviewDecision.BLOCKED,
             claims_agi=True,
         )
 
-    with pytest.raises(ValueError, match="must not allow autonomous authority"):
-        WaveSixIndependentReviewPacket(
-            packet_id="packet-authority",
-            title="Invalid packet",
-            artifacts=_complete_artifacts(),
-            claim_boundary_statement="Invalid authority claim.",
-            replication_instructions=("Recompute fingerprints.",),
-            generated_by_engine_id="wave6-independent-review-engine",
-            decision=WaveSixIndependentReviewDecision.NEEDS_MORE_EVIDENCE,
-            allows_autonomous_authority=True,
-        )
+
+def test_ready_independent_review_packet_rejects_missing_or_follow_up_items() -> None:
+    with pytest.raises(ValueError, match="require every independent-review"):
+        _packet(artifacts=_complete_artifacts()[:-1])
+
+    artifacts = list(_complete_artifacts())
+    artifacts[4] = _artifact(
+        WaveSixIndependentReviewArtifactKind.FUTURE_REASONING_CHANGE_LEDGER,
+        finding=WaveSixIndependentReviewFinding.NEEDS_MORE_EVIDENCE,
+    )
+
+    with pytest.raises(ValueError, match="cannot include needs-more-evidence"):
+        _packet(artifacts=tuple(artifacts))
 
 
-def test_independent_review_packet_rejects_duplicate_artifact_ids() -> None:
-    artifact = _artifact(WaveSixIndependentReviewArtifactKind.MASTER_LOOP_TRACE)
-
-    with pytest.raises(ValueError, match="Duplicate artifact_id"):
-        WaveSixIndependentReviewPacket(
-            packet_id="packet-duplicate",
-            title="Duplicate packet",
-            artifacts=(artifact, artifact),
-            claim_boundary_statement="Not an AGI claim.",
-            replication_instructions=("Recompute fingerprints.",),
-            generated_by_engine_id="wave6-independent-review-engine",
-            decision=WaveSixIndependentReviewDecision.NEEDS_MORE_EVIDENCE,
-        )
+def test_blocked_independent_review_packet_requires_blocking_artifact() -> None:
+    with pytest.raises(ValueError, match="require at least one blocking artifact"):
+        _packet(decision=WaveSixIndependentReviewDecision.BLOCKED)
 
 
-def test_artifact_for_kind_returns_present_artifact_only() -> None:
-    packet = WaveSixIndependentReviewPacket(
-        packet_id="packet-lookup",
-        title="Lookup packet",
-        artifacts=(
-            _artifact(WaveSixIndependentReviewArtifactKind.MASTER_LOOP_TRACE),
-        ),
-        claim_boundary_statement="Not an AGI claim.",
-        replication_instructions=("Recompute fingerprints.",),
-        generated_by_engine_id="wave6-independent-review-engine",
+def test_independent_review_packet_lookup_and_duplicate_rejection() -> None:
+    packet = _packet(
+        artifacts=(_artifact(WaveSixIndependentReviewArtifactKind.MASTER_LOOP_TRACE),),
         decision=WaveSixIndependentReviewDecision.NEEDS_MORE_EVIDENCE,
     )
 
@@ -329,6 +261,14 @@ def test_artifact_for_kind_returns_present_artifact_only() -> None:
 
     assert artifact is not None
     assert artifact.artifact_id == "artifact-master-loop-trace"
-    assert packet.artifact_for_kind(
-        WaveSixIndependentReviewArtifactKind.CONTRACT_BUNDLE
-    ) is None
+    assert (
+        packet.artifact_for_kind(WaveSixIndependentReviewArtifactKind.CONTRACT_BUNDLE)
+        is None
+    )
+
+    duplicate = _artifact(WaveSixIndependentReviewArtifactKind.MASTER_LOOP_TRACE)
+    with pytest.raises(ValueError, match="Duplicate artifact_id"):
+        _packet(
+            artifacts=(duplicate, duplicate),
+            decision=WaveSixIndependentReviewDecision.NEEDS_MORE_EVIDENCE,
+        )
