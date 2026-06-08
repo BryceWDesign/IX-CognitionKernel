@@ -19,12 +19,8 @@ from typing import Any, TypeVar
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_SIX_CHALLENGE_CASE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-challenge-case-v1"
-)
-WAVE_SIX_CHALLENGE_SUITE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-challenge-suite-v1"
-)
+WAVE_SIX_CHALLENGE_CASE_SCHEMA_VERSION = "ix-cognition-kernel-wave6-challenge-case-v1"
+WAVE_SIX_CHALLENGE_SUITE_SCHEMA_VERSION = "ix-cognition-kernel-wave6-challenge-suite-v1"
 
 
 class WaveSixChallengeKind(StrEnum):
@@ -150,15 +146,21 @@ class WaveSixChallengeCase:
             raise ValueError("Wave 6 challenge cases require failure modes.")
         if not self.evidence_ids:
             raise ValueError("Wave 6 challenge cases require evidence ids.")
-        if self.outcome is WaveSixChallengeOutcome.FAILED:
-            if self.decision is not WaveSixChallengeDecision.BLOCK_CLAIM:
-                raise ValueError("Failed Wave 6 challenge cases must block the claim.")
-        if self.outcome is WaveSixChallengeOutcome.BLOCKED_BY_SAFETY_GATE:
-            if self.decision is not WaveSixChallengeDecision.BLOCK_CLAIM:
-                raise ValueError("Safety-gated challenge cases must block the claim.")
-        if self.outcome is WaveSixChallengeOutcome.PASSED:
-            if self.decision is not WaveSixChallengeDecision.ACCEPT_FOR_REVIEW:
-                raise ValueError("Passed challenge cases must be accepted for review.")
+        if (
+            self.outcome is WaveSixChallengeOutcome.FAILED
+            and self.decision is not WaveSixChallengeDecision.BLOCK_CLAIM
+        ):
+            raise ValueError("Failed Wave 6 challenge cases must block the claim.")
+        if (
+            self.outcome is WaveSixChallengeOutcome.BLOCKED_BY_SAFETY_GATE
+            and self.decision is not WaveSixChallengeDecision.BLOCK_CLAIM
+        ):
+            raise ValueError("Safety-gated challenge cases must block the claim.")
+        if (
+            self.outcome is WaveSixChallengeOutcome.PASSED
+            and self.decision is not WaveSixChallengeDecision.ACCEPT_FOR_REVIEW
+        ):
+            raise ValueError("Passed challenge cases must be accepted for review.")
 
     @property
     def passed(self) -> bool:
@@ -317,9 +319,9 @@ class WaveSixChallengeSuite:
             return False
         if self.needs_more_evidence_case_ids:
             return False
-        if self.require_all_kinds_passed and self.missing_passed_required_kinds:
-            return False
-        return True
+        return not (
+            self.require_all_kinds_passed and self.missing_passed_required_kinds
+        )
 
     def case_for_kind(
         self,
