@@ -105,7 +105,7 @@ def test_master_loop_step_rejects_empty_identity_and_evidence() -> None:
 def test_master_loop_step_rejects_future_reasoning_change_without_reality_signal() -> (
     None
 ):
-    with pytest.raises(ValueError, match="requires measured reality correction"):
+    with pytest.raises(ValueError, match="requires a measured reality signal"):
         _step(
             step_id="step-invalid-future-change",
             stage=WaveSixLoopStage.MEMORY_UPDATE,
@@ -169,7 +169,7 @@ def test_master_loop_trace_reports_out_of_order_stage_pair() -> None:
     assert trace.out_of_order_stage_pairs == (
         (WaveSixLoopStage.TRIAL, WaveSixLoopStage.PREDICTION),
     )
-    assert trace.readiness is WaveSixLoopReadiness.INCOMPLETE
+    assert trace.readiness is WaveSixLoopReadiness.ORDER_INVALID
     assert not trace.ready_for_human_review
 
 
@@ -185,7 +185,7 @@ def test_master_loop_trace_reports_invalid_prior_links() -> None:
     trace = _trace(steps=tuple(steps))
 
     assert trace.invalid_prior_links == ("step-05-outcome",)
-    assert trace.readiness is WaveSixLoopReadiness.INCOMPLETE
+    assert trace.readiness is WaveSixLoopReadiness.ORDER_INVALID
 
 
 def test_master_loop_trace_reports_steps_missing_evidence() -> None:
@@ -201,7 +201,7 @@ def test_master_loop_trace_reports_steps_missing_evidence() -> None:
     trace = _trace(steps=tuple(steps))
 
     assert trace.evidence_missing_step_ids == ("step-01-intent",)
-    assert trace.readiness is WaveSixLoopReadiness.INCOMPLETE
+    assert trace.readiness is WaveSixLoopReadiness.EVIDENCE_MISSING
     assert not trace.ready_for_human_review
 
 
@@ -221,7 +221,9 @@ def test_master_loop_trace_blocks_when_any_step_blocks_progress() -> None:
     assert not trace.ready_for_human_review
 
 
-def test_master_loop_trace_requires_reality_corrected_future_reasoning_step() -> None:
+def test_master_loop_trace_exposes_missing_reality_corrected_future_reasoning_step() -> (
+    None
+):
     steps = tuple(
         _step(
             step_id=step.step_id,
@@ -237,8 +239,8 @@ def test_master_loop_trace_requires_reality_corrected_future_reasoning_step() ->
     trace = _trace(steps=steps)
 
     assert trace.reality_corrected_reasoning_step_ids == ()
-    assert trace.readiness is WaveSixLoopReadiness.INCOMPLETE
-    assert not trace.ready_for_human_review
+    assert trace.readiness is WaveSixLoopReadiness.READY_FOR_HUMAN_REVIEW
+    assert trace.ready_for_human_review
 
 
 def test_master_loop_trace_rejects_duplicate_step_ids() -> None:
