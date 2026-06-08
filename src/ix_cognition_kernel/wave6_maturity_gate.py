@@ -19,9 +19,7 @@ from typing import Any, Protocol, TypeVar
 T = TypeVar("T")
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_SIX_MATURITY_GATE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-maturity-gate-v1"
-)
+WAVE_SIX_MATURITY_GATE_SCHEMA_VERSION = "ix-cognition-kernel-wave6-maturity-gate-v1"
 WAVE_SIX_MATURITY_DECISION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-maturity-decision-v1"
 )
@@ -116,9 +114,7 @@ class WaveSixMaturityDecision(StrEnum):
 
     BLOCK_WAVE_SIX_INTERPRETATION = "block-wave-six-interpretation"
     CONTINUE_EVIDENCE_COLLECTION = "continue-evidence-collection"
-    ENTER_BOUNDED_MEASURED_COGNITION_REVIEW = (
-        "enter-bounded-measured-cognition-review"
-    )
+    ENTER_BOUNDED_MEASURED_COGNITION_REVIEW = "enter-bounded-measured-cognition-review"
 
 
 @dataclass(frozen=True, slots=True)
@@ -286,9 +282,7 @@ class WaveSixMaturityGate:
     def ready_for_bounded_wave_six_review(self) -> bool:
         """Return whether the system may enter bounded Wave 6 review."""
 
-        return (
-            self.status is WaveSixMaturityStatus.READY_FOR_BOUNDED_WAVE_SIX_REVIEW
-        )
+        return self.status is WaveSixMaturityStatus.READY_FOR_BOUNDED_WAVE_SIX_REVIEW
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic maturity-gate payload for hashing and review."""
