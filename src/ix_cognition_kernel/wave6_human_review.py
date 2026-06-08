@@ -112,10 +112,14 @@ class WaveSixReviewItem:
             raise ValueError("Human-review items require evidence ids.")
         if not self.reviewer_notes:
             raise ValueError("Human-review items require reviewer notes.")
-        if self.finding in {
-            WaveSixHumanReviewFinding.CONTRADICTED,
-            WaveSixHumanReviewFinding.BLOCKS_CLAIM,
-        } and not self.blocks_wave_six_claim:
+        if (
+            self.finding
+            in {
+                WaveSixHumanReviewFinding.CONTRADICTED,
+                WaveSixHumanReviewFinding.BLOCKS_CLAIM,
+            }
+            and not self.blocks_wave_six_claim
+        ):
             raise ValueError("Contradicting or blocking findings must block the claim.")
         if (
             self.finding is WaveSixHumanReviewFinding.NEEDS_MORE_EVIDENCE
@@ -300,8 +304,7 @@ class WaveSixHumanReviewDocket:
         """Return whether human review approves bounded Wave 6 review."""
 
         return (
-            self.decision
-            is WaveSixHumanReviewDecision.APPROVE_BOUNDED_WAVE_SIX_REVIEW
+            self.decision is WaveSixHumanReviewDecision.APPROVE_BOUNDED_WAVE_SIX_REVIEW
             and not self.missing_item_kinds
             and not self.blocking_item_ids
             and not self.follow_up_item_ids
@@ -311,9 +314,8 @@ class WaveSixHumanReviewDocket:
     def blocks_wave_six_claim(self) -> bool:
         """Return whether human review blocks Wave 6 interpretation."""
 
-        return (
-            self.decision is WaveSixHumanReviewDecision.BLOCK_CLAIM
-            or bool(self.blocking_item_ids)
+        return self.decision is WaveSixHumanReviewDecision.BLOCK_CLAIM or bool(
+            self.blocking_item_ids
         )
 
     def item_for_kind(self, kind: WaveSixReviewItemKind) -> WaveSixReviewItem | None:
