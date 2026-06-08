@@ -226,10 +226,7 @@ def test_closure_checklist_lookup_and_duplicate_rejection() -> None:
 
     assert item is not None
     assert item.item_id == "item-readme-boundary"
-    assert (
-        checklist.item_for_kind(WaveSixClosureItemKind.PUBLIC_CLAIM_REPORT)
-        is None
-    )
+    assert checklist.item_for_kind(WaveSixClosureItemKind.PUBLIC_CLAIM_REPORT) is None
 
     duplicate = _item(WaveSixClosureItemKind.README_BOUNDARY)
     with pytest.raises(ValueError, match="Duplicate item_id"):
