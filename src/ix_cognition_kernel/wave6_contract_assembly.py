@@ -329,8 +329,7 @@ def canonical_wave_six_contract_blueprints() -> tuple[WaveSixContractBlueprint, 
             source_system=WaveSixSourceSystem.IX_INTENT_REALITY_LOOP,
             loop_stages=(WaveSixLoopStage.OUTCOME, WaveSixLoopStage.DELTA),
             summary=(
-                "Reality-correction record comparing expected "
-                "and measured outcome."
+                "Reality-correction record comparing expected and measured outcome."
             ),
             evidence_ids=("wave6-blueprint:reality-correction-record",),
         ),
