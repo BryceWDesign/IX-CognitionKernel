@@ -165,9 +165,11 @@ class WaveSixEvidenceGap:
                 raise ValueError("Blocking evidence gaps must block review.")
             if self.disposition is not WaveSixGapDisposition.BLOCK_WAVE_SIX_REVIEW:
                 raise ValueError("Blocking evidence gaps must use block disposition.")
-        if self.disposition is WaveSixGapDisposition.BLOCK_WAVE_SIX_REVIEW:
-            if not self.blocks_review:
-                raise ValueError("Block disposition must block review.")
+        if (
+            self.disposition is WaveSixGapDisposition.BLOCK_WAVE_SIX_REVIEW
+            and not self.blocks_review
+        ):
+            raise ValueError("Block disposition must block review.")
         if self.severity is WaveSixGapSeverity.CRITICAL:
             if self.disposition is WaveSixGapDisposition.ACCEPT_BOUNDED_RISK:
                 raise ValueError("Critical evidence gaps cannot be accepted as risk.")
@@ -219,8 +221,7 @@ class WaveSixEvidenceGap:
             self.state is WaveSixGapState.OPEN
             or self.requires_follow_up
             or (
-                bool(self.missing_evidence_ids)
-                and not self.accepted_for_bounded_review
+                bool(self.missing_evidence_ids) and not self.accepted_for_bounded_review
             )
         )
 
@@ -351,9 +352,12 @@ class WaveSixEvidenceGapRegister:
                 raise ValueError("Ready gap registers cannot contain overclaims.")
             if not self.claim_boundary_statement_valid:
                 raise ValueError("Ready gap registers require valid claim boundary.")
-        if self.decision is WaveSixGapRegisterDecision.BLOCK_REVIEW:
-            if not self.blocking_gap_ids and not self.overclaim_present:
-                raise ValueError("Blocked gap registers require blocker or overclaim.")
+        if (
+            self.decision is WaveSixGapRegisterDecision.BLOCK_REVIEW
+            and not self.blocking_gap_ids
+            and not self.overclaim_present
+        ):
+            raise ValueError("Blocked gap registers require blocker or overclaim.")
 
     @property
     def gap_ids(self) -> tuple[str, ...]:
@@ -385,9 +389,7 @@ class WaveSixEvidenceGapRegister:
     def accepted_risk_gap_ids(self) -> tuple[str, ...]:
         """Return non-critical gaps accepted for bounded review."""
 
-        return tuple(
-            gap.gap_id for gap in self.gaps if gap.accepted_for_bounded_review
-        )
+        return tuple(gap.gap_id for gap in self.gaps if gap.accepted_for_bounded_review)
 
     @property
     def follow_up_gap_ids(self) -> tuple[str, ...]:
