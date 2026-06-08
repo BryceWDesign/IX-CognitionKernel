@@ -79,9 +79,7 @@ def test_canonical_master_loop_trace_is_ready_for_human_review() -> None:
     assert trace.evidence_missing_step_ids == ()
     assert trace.readiness is WaveSixLoopReadiness.READY_FOR_HUMAN_REVIEW
     assert trace.ready_for_human_review
-    assert trace.reality_corrected_reasoning_step_ids == (
-        "step-07-memory-update",
-    )
+    assert trace.reality_corrected_reasoning_step_ids == ("step-07-memory-update",)
     assert len(trace.fingerprint()) == 64
     assert trace.fingerprint() == trace.fingerprint()
 
