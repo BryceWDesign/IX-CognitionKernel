@@ -17,9 +17,7 @@ from typing import Any, Protocol, TypeVar
 
 E = TypeVar("E", bound=StrEnum)
 
-WAVE_SIX_OUTCOME_SURFACE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-outcome-surface-v1"
-)
+WAVE_SIX_OUTCOME_SURFACE_SCHEMA_VERSION = "ix-cognition-kernel-wave6-outcome-surface-v1"
 WAVE_SIX_OUTCOME_DECLARATION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-outcome-declaration-v1"
 )
@@ -279,11 +277,14 @@ class WaveSixFinalOutcomeDeclaration:
                 )
             if not self.claim_boundary_statement_valid:
                 raise ValueError("Ready outcome declarations require valid boundary.")
-        if self.decision is WaveSixOutcomeDecision.BLOCK_WAVE_SIX_INTERPRETATION:
-            if not self.blocking_surface_ids and not self.overclaim_present:
-                raise ValueError(
-                    "Blocked outcome declarations require blocker or overclaim."
-                )
+        if (
+            self.decision is WaveSixOutcomeDecision.BLOCK_WAVE_SIX_INTERPRETATION
+            and not self.blocking_surface_ids
+            and not self.overclaim_present
+        ):
+            raise ValueError(
+                "Blocked outcome declarations require blocker or overclaim."
+            )
 
     @property
     def surface_ids(self) -> tuple[str, ...]:
@@ -578,7 +579,5 @@ def _require_unique_enum(values: Iterable[E], *, label: str) -> None:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
