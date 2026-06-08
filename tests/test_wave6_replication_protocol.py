@@ -149,7 +149,7 @@ def test_replication_step_requires_artifacts_fingerprints_and_evidence() -> None
             instruction="Invalid step without expected artifacts.",
             expected_artifact_ids=(),
             expected_fingerprints=("fingerprint",),
-            pass_criteria=("Pass criterion.",),
+            pass_criteria=("Pass criterion."),
             evidence_ids=("evidence",),
         )
 
@@ -160,7 +160,7 @@ def test_replication_step_requires_artifacts_fingerprints_and_evidence() -> None
             instruction="Invalid step without expected fingerprints.",
             expected_artifact_ids=("artifact",),
             expected_fingerprints=(),
-            pass_criteria=("Pass criterion.",),
+            pass_criteria=("Pass criterion."),
             evidence_ids=("evidence",),
         )
 
@@ -171,7 +171,7 @@ def test_replication_step_requires_artifacts_fingerprints_and_evidence() -> None
             instruction="Invalid step without evidence.",
             expected_artifact_ids=("artifact",),
             expected_fingerprints=("fingerprint",),
-            pass_criteria=("Pass criterion.",),
+            pass_criteria=("Pass criterion."),
             evidence_ids=(),
         )
 
@@ -239,9 +239,7 @@ def test_replication_protocol_tracks_inconclusive_step() -> None:
         decision=WaveSixReplicationDecision.NEEDS_MORE_EVIDENCE,
     )
 
-    assert protocol.needs_evidence_step_ids == (
-        "step-future-reasoning-replay",
-    )
+    assert protocol.needs_evidence_step_ids == ("step-future-reasoning-replay",)
     assert not protocol.replication_passed
     assert not protocol.blocks_claim
 
@@ -299,8 +297,7 @@ def test_replication_protocol_lookup_and_duplicate_rejection() -> None:
     assert step is not None
     assert step.step_id == "step-environment-check"
     assert (
-        protocol.step_for_kind(WaveSixReplicationStepKind.CLAIM_BOUNDARY_REPLAY)
-        is None
+        protocol.step_for_kind(WaveSixReplicationStepKind.CLAIM_BOUNDARY_REPLAY) is None
     )
 
     duplicate = _step(WaveSixReplicationStepKind.ENVIRONMENT_CHECK)
