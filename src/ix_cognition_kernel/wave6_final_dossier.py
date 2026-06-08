@@ -23,9 +23,7 @@ E = TypeVar("E", bound=StrEnum)
 WAVE_SIX_DOSSIER_ENTRY_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-final-dossier-entry-v1"
 )
-WAVE_SIX_FINAL_DOSSIER_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave6-final-dossier-v1"
-)
+WAVE_SIX_FINAL_DOSSIER_SCHEMA_VERSION = "ix-cognition-kernel-wave6-final-dossier-v1"
 
 
 class BoundedReviewArtifactLike(Protocol):
@@ -155,9 +153,11 @@ class WaveSixFinalDossierEntry:
             and not self.requires_follow_up
         ):
             raise ValueError("Needs-more-evidence dossier entries require follow-up.")
-        if self.finding is WaveSixDossierFinding.BLOCKS_DOSSIER:
-            if not self.blocks_handoff:
-                raise ValueError("Blocking dossier entries must block handoff.")
+        if (
+            self.finding is WaveSixDossierFinding.BLOCKS_DOSSIER
+            and not self.blocks_handoff
+        ):
+            raise ValueError("Blocking dossier entries must block handoff.")
 
     @property
     def included(self) -> bool:
@@ -176,8 +176,7 @@ class WaveSixFinalDossierEntry:
         """Return whether this entry blocks the bounded handoff."""
 
         return (
-            self.blocks_handoff
-            or self.finding is WaveSixDossierFinding.BLOCKS_DOSSIER
+            self.blocks_handoff or self.finding is WaveSixDossierFinding.BLOCKS_DOSSIER
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -299,9 +298,12 @@ class WaveSixFinalDossier:
                 raise ValueError("Ready final dossiers cannot contain overclaims.")
             if not self.claim_boundary_statement_valid:
                 raise ValueError("Ready final dossiers require valid claim boundary.")
-        if self.decision is WaveSixDossierDecision.BLOCK_HANDOFF:
-            if not self.blocking_entry_ids and not self.overclaim_present:
-                raise ValueError("Blocked final dossiers require blocker or overclaim.")
+        if (
+            self.decision is WaveSixDossierDecision.BLOCK_HANDOFF
+            and not self.blocking_entry_ids
+            and not self.overclaim_present
+        ):
+            raise ValueError("Blocked final dossiers require blocker or overclaim.")
 
     @property
     def entry_ids(self) -> tuple[str, ...]:
