@@ -119,9 +119,7 @@ class WaveSixExternalValidationSummary:
         if self.ready and self.blocking_ids:
             raise ValueError("Ready validation summaries cannot include blockers.")
         if self.ready and self.needs_more_evidence_ids:
-            raise ValueError(
-                "Ready validation summaries cannot need more evidence."
-            )
+            raise ValueError("Ready validation summaries cannot need more evidence.")
 
     @property
     def blocked(self) -> bool:
@@ -262,8 +260,7 @@ class WaveSixExternalValidationGate:
                 needs_more_evidence_ids=(
                     self.trial_replay_ledger.needs_more_evidence_replay_ids
                     or tuple(
-                        stage.value
-                        for stage in self.trial_replay_ledger.missing_stages
+                        stage.value for stage in self.trial_replay_ledger.missing_stages
                     )
                     or tuple(
                         stage.value
@@ -286,9 +283,7 @@ class WaveSixExternalValidationGate:
     def blocking_summary_ids(self) -> tuple[str, ...]:
         """Return validation summaries that block interpretation."""
 
-        return tuple(
-            summary.summary_id for summary in self.summaries if summary.blocked
-        )
+        return tuple(summary.summary_id for summary in self.summaries if summary.blocked)
 
     @property
     def needs_more_evidence_summary_ids(self) -> tuple[str, ...]:
