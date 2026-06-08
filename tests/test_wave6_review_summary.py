@@ -46,9 +46,7 @@ def _section(
 
 
 def _complete_sections() -> tuple[WaveSixReviewSummarySection, ...]:
-    return tuple(
-        _section(kind) for kind in WAVE_SIX_REQUIRED_REVIEW_SUMMARY_SECTIONS
-    )
+    return tuple(_section(kind) for kind in WAVE_SIX_REQUIRED_REVIEW_SUMMARY_SECTIONS)
 
 
 def _summary(
