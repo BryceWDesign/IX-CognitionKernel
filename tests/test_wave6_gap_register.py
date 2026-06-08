@@ -35,19 +35,21 @@ def _gap(
     blocks_review: bool = False,
     claim_boundary_impact: bool = False,
 ) -> WaveSixEvidenceGap:
-    required_evidence_ids = (f"required-evidence-{kind.value}",)
+    required_evidence_ids = (f"required-{kind.value}",)
     return WaveSixEvidenceGap(
         gap_id=gap_id or f"gap-{kind.value}",
         kind=kind,
         severity=severity,
         state=state,
         disposition=disposition,
-        summary=f"Evidence-gap check for {kind.value}.",
+        summary=f"Evidence gap check for {kind.value}.",
         affected_artifact_ids=(f"artifact-{kind.value}",),
         required_evidence_ids=required_evidence_ids,
-        evidence_ids=evidence_ids if evidence_ids is not None else required_evidence_ids,
         mitigation_summary=f"Mitigation for {kind.value}.",
-        reviewer_question=f"Is {kind.value} resolved or intentionally blocked?",
+        reviewer_question=f"Is the {kind.value} gap closed or bounded?",
+        evidence_ids=evidence_ids
+        if evidence_ids is not None
+        else required_evidence_ids,
         requires_follow_up=requires_follow_up,
         blocks_review=blocks_review,
         claim_boundary_impact=claim_boundary_impact,
@@ -76,7 +78,7 @@ def _register(
         human_authority_id="human-authority-1",
         independent_reviewer_id="independent-reviewer-1",
         claims_agi=claims_agi,
-        notes=("Gaps must be explicit before bounded Wave 6 review.",),
+        notes=("Gaps are explicit bounded-review evidence, not AGI proof.",),
     )
 
 
@@ -94,69 +96,82 @@ def test_required_gap_kinds_are_locked() -> None:
     )
 
 
-def test_resolved_gap_is_evidence_bound_and_fingerprinted() -> None:
+def test_evidence_gap_is_resolved_and_fingerprinted() -> None:
     gap = _gap(WaveSixGapKind.CI_VERIFICATION_GAP)
 
-    assert gap.evidence_complete
     assert gap.resolved
+    assert gap.evidence_complete
+    assert gap.missing_evidence_ids == ()
     assert not gap.needs_more_evidence
     assert not gap.blocks_bounded_review
     assert gap.fingerprint() == gap.fingerprint()
     assert len(gap.fingerprint()) == 64
 
 
-def test_resolved_gap_requires_all_required_evidence() -> None:
-    with pytest.raises(ValueError, match="require all required evidence"):
-        _gap(
-            WaveSixGapKind.REQUIRED_EVIDENCE_GAP,
-            evidence_ids=("other-evidence",),
-        )
+def test_evidence_gap_tracks_missing_required_evidence() -> None:
+    gap = _gap(
+        WaveSixGapKind.REQUIRED_EVIDENCE_GAP,
+        state=WaveSixGapState.OPEN,
+        disposition=WaveSixGapDisposition.REQUIRE_EVIDENCE,
+        evidence_ids=(),
+        requires_follow_up=True,
+    )
+
+    assert gap.missing_evidence_ids == ("required-required-evidence-gap",)
+    assert not gap.evidence_complete
+    assert gap.needs_more_evidence
+    assert not gap.resolved
 
 
-def test_open_gap_requires_follow_up() -> None:
-    with pytest.raises(ValueError, match="require follow-up"):
+def test_evidence_gap_allows_noncritical_bounded_risk_acceptance() -> None:
+    gap = _gap(
+        WaveSixGapKind.FINGERPRINT_REPRODUCTION_GAP,
+        severity=WaveSixGapSeverity.MINOR,
+        state=WaveSixGapState.ACCEPTED_FOR_BOUNDED_REVIEW,
+        disposition=WaveSixGapDisposition.ACCEPT_BOUNDED_RISK,
+        evidence_ids=(),
+    )
+
+    assert gap.accepted_for_bounded_review
+    assert not gap.needs_more_evidence
+    assert not gap.blocks_bounded_review
+
+
+def test_evidence_gap_enforces_fail_closed_semantics() -> None:
+    with pytest.raises(ValueError, match="Resolved evidence gaps require"):
         _gap(
             WaveSixGapKind.TRANSFER_EVIDENCE_GAP,
+            state=WaveSixGapState.RESOLVED,
+            evidence_ids=(),
+        )
+
+    with pytest.raises(ValueError, match="must block review"):
+        _gap(
+            WaveSixGapKind.FALSIFICATION_EVIDENCE_GAP,
+            state=WaveSixGapState.BLOCKING,
+            disposition=WaveSixGapDisposition.BLOCK_WAVE_SIX_REVIEW,
+        )
+
+    with pytest.raises(ValueError, match="Open evidence gaps require follow-up"):
+        _gap(
+            WaveSixGapKind.HUMAN_REVIEW_GAP,
             state=WaveSixGapState.OPEN,
             disposition=WaveSixGapDisposition.REQUIRE_EVIDENCE,
-            evidence_ids=(),
-            requires_follow_up=False,
         )
 
 
 def test_critical_gap_cannot_be_accepted_as_bounded_risk() -> None:
-    with pytest.raises(ValueError, match="cannot be accepted as risk"):
+    with pytest.raises(ValueError, match="Critical evidence gaps cannot be accepted"):
         _gap(
-            WaveSixGapKind.FALSIFICATION_EVIDENCE_GAP,
+            WaveSixGapKind.INDEPENDENT_REVIEW_GAP,
             severity=WaveSixGapSeverity.CRITICAL,
-            state=WaveSixGapState.OPEN,
+            state=WaveSixGapState.ACCEPTED_FOR_BOUNDED_REVIEW,
             disposition=WaveSixGapDisposition.ACCEPT_BOUNDED_RISK,
             evidence_ids=(),
-            requires_follow_up=True,
         )
 
 
-def test_blocking_gap_must_block_review_and_use_block_disposition() -> None:
-    with pytest.raises(ValueError, match="must block review"):
-        _gap(
-            WaveSixGapKind.CLAIM_BOUNDARY_GAP,
-            severity=WaveSixGapSeverity.CRITICAL,
-            state=WaveSixGapState.BLOCKING,
-            disposition=WaveSixGapDisposition.BLOCK_WAVE_SIX_REVIEW,
-            blocks_review=False,
-        )
-
-    with pytest.raises(ValueError, match="must use block disposition"):
-        _gap(
-            WaveSixGapKind.CLAIM_BOUNDARY_GAP,
-            severity=WaveSixGapSeverity.CRITICAL,
-            state=WaveSixGapState.BLOCKING,
-            disposition=WaveSixGapDisposition.REQUIRE_EVIDENCE,
-            blocks_review=True,
-        )
-
-
-def test_gap_register_is_ready_when_all_required_gap_checks_are_resolved() -> None:
+def test_gap_register_is_ready_when_complete_and_bounded() -> None:
     register = build_wave_six_gap_register(
         register_id="gap-register-ready",
         gaps=_complete_gaps(),
@@ -165,7 +180,7 @@ def test_gap_register_is_ready_when_all_required_gap_checks_are_resolved() -> No
         generated_by_engine_id="wave6-gap-register-engine",
         human_authority_id="human-authority-1",
         independent_reviewer_id="independent-reviewer-1",
-        notes=("Every required gap kind is represented and resolved.",),
+        notes=("All required evidence-gap kinds are represented.",),
     )
 
     assert register.present_gap_kinds == WAVE_SIX_REQUIRED_GAP_KINDS
@@ -189,11 +204,10 @@ def test_gap_register_reports_missing_gap_kind() -> None:
     assert not register.ready_for_bounded_review
 
 
-def test_gap_register_tracks_open_gap_as_follow_up() -> None:
+def test_gap_register_tracks_follow_up_gap() -> None:
     gaps = list(_complete_gaps())
     gaps[3] = _gap(
         WaveSixGapKind.TRANSFER_EVIDENCE_GAP,
-        severity=WaveSixGapSeverity.MAJOR,
         state=WaveSixGapState.OPEN,
         disposition=WaveSixGapDisposition.REQUIRE_EVIDENCE,
         evidence_ids=(),
@@ -206,6 +220,7 @@ def test_gap_register_tracks_open_gap_as_follow_up() -> None:
 
     assert register.follow_up_gap_ids == ("gap-transfer-evidence-gap",)
     assert register.status is WaveSixGapRegisterStatus.NEEDS_MORE_EVIDENCE
+    assert not register.ready_for_bounded_review
 
 
 def test_gap_register_blocks_on_blocking_gap_or_overclaim() -> None:
@@ -241,8 +256,8 @@ def test_ready_gap_register_rejects_missing_or_follow_up_gaps() -> None:
         _register(gaps=_complete_gaps()[:-1])
 
     gaps = list(_complete_gaps())
-    gaps[0] = _gap(
-        WaveSixGapKind.CI_VERIFICATION_GAP,
+    gaps[5] = _gap(
+        WaveSixGapKind.HUMAN_REVIEW_GAP,
         state=WaveSixGapState.OPEN,
         disposition=WaveSixGapDisposition.REQUIRE_EVIDENCE,
         evidence_ids=(),
@@ -270,18 +285,17 @@ def test_gap_register_reports_invalid_claim_boundary_statement() -> None:
 
 def test_gap_register_lookup_and_duplicate_rejection() -> None:
     register = _register(
-        gaps=(_gap(WaveSixGapKind.CI_VERIFICATION_GAP),),
+        gaps=(_gap(WaveSixGapKind.PUBLIC_WORDING_GAP),),
         decision=WaveSixGapRegisterDecision.HOLD_FOR_MORE_EVIDENCE,
     )
 
-    gap = register.gap_for_kind(WaveSixGapKind.CI_VERIFICATION_GAP)
+    gap = register.gap_for_kind(WaveSixGapKind.PUBLIC_WORDING_GAP)
 
     assert gap is not None
-    assert gap.gap_id == "gap-ci-verification-gap"
-    assert register.gap_for_kind(WaveSixGapKind.PUBLIC_WORDING_GAP) is None
+    assert gap.gap_id == "gap-public-wording-gap"
+    assert register.gap_for_kind(WaveSixGapKind.CI_VERIFICATION_GAP) is None
 
-    duplicate = _gap(WaveSixGapKind.CI_VERIFICATION_GAP)
-
+    duplicate = _gap(WaveSixGapKind.PUBLIC_WORDING_GAP)
     with pytest.raises(ValueError, match="Duplicate gap_id"):
         _register(
             gaps=(duplicate, duplicate),
@@ -292,10 +306,7 @@ def test_gap_register_lookup_and_duplicate_rejection() -> None:
         _register(
             gaps=(
                 duplicate,
-                _gap(
-                    WaveSixGapKind.CI_VERIFICATION_GAP,
-                    gap_id="different-gap-id",
-                ),
+                _gap(WaveSixGapKind.PUBLIC_WORDING_GAP, gap_id="different-gap"),
             ),
             decision=WaveSixGapRegisterDecision.HOLD_FOR_MORE_EVIDENCE,
         )
