@@ -110,7 +110,9 @@ def test_contract_assembly_reports_incomplete_when_donor_map_has_gap() -> None:
                 repo_name="IX-Function",
                 contribution_summary="Partial donor evidence.",
                 supported_loop_stages=(WaveSixLoopStage.TRANSFER_CHECK,),
-                supplied_capability_areas=(WaveSixCapabilityArea.CROSS_DOMAIN_TRANSFER,),
+                supplied_capability_areas=(
+                    WaveSixCapabilityArea.CROSS_DOMAIN_TRANSFER,
+                ),
                 supplied_artifact_kinds=(WaveSixArtifactKind.DONOR_TRACEABILITY_MAP,),
                 evidence_ids=("evidence-only-ix-function",),
                 integration_risks=(WaveSixDonorIntegrationRisk.SCHEMA_DRIFT,),
