@@ -66,9 +66,10 @@ def test_profile_lookup_returns_only_canonical_donor_sources() -> None:
 
     assert ix_function_profile is not None
     assert ix_function_profile.repo_name == "IX-Function"
-    assert canonical_wave_six_donor_profile_for_source(
-        WaveSixSourceSystem.HUMAN_REVIEW
-    ) is None
+    assert (
+        canonical_wave_six_donor_profile_for_source(WaveSixSourceSystem.HUMAN_REVIEW)
+        is None
+    )
 
 
 def test_profile_converts_to_traceability_contribution() -> None:
