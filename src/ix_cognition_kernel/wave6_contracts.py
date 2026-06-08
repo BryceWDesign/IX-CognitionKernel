@@ -102,17 +102,13 @@ class WaveSixDecisionState(StrEnum):
 class WaveSixClaimBoundary(StrEnum):
     """Claim boundaries that keep Wave 6 honest."""
 
-    MEASURED_SYSTEM_LEVEL_COGNITION_ATTEMPT = (
-        "measured-system-level-cognition-attempt"
-    )
+    MEASURED_SYSTEM_LEVEL_COGNITION_ATTEMPT = "measured-system-level-cognition-attempt"
     NO_AGI_CLAIM = "no-agi-claim"
     NO_PRODUCTION_CLAIM = "no-production-claim"
     NO_CERTIFICATION_CLAIM = "no-certification-claim"
     NO_AUTONOMOUS_AUTHORITY = "no-autonomous-authority"
     NO_SELF_VALIDATION = "no-self-validation"
-    TRANSFER_NOVELTY_FALSIFICATION_REQUIRED = (
-        "transfer-novelty-falsification-required"
-    )
+    TRANSFER_NOVELTY_FALSIFICATION_REQUIRED = "transfer-novelty-falsification-required"
     HUMAN_REVIEW_REQUIRED = "human-review-required"
 
 
@@ -422,9 +418,7 @@ class WaveSixContractBundle:
         present = {
             stage for artifact in self.artifacts for stage in artifact.loop_stages
         }
-        return tuple(
-            stage for stage in self.required_loop_stages if stage in present
-        )
+        return tuple(stage for stage in self.required_loop_stages if stage in present)
 
     @property
     def missing_loop_stages(self) -> tuple[WaveSixLoopStage, ...]:
