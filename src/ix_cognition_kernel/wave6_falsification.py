@@ -281,10 +281,7 @@ class WaveSixFalsificationResult:
     def accepted_for_review(self) -> bool:
         """Return whether this result can support Wave 6 review."""
 
-        return (
-            self.decision
-            is WaveSixFalsificationDecision.ACCEPT_FOR_WAVE_SIX_REVIEW
-        )
+        return self.decision is WaveSixFalsificationDecision.ACCEPT_FOR_WAVE_SIX_REVIEW
 
     @property
     def supports_bounded_claim_survival(self) -> bool:
