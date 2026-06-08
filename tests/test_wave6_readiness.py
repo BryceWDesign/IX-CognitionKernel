@@ -56,7 +56,9 @@ def _complete_bundle() -> WaveSixContractBundle:
     return build_canonical_wave_six_contract_assembly().contract_bundle
 
 
-def test_readiness_assessment_is_ready_with_complete_trace_and_contract_bundle() -> None:
+def test_readiness_assessment_is_ready_with_complete_trace_and_contract_bundle() -> (
+    None
+):
     assessment = build_wave_six_readiness_assessment(
         assessment_id="readiness-ready",
         trace=_complete_trace(),
@@ -73,9 +75,7 @@ def test_readiness_assessment_is_ready_with_complete_trace_and_contract_bundle()
     )
     assert assessment.ready_for_measured_cognition_review
     assert assessment.has_reality_corrected_reasoning_proof
-    assert assessment.reality_corrected_reasoning_step_ids == (
-        "step-07-memory-update",
-    )
+    assert assessment.reality_corrected_reasoning_step_ids == ("step-07-memory-update",)
     assert assessment.has_falsification_stage
     assert assessment.has_human_review_stage
     assert assessment.has_falsification_artifact
@@ -97,9 +97,7 @@ def test_readiness_assessment_reports_master_loop_not_review_ready() -> None:
     )
 
     assert assessment.trace_readiness is WaveSixLoopReadiness.INCOMPLETE
-    assert WaveSixReadinessBlocker.MASTER_LOOP_NOT_REVIEW_READY in (
-        assessment.blockers
-    )
+    assert WaveSixReadinessBlocker.MASTER_LOOP_NOT_REVIEW_READY in (assessment.blockers)
     assert WaveSixReadinessBlocker.HUMAN_REVIEW_STAGE_MISSING in assessment.blockers
     assert assessment.status is WaveSixReadinessStatus.NOT_READY
     assert not assessment.ready_for_measured_cognition_review
@@ -125,9 +123,7 @@ def test_readiness_assessment_reports_missing_contract_coverage() -> None:
         require_all_donor_sources=False,
     )
 
-    assert WaveSixReadinessBlocker.CONTRACT_COVERAGE_INCOMPLETE in (
-        assessment.blockers
-    )
+    assert WaveSixReadinessBlocker.CONTRACT_COVERAGE_INCOMPLETE in (assessment.blockers)
     assert WaveSixReadinessBlocker.FALSIFICATION_ARTIFACT_MISSING in (
         assessment.blockers
     )
