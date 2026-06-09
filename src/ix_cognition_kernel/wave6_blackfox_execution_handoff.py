@@ -285,9 +285,7 @@ class WaveSixBlackFoxExecutionHandoff:
     def expected_command_evidence_ids(self) -> tuple[str, ...]:
         """Return expected evidence ids from requested verification commands."""
 
-        return tuple(
-            command.expected_evidence_id for command in self.verification_commands
-        )
+        return tuple(command.expected_evidence_id for command in self.verification_commands)
 
     @property
     def blockers(self) -> tuple[WaveSixBlackFoxHandoffBlocker, ...]:
@@ -303,9 +301,7 @@ class WaveSixBlackFoxExecutionHandoff:
         if not self.candidate_gate.independent_reviewer_id.strip():
             blockers.append(WaveSixBlackFoxHandoffBlocker.INDEPENDENT_REVIEW_MISSING)
         if not _gate_falsification_probe_ids(self.candidate_gate):
-            blockers.append(
-                WaveSixBlackFoxHandoffBlocker.FALSIFICATION_PRESSURE_MISSING
-            )
+            blockers.append(WaveSixBlackFoxHandoffBlocker.FALSIFICATION_PRESSURE_MISSING)
         return tuple(blockers)
 
     @property
@@ -383,9 +379,7 @@ class WaveSixBlackFoxExecutionHandoff:
             "decision": self.decision.value,
             "destructive_actions_allowed": self.destructive_actions_allowed,
             "dispatch_allowed": self.dispatch_allowed,
-            "expected_command_evidence_ids": list(
-                self.expected_command_evidence_ids
-            ),
+            "expected_command_evidence_ids": list(self.expected_command_evidence_ids),
             "generated_by_engine_id": self.generated_by_engine_id,
             "handoff_id": self.handoff_id,
             "metadata_only": self.metadata_only,
@@ -393,9 +387,7 @@ class WaveSixBlackFoxExecutionHandoff:
             "notes": list(self.notes),
             "policy_ids": list(self.policy_ids),
             "purpose": self.purpose,
-            "ready_for_blackfox_review_packet": (
-                self.ready_for_blackfox_review_packet
-            ),
+            "ready_for_blackfox_review_packet": self.ready_for_blackfox_review_packet,
             "represented_evidence_ids": list(self.represented_evidence_ids),
             "requires_human_approval": self.requires_human_approval,
             "schema_version": self.schema_version,
