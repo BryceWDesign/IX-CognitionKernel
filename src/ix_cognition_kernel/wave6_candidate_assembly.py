@@ -226,9 +226,7 @@ class WaveSixCandidateAssembly:
 
         blockers: list[WaveSixCandidateAssemblyBlocker] = []
         if self.ix_pressure_bundle.blocking_gap_ids:
-            blockers.append(
-                WaveSixCandidateAssemblyBlocker.IX_OBLIGATION_GAPS_BLOCKING
-            )
+            blockers.append(WaveSixCandidateAssemblyBlocker.IX_OBLIGATION_GAPS_BLOCKING)
         if self.donor_intake_bundle.missing_source_systems:
             blockers.append(
                 WaveSixCandidateAssemblyBlocker.DONOR_SOURCE_EVIDENCE_MISSING
@@ -361,7 +359,5 @@ def _require_non_empty(value: str, label: str) -> str:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
