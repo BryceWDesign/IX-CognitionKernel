@@ -72,8 +72,9 @@ def test_assurance_bridge_exports_draft_only_for_ready_gate_and_blackfox() -> No
         notes=("Draft assurance export only; not certification.",),
     )
 
-    assert bundle.status is (
-        WaveSixAssuranceBridgeStatus.READY_FOR_ASSURANCE_DRAFT_EXPORT
+    assert (
+        bundle.status
+        is WaveSixAssuranceBridgeStatus.READY_FOR_ASSURANCE_DRAFT_EXPORT
     )
     assert bundle.decision is WaveSixAssuranceBridgeDecision.EXPORT_ASSURANCE_DRAFT_ONLY
     assert bundle.ready_for_assurance_draft_export
@@ -98,8 +99,9 @@ def test_assurance_bridge_payload_targets_assurance_runtime_vocabulary() -> None
     payload = bundle.canonical_payload()
 
     assert payload["target_runtime"] == "IX-Autonomy-Assurance-Case-Runtime"
-    assert payload["schema_version"] == (
-        "ix-cognition-kernel-wave6-assurance-case-bridge-v1"
+    assert (
+        payload["schema_version"]
+        == "ix-cognition-kernel-wave6-assurance-case-bridge-v1"
     )
     assert payload["decision"] == "export-assurance-draft-only"
     assert payload["status"] == "ready-for-assurance-draft-export"
