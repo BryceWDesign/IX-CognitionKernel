@@ -30,7 +30,6 @@ from ix_cognition_kernel.wave6_contracts import (
     WaveSixSourceSystem,
 )
 
-
 WAVE_SIX_IX_HANDOFF_SCHEMA_VERSION = "ix-cognition-kernel-wave6-ix-handoff-v1"
 IX_KERNEL_HANDOFF_PAYLOAD_SCHEMA_VERSION = "1.0"
 IX_KERNEL_HANDOFF_TYPE = "ix.cognitionkernel.handoff"
@@ -704,9 +703,7 @@ class WaveSixIxHandoffBundle:
         )
         if not self.packages:
             raise ValueError("IX handoff bundle requires at least one package.")
-        sorted_packages = tuple(
-            sorted(self.packages, key=lambda package: package.attempt)
-        )
+        sorted_packages = tuple(sorted(self.packages, key=lambda package: package.attempt))
         _require_unique_text(
             (package.attempt for package in sorted_packages),
             label="attempt",
