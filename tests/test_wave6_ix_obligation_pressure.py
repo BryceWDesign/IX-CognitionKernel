@@ -98,9 +98,7 @@ def test_ix_obligation_pressure_builds_one_pressure_per_canonical_obligation() -
     assert bundle.contract_artifact_id == (
         "ix-handoff-artifact-wave6_measured_cognition"
     )
-    assert bundle.generated_by_engine_id == (
-        WAVE_SIX_IX_OBLIGATION_PRESSURE_ENGINE_ID
-    )
+    assert bundle.generated_by_engine_id == (WAVE_SIX_IX_OBLIGATION_PRESSURE_ENGINE_ID)
     assert bundle.obligation_ids == canonical_ix_cognition_obligation_ids()
     assert len(bundle.pressures) == len(canonical_ix_cognition_obligation_ids())
 
