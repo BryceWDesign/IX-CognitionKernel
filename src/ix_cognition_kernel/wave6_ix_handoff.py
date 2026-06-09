@@ -26,7 +26,6 @@ from ix_cognition_kernel.wave6_contracts import (
     WaveSixCapabilityArea,
     WaveSixContractArtifact,
     WaveSixDecisionState,
-    WaveSixLoopStage,
     WaveSixSourceSystem,
 )
 
@@ -345,8 +344,7 @@ CANONICAL_IX_COGNITION_OBLIGATION_MAP: Mapping[
     str,
     WaveSixIxCanonicalObligationDefinition,
 ] = {
-    definition.obligation_id: definition
-    for definition in CANONICAL_IX_COGNITION_OBLIGATIONS
+    definition.obligation_id: definition for definition in CANONICAL_IX_COGNITION_OBLIGATIONS
 }
 
 
@@ -594,9 +592,7 @@ class WaveSixIxHandoffPackage:
         """Return declared falsification gates in deterministic order."""
 
         return _unique_preserving_order(
-            gate_id
-            for obligation in self.obligations
-            for gate_id in obligation.falsify_if
+            gate_id for obligation in self.obligations for gate_id in obligation.falsify_if
         )
 
     @property
