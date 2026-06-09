@@ -271,8 +271,7 @@ class WaveSixAssuranceCaseBridgeBundle:
         """Return whether this payload may be exported as a draft only."""
 
         return (
-            self.status
-            is WaveSixAssuranceBridgeStatus.READY_FOR_ASSURANCE_DRAFT_EXPORT
+            self.status is WaveSixAssuranceBridgeStatus.READY_FOR_ASSURANCE_DRAFT_EXPORT
         )
 
     def canonical_payload(self) -> dict[str, Any]:
