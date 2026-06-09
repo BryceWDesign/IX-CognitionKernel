@@ -112,7 +112,9 @@ def test_fail_closed_candidate_gate_payload_is_deterministic() -> None:
     assert payload["evidence_ids"] == list(gate.candidate_assembly.evidence_ids)
 
 
-def test_fail_closed_candidate_gate_blocks_missing_authority_and_claim_boundary() -> None:
+def test_fail_closed_candidate_gate_blocks_missing_authority_and_claim_boundary() -> (
+    None
+):
     gate = build_wave_six_fail_closed_candidate_gate(
         gate_id="wave6-candidate-gate",
         candidate_assembly=_CandidateAssembly(),
@@ -122,7 +124,9 @@ def test_fail_closed_candidate_gate_blocks_missing_authority_and_claim_boundary(
     )
 
     assert gate.status is WaveSixFailClosedCandidateGateStatus.BLOCKED
-    assert gate.decision is WaveSixFailClosedCandidateGateDecision.BLOCK_CANDIDATE_REVIEW
+    assert (
+        gate.decision is WaveSixFailClosedCandidateGateDecision.BLOCK_CANDIDATE_REVIEW
+    )
     assert not gate.ready_for_bounded_review_inputs
     assert gate.blockers == (
         WaveSixFailClosedCandidateGateBlocker.HUMAN_AUTHORITY_MISSING,
@@ -131,7 +135,7 @@ def test_fail_closed_candidate_gate_blocks_missing_authority_and_claim_boundary(
     )
 
 
-def test_fail_closed_candidate_gate_blocks_overclaim_execution_and_self_validation() -> None:
+def test_fail_closed_gate_blocks_overclaim_execution_and_self_validation() -> None:
     gate = build_wave_six_fail_closed_candidate_gate(
         gate_id="wave6-candidate-gate",
         candidate_assembly=_CandidateAssembly(
@@ -199,7 +203,7 @@ def test_fail_closed_candidate_gate_needs_evidence_for_donor_gaps() -> None:
     )
 
 
-def test_fail_closed_candidate_gate_blocks_empty_evidence_and_missing_falsification() -> None:
+def test_fail_closed_gate_blocks_empty_evidence_and_missing_falsification() -> None:
     gate = build_wave_six_fail_closed_candidate_gate(
         gate_id="wave6-candidate-gate",
         candidate_assembly=_CandidateAssembly(
