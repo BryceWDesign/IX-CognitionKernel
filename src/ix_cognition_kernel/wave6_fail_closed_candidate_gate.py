@@ -300,15 +300,21 @@ class WaveSixFailClosedCandidateGate:
                 WaveSixFailClosedCandidateGateBlocker.EXECUTION_AUTHORITY_PRESENT
             )
         if self.self_validation_present:
-            blockers.append(WaveSixFailClosedCandidateGateBlocker.SELF_VALIDATION_PRESENT)
+            blockers.append(
+                WaveSixFailClosedCandidateGateBlocker.SELF_VALIDATION_PRESENT
+            )
         if not self.human_authority_present:
-            blockers.append(WaveSixFailClosedCandidateGateBlocker.HUMAN_AUTHORITY_MISSING)
+            blockers.append(
+                WaveSixFailClosedCandidateGateBlocker.HUMAN_AUTHORITY_MISSING
+            )
         if not self.independent_review_present:
             blockers.append(
                 WaveSixFailClosedCandidateGateBlocker.INDEPENDENT_REVIEW_MISSING
             )
         if not self.claim_boundary_statement_valid:
-            blockers.append(WaveSixFailClosedCandidateGateBlocker.CLAIM_BOUNDARY_INVALID)
+            blockers.append(
+                WaveSixFailClosedCandidateGateBlocker.CLAIM_BOUNDARY_INVALID
+            )
         if not self.candidate_assembly.ready_for_fail_closed_readiness_gate:
             blockers.append(
                 WaveSixFailClosedCandidateGateBlocker.CANDIDATE_ASSEMBLY_NOT_READY
@@ -318,9 +324,13 @@ class WaveSixFailClosedCandidateGate:
                 WaveSixFailClosedCandidateGateBlocker.IX_OBLIGATION_PRESSURE_UNRESOLVED
             )
         if self.donor_evidence_incomplete:
-            blockers.append(WaveSixFailClosedCandidateGateBlocker.DONOR_EVIDENCE_INCOMPLETE)
+            blockers.append(
+                WaveSixFailClosedCandidateGateBlocker.DONOR_EVIDENCE_INCOMPLETE
+            )
         if self.evidence_package_empty:
-            blockers.append(WaveSixFailClosedCandidateGateBlocker.EVIDENCE_PACKAGE_EMPTY)
+            blockers.append(
+                WaveSixFailClosedCandidateGateBlocker.EVIDENCE_PACKAGE_EMPTY
+            )
         if self.falsification_pressure_missing:
             blockers.append(
                 WaveSixFailClosedCandidateGateBlocker.FALSIFICATION_PRESSURE_MISSING
