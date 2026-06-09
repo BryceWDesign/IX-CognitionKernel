@@ -329,8 +329,7 @@ class WaveSixBlackFoxExecutionHandoff:
         """Return whether this package may become a BlackFox review packet."""
 
         return (
-            self.status
-            is WaveSixBlackFoxHandoffStatus.READY_FOR_BLACKFOX_REVIEW_PACKET
+            self.status is WaveSixBlackFoxHandoffStatus.READY_FOR_BLACKFOX_REVIEW_PACKET
         )
 
     @property
