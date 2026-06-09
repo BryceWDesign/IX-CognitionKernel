@@ -992,3 +992,84 @@ def _stable_sha256(payload: Mapping[str, Any]) -> str:
 
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+    def _probe_id(contract_artifact_id: str, obligation: WaveSixIxObligation) -> str:
+    """Return deterministic falsification-probe id for an IX obligation."""
+
+    return f"ix-obligation-probe:{contract_artifact_id}:{obligation.obligation_id}"
+
+
+def _sort_pressures_by_canonical_order(
+    pressures: Iterable[WaveSixIxObligationPressure],
+) -> tuple[WaveSixIxObligationPressure, ...]:
+    """Return pressure records sorted by canonical IX obligation order."""
+
+    by_id: dict[str, WaveSixIxObligationPressure] = {}
+    for pressure in pressures:
+        if pressure.obligation_id in by_id:
+            raise ValueError(
+                f"Duplicate IX obligation pressure: {pressure.obligation_id}"
+            )
+        by_id[pressure.obligation_id] = pressure
+    return tuple(
+        by_id[obligation_id]
+        for obligation_id in canonical_ix_cognition_obligation_ids()
+        if obligation_id in by_id
+    )
+
+
+def _require_exact_obligation_ids(obligation_ids: tuple[str, ...]) -> None:
+    """Require pressure coverage for every canonical IX cognition obligation."""
+
+    expected = set(canonical_ix_cognition_obligation_ids())
+    actual = set(obligation_ids)
+    missing = tuple(
+        obligation_id
+        for obligation_id in canonical_ix_cognition_obligation_ids()
+        if obligation_id not in actual
+    )
+    extra = tuple(sorted(actual - expected))
+    if missing:
+        raise ValueError(f"Missing IX obligation pressure: {missing[0]}")
+    if extra:
+        raise ValueError(f"Unknown IX obligation pressure: {extra[0]}")
+
+
+def _unique_preserving_order(values: Iterable[str]) -> tuple[str, ...]:
+    """Return unique text values while preserving first-seen order."""
+
+    seen: set[str] = set()
+    unique: list[str] = []
+    for value in values:
+        if value not in seen:
+            unique.append(value)
+            seen.add(value)
+    return tuple(unique)
+
+
+def _require_non_empty(value: str, label: str) -> str:
+    """Return stripped text or raise when empty."""
+
+    normalized = value.strip()
+    if not normalized:
+        raise ValueError(f"{label} must not be empty.")
+    return normalized
+
+
+def _require_sha256(value: str, label: str) -> str:
+    """Require a deterministic SHA-256 fingerprint value."""
+
+    normalized = _require_non_empty(value, label)
+    if len(normalized) != 64:
+        raise ValueError(f"{label} must be a SHA-256 fingerprint.")
+    try:
+        int(normalized, 16)
+    except ValueError as exc:
+        raise ValueError(f"{label} must be hexadecimal.") from exc
+    return normalized
+
+
+def _stable_sha256(payload: Mapping[str, Any]) -> str:
+    """Return deterministic SHA-256 over a canonical JSON payload."""
+
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
