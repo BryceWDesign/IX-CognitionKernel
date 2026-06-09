@@ -44,9 +44,7 @@ WAVE_SIX_IX_OBLIGATION_PRESSURE_SCHEMA_VERSION = (
 WAVE_SIX_IX_OBLIGATION_PRESSURE_BUNDLE_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave6-ix-obligation-pressure-bundle-v1"
 )
-WAVE_SIX_IX_OBLIGATION_PRESSURE_ENGINE_ID = (
-    "wave6-ix-obligation-pressure-engine"
-)
+WAVE_SIX_IX_OBLIGATION_PRESSURE_ENGINE_ID = "wave6-ix-obligation-pressure-engine"
 
 
 class WaveSixIxObligationPressureDecision(StrEnum):
