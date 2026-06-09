@@ -306,7 +306,7 @@ def test_candidate_assembly_rejects_ix_pressure_linkage_mismatch() -> None:
         ),
     )
 
-    with pytest.raises(ValueError, match="IX_PRESSURE_ATTEMPT_MISMATCH"):
+    with pytest.raises(ValueError, match="ix-pressure-attempt-mismatch"):
         build_wave_six_candidate_assembly(
             assembly_id="candidate-assembly",
             ix_package=package,
@@ -316,8 +316,6 @@ def test_candidate_assembly_rejects_ix_pressure_linkage_mismatch() -> None:
 
 
 def test_candidate_assembly_rejects_unknown_required_donor_source() -> None:
-    package = _ix_package()
-
     with pytest.raises(ValueError, match="supporting donors"):
         build_wave_six_donor_evidence_intake_bundle(
             intake_id="bad-donor-intake",
