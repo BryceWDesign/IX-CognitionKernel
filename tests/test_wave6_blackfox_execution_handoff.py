@@ -107,11 +107,10 @@ def test_blackfox_handoff_prepares_review_packet_only_for_ready_gate() -> None:
         notes=("Review packet only; no dispatch.",),
     )
 
-    assert handoff.status is WaveSixBlackFoxHandoffStatus.READY_FOR_BLACKFOX_REVIEW_PACKET
     assert (
-        handoff.decision
-        is WaveSixBlackFoxHandoffDecision.PREPARE_REVIEW_PACKET_ONLY
+        handoff.status is WaveSixBlackFoxHandoffStatus.READY_FOR_BLACKFOX_REVIEW_PACKET
     )
+    assert handoff.decision is WaveSixBlackFoxHandoffDecision.PREPARE_REVIEW_PACKET_ONLY
     assert handoff.ready_for_blackfox_review_packet
     assert handoff.blockers == ()
     assert not handoff.dispatch_allowed
