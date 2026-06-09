@@ -192,6 +192,7 @@ def canonical_wave_six_donor_profiles() -> tuple[WaveSixDonorProfile, ...]:
             ),
             supplied_capability_areas=(
                 WaveSixCapabilityArea.CROSS_DOMAIN_TRANSFER,
+                WaveSixCapabilityArea.TRANSFER_GENERALIZATION,
                 WaveSixCapabilityArea.NOVELTY_PRESSURE,
                 WaveSixCapabilityArea.FALSIFICATION_DISCIPLINE,
             ),
@@ -261,6 +262,7 @@ def canonical_wave_six_donor_profiles() -> tuple[WaveSixDonorProfile, ...]:
                 WaveSixCapabilityArea.FALSIFICATION_DISCIPLINE,
             ),
             supplied_artifact_kinds=(
+                WaveSixArtifactKind.BLACKFOX_HANDOFF_RECEIPT,
                 WaveSixArtifactKind.FALSIFICATION_RECORD,
                 WaveSixArtifactKind.HUMAN_REVIEW_DOCKET,
                 WaveSixArtifactKind.INDEPENDENT_REVIEW_PACKET,
@@ -294,6 +296,7 @@ def canonical_wave_six_donor_profiles() -> tuple[WaveSixDonorProfile, ...]:
             ),
             supplied_artifact_kinds=(
                 WaveSixArtifactKind.MEASURED_COGNITION_RECORD,
+                WaveSixArtifactKind.COGNITION_REVIEW_RECORD,
                 WaveSixArtifactKind.FUTURE_REASONING_CHANGE_PROOF,
                 WaveSixArtifactKind.HUMAN_REVIEW_DOCKET,
                 WaveSixArtifactKind.DONOR_TRACEABILITY_MAP,
@@ -358,6 +361,7 @@ def canonical_wave_six_donor_profiles() -> tuple[WaveSixDonorProfile, ...]:
                 WaveSixCapabilityArea.INDEPENDENT_REVIEW_READINESS,
             ),
             supplied_artifact_kinds=(
+                WaveSixArtifactKind.BLACKFOX_HANDOFF_RECEIPT,
                 WaveSixArtifactKind.FALSIFICATION_RECORD,
                 WaveSixArtifactKind.HUMAN_REVIEW_DOCKET,
                 WaveSixArtifactKind.INDEPENDENT_REVIEW_PACKET,
