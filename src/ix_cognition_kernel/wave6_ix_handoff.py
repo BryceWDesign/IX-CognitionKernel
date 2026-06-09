@@ -127,8 +127,7 @@ CANONICAL_IX_COGNITION_OBLIGATIONS: tuple[
         obligation_id="purpose_discipline",
         title="Purpose discipline",
         purpose=(
-            "Declare the measured reason the cognition attempt exists before it "
-            "runs."
+            "Declare the measured reason the cognition attempt exists before it runs."
         ),
         evidence_artifacts=("attempt_purpose_record",),
         falsification_conditions=("purpose_missing", "purpose_changes_after_result"),
@@ -167,8 +166,7 @@ CANONICAL_IX_COGNITION_OBLIGATIONS: tuple[
         obligation_id="measured_outcome_capture",
         title="Measured outcome capture",
         purpose=(
-            "Record the observed result used to judge whether the attempt met "
-            "reality."
+            "Record the observed result used to judge whether the attempt met reality."
         ),
         evidence_artifacts=("outcome_record",),
         falsification_conditions=("outcome_missing", "outcome_not_measured"),
@@ -250,8 +248,7 @@ CANONICAL_IX_COGNITION_OBLIGATIONS: tuple[
         obligation_id="contradiction_handling",
         title="Contradiction handling",
         purpose=(
-            "Detect contradictions and route them to correction, quarantine, or "
-            "review."
+            "Detect contradictions and route them to correction, quarantine, or review."
         ),
         evidence_artifacts=("contradiction_record", "resolution_record"),
         falsification_conditions=("contradiction_ignored", "conflict_used_as_truth"),
@@ -293,8 +290,7 @@ CANONICAL_IX_COGNITION_OBLIGATIONS: tuple[
         obligation_id="no_self_certification",
         title="No self-certification",
         purpose=(
-            "Prevent the system or model from certifying its own AGI-candidate "
-            "success."
+            "Prevent the system or model from certifying its own AGI-candidate success."
         ),
         evidence_artifacts=("self_certification_guard_record",),
         falsification_conditions=(
@@ -319,8 +315,7 @@ CANONICAL_IX_COGNITION_OBLIGATIONS: tuple[
         obligation_id="independent_replay_review",
         title="Independent replay and review readiness",
         purpose=(
-            "Produce enough evidence for independent replay, audit, or human "
-            "review."
+            "Produce enough evidence for independent replay, audit, or human review."
         ),
         evidence_artifacts=("replay_manifest", "review_packet"),
         falsification_conditions=("replay_not_possible", "review_packet_missing"),
@@ -329,8 +324,7 @@ CANONICAL_IX_COGNITION_OBLIGATIONS: tuple[
         obligation_id="kernel_handoff_package",
         title="Kernel handoff package",
         purpose=(
-            "Export a structured obligation package for IX-CognitionKernel to "
-            "attempt."
+            "Export a structured obligation package for IX-CognitionKernel to attempt."
         ),
         evidence_artifacts=("kernel_handoff_package",),
         falsification_conditions=("kernel_handoff_missing", "handoff_schema_invalid"),
@@ -344,7 +338,8 @@ CANONICAL_IX_COGNITION_OBLIGATION_MAP: Mapping[
     str,
     WaveSixIxCanonicalObligationDefinition,
 ] = {
-    definition.obligation_id: definition for definition in CANONICAL_IX_COGNITION_OBLIGATIONS
+    definition.obligation_id: definition
+    for definition in CANONICAL_IX_COGNITION_OBLIGATIONS
 }
 
 
@@ -592,7 +587,9 @@ class WaveSixIxHandoffPackage:
         """Return declared falsification gates in deterministic order."""
 
         return _unique_preserving_order(
-            gate_id for obligation in self.obligations for gate_id in obligation.falsify_if
+            gate_id
+            for obligation in self.obligations
+            for gate_id in obligation.falsify_if
         )
 
     @property
@@ -699,7 +696,9 @@ class WaveSixIxHandoffBundle:
         )
         if not self.packages:
             raise ValueError("IX handoff bundle requires at least one package.")
-        sorted_packages = tuple(sorted(self.packages, key=lambda package: package.attempt))
+        sorted_packages = tuple(
+            sorted(self.packages, key=lambda package: package.attempt)
+        )
         _require_unique_text(
             (package.attempt for package in sorted_packages),
             label="attempt",
@@ -815,8 +814,7 @@ def _canonical_definition_for_payload(
         raise ValueError(f"Unknown IX cognition obligation: {obligation_id}")
     if payload != definition.canonical_payload():
         raise ValueError(
-            "IX canonical obligation definition drift detected for "
-            f"{obligation_id}."
+            f"IX canonical obligation definition drift detected for {obligation_id}."
         )
     return definition
 
@@ -985,87 +983,6 @@ def _require_unique_text(values: Iterable[str], *, label: str) -> None:
         if value in seen:
             raise ValueError(f"Duplicate {label} detected: {value}")
         seen.add(value)
-
-
-def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    """Return deterministic SHA-256 over a canonical JSON payload."""
-
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    return hashlib.sha256(encoded).hexdigest()
-    def _probe_id(contract_artifact_id: str, obligation: WaveSixIxObligation) -> str:
-    """Return deterministic falsification-probe id for an IX obligation."""
-
-    return f"ix-obligation-probe:{contract_artifact_id}:{obligation.obligation_id}"
-
-
-def _sort_pressures_by_canonical_order(
-    pressures: Iterable[WaveSixIxObligationPressure],
-) -> tuple[WaveSixIxObligationPressure, ...]:
-    """Return pressure records sorted by canonical IX obligation order."""
-
-    by_id: dict[str, WaveSixIxObligationPressure] = {}
-    for pressure in pressures:
-        if pressure.obligation_id in by_id:
-            raise ValueError(
-                f"Duplicate IX obligation pressure: {pressure.obligation_id}"
-            )
-        by_id[pressure.obligation_id] = pressure
-    return tuple(
-        by_id[obligation_id]
-        for obligation_id in canonical_ix_cognition_obligation_ids()
-        if obligation_id in by_id
-    )
-
-
-def _require_exact_obligation_ids(obligation_ids: tuple[str, ...]) -> None:
-    """Require pressure coverage for every canonical IX cognition obligation."""
-
-    expected = set(canonical_ix_cognition_obligation_ids())
-    actual = set(obligation_ids)
-    missing = tuple(
-        obligation_id
-        for obligation_id in canonical_ix_cognition_obligation_ids()
-        if obligation_id not in actual
-    )
-    extra = tuple(sorted(actual - expected))
-    if missing:
-        raise ValueError(f"Missing IX obligation pressure: {missing[0]}")
-    if extra:
-        raise ValueError(f"Unknown IX obligation pressure: {extra[0]}")
-
-
-def _unique_preserving_order(values: Iterable[str]) -> tuple[str, ...]:
-    """Return unique text values while preserving first-seen order."""
-
-    seen: set[str] = set()
-    unique: list[str] = []
-    for value in values:
-        if value not in seen:
-            unique.append(value)
-            seen.add(value)
-    return tuple(unique)
-
-
-def _require_non_empty(value: str, label: str) -> str:
-    """Return stripped text or raise when empty."""
-
-    normalized = value.strip()
-    if not normalized:
-        raise ValueError(f"{label} must not be empty.")
-    return normalized
-
-
-def _require_sha256(value: str, label: str) -> str:
-    """Require a deterministic SHA-256 fingerprint value."""
-
-    normalized = _require_non_empty(value, label)
-    if len(normalized) != 64:
-        raise ValueError(f"{label} must be a SHA-256 fingerprint.")
-    try:
-        int(normalized, 16)
-    except ValueError as exc:
-        raise ValueError(f"{label} must be hexadecimal.") from exc
-    return normalized
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
