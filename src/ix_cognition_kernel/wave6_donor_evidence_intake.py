@@ -360,8 +360,7 @@ class WaveSixDonorEvidenceIntakeBundle:
         """Return whether donor intake covers all required supporting evidence."""
 
         return (
-            not self.missing_source_systems
-            and not self.missing_required_artifact_keys
+            not self.missing_source_systems and not self.missing_required_artifact_keys
         )
 
     @property
@@ -407,9 +406,7 @@ class WaveSixDonorEvidenceIntakeBundle:
             "evidence_ids": list(self.evidence_ids),
             "generated_by_engine_id": self.generated_by_engine_id,
             "intake_id": self.intake_id,
-            "missing_required_artifact_keys": list(
-                self.missing_required_artifact_keys
-            ),
+            "missing_required_artifact_keys": list(self.missing_required_artifact_keys),
             "missing_source_systems": [
                 source.value for source in self.missing_source_systems
             ],
@@ -549,7 +546,5 @@ def _require_unique(values: Iterable[T], *, label: str) -> None:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
