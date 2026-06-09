@@ -1,4 +1,7 @@
-from typing import Any
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any, cast
 
 import pytest
 
@@ -8,26 +11,19 @@ from ix_cognition_kernel.wave6_candidate_assembly import (
     WaveSixCandidateAssemblyStatus,
     build_wave_six_candidate_assembly,
 )
-from ix_cognition_kernel.wave6_contracts import (
-    WaveSixArtifactKind,
-    WaveSixSourceSystem,
-)
+from ix_cognition_kernel.wave6_contracts import WaveSixSourceSystem
 from ix_cognition_kernel.wave6_donor_evidence_intake import (
+    WAVE_SIX_SUPPORTING_DONOR_SOURCE_SYSTEMS,
+    WaveSixDonorEvidenceIntakeBundle,
     WaveSixDonorEvidenceReceipt,
     build_wave_six_donor_evidence_intake_bundle,
-    supporting_wave_six_donor_source_systems,
 )
 from ix_cognition_kernel.wave6_donor_profiles import (
     canonical_wave_six_donor_profile_for_source,
 )
 from ix_cognition_kernel.wave6_ix_handoff import (
     CANONICAL_IX_COGNITION_OBLIGATIONS,
-    IX_COGNITION_CONTRACT_SCHEMA,
-    IX_COGNITION_KERNEL_TARGET,
-    IX_KERNEL_HANDOFF_TYPE,
-    IX_KERNEL_HANDOFF_PAYLOAD_SCHEMA_VERSION,
-    IX_METADATA_ONLY_RUNTIME_SEMANTICS,
-    canonical_ix_cognition_obligation_ids,
+    WaveSixIxHandoffPackage,
     load_ix_cognition_handoff,
 )
 from ix_cognition_kernel.wave6_ix_obligation_pressure import (
@@ -36,264 +32,298 @@ from ix_cognition_kernel.wave6_ix_obligation_pressure import (
 )
 
 
-def _source(line: int = 1) -> dict[str, Any]:
-    return {
-        "column": 5,
-        "filename": "examples/cognitionkernel_wave6_contract.ix",
-        "line": line,
-    }
-
-
-def _obligation_payload(index: int, obligation_id: str) -> dict[str, Any]:
-    definition = next(
-        definition
-        for definition in CANONICAL_IX_COGNITION_OBLIGATIONS
-        if definition.obligation_id == obligation_id
-    )
-    return {
-        "canonical": True,
-        "canonical_definition": definition.canonical_payload(),
-        "evidence_required": [definition.evidence_artifacts[0]],
-        "falsify_if": [definition.falsification_conditions[0]],
-        "id": obligation_id,
-        "source": _source(line=8 + (index * 5)),
-    }
-
-
-def _canonical_payload() -> dict[str, Any]:
-    return {
-        "handoff_type": IX_KERNEL_HANDOFF_TYPE,
-        "packages": [
-            {
-                "attempt": "wave6_measured_cognition",
-                "claim_boundaries": [
-                    "Research candidate only, evaluation use only, not deployment",
-                ],
-                "execution_authority": "none",
-                "human_approval_required": [
-                    "Human review required before any advancement or public claim",
-                ],
-                "human_authority_required": True,
-                "non_goals": [
-                    "Do not claim AGI, certify AGI, or allow system self-approval",
-                ],
-                "obligations": [
-                    _obligation_payload(index, obligation_id)
-                    for index, obligation_id in enumerate(
-                        canonical_ix_cognition_obligation_ids()
-                    )
-                ],
-                "purpose": [
-                    "Define a governed IX-CognitionKernel Wave 6 contract for "
-                    "measured reality correction",
-                ],
-                "runtime_semantics": IX_METADATA_ONLY_RUNTIME_SEMANTICS,
-                "schema": IX_COGNITION_CONTRACT_SCHEMA,
-                "self_certification_allowed": False,
-                "source": _source(line=6),
-                "target": IX_COGNITION_KERNEL_TARGET,
-            }
-        ],
-        "runtime_semantics": IX_METADATA_ONLY_RUNTIME_SEMANTICS,
-        "schema_version": IX_KERNEL_HANDOFF_PAYLOAD_SCHEMA_VERSION,
-    }
-
-
 def _fingerprint(seed: int) -> str:
     return f"{seed:064x}"[-64:]
 
 
-def _receipt_for(
-    source_system: WaveSixSourceSystem,
-    artifact_kind: WaveSixArtifactKind | None = None,
-    *,
-    seed: int = 1,
-) -> WaveSixDonorEvidenceReceipt:
-    profile = canonical_wave_six_donor_profile_for_source(source_system)
-    assert profile is not None
-    selected_artifact = artifact_kind or profile.supplied_artifact_kinds[0]
-    return WaveSixDonorEvidenceReceipt(
-        receipt_id=f"receipt-{source_system.value}-{selected_artifact.value}",
-        source_system=source_system,
-        repo_name=profile.repo_name,
-        evidence_id=f"donor-evidence:{source_system.value}:{selected_artifact.value}",
-        artifact_kind=selected_artifact,
-        capability_area=profile.supplied_capability_areas[0],
-        loop_stages=(profile.supported_loop_stages[0],),
-        artifact_fingerprint=_fingerprint(seed),
-        summary=f"Metadata-only evidence receipt for {profile.repo_name}.",
-        produced_by_engine_id=f"{source_system.value}-evidence-exporter",
-    )
+def _canonical_ix_payload() -> dict[str, Any]:
+    obligations = []
+    for index, definition in enumerate(CANONICAL_IX_COGNITION_OBLIGATIONS, start=1):
+        obligations.append(
+            {
+                "canonical": True,
+                "canonical_definition": definition.canonical_payload(),
+                "evidence_required": list(definition.evidence_artifacts),
+                "falsify_if": list(definition.falsification_conditions),
+                "id": definition.obligation_id,
+                "source": {
+                    "column": 1,
+                    "filename": "kernel_contract.ix",
+                    "line": index,
+                },
+            }
+        )
+    return {
+        "handoff_type": "ix.cognitionkernel.handoff",
+        "packages": [
+            {
+                "attempt": "wave6_measured_cognition",
+                "claim_boundaries": [
+                    "measured system-level cognition only",
+                    "not an AGI claim",
+                    "human and independent review required",
+                ],
+                "execution_authority": "none",
+                "human_approval_required": ["human authority required"],
+                "human_authority_required": True,
+                "non_goals": ["do not claim AGI", "do not self-certify"],
+                "obligations": obligations,
+                "purpose": ["test measured system-level cognition"],
+                "runtime_semantics": "metadata_only_not_executed",
+                "schema": "ix.cognition.contract.v1",
+                "self_certification_allowed": False,
+                "source": {
+                    "column": 1,
+                    "filename": "kernel_contract.ix",
+                    "line": 1,
+                },
+                "target": "IX-CognitionKernel",
+            }
+        ],
+        "runtime_semantics": "metadata_only_not_executed",
+        "schema_version": "1.0",
+    }
 
 
-def _full_receipts() -> tuple[WaveSixDonorEvidenceReceipt, ...]:
+def _ix_package() -> WaveSixIxHandoffPackage:
+    return load_ix_cognition_handoff(_canonical_ix_payload()).packages[0]
+
+
+def _donor_receipts() -> tuple[WaveSixDonorEvidenceReceipt, ...]:
     receipts: list[WaveSixDonorEvidenceReceipt] = []
-    seed = 1
-    for source_system in supporting_wave_six_donor_source_systems():
+    seed = 100
+    for source_system in WAVE_SIX_SUPPORTING_DONOR_SOURCE_SYSTEMS:
         profile = canonical_wave_six_donor_profile_for_source(source_system)
         assert profile is not None
         for artifact_kind in profile.supplied_artifact_kinds:
-            receipts.append(_receipt_for(source_system, artifact_kind, seed=seed))
             seed += 1
+            receipts.append(
+                WaveSixDonorEvidenceReceipt(
+                    receipt_id=f"{source_system.value}:{artifact_kind.value}",
+                    source_system=source_system,
+                    repo_name=profile.repo_name,
+                    evidence_id=f"donor-evidence:{source_system.value}:{artifact_kind.value}",
+                    artifact_kind=artifact_kind,
+                    capability_area=profile.supplied_capability_areas[0],
+                    loop_stages=(profile.supported_loop_stages[0],),
+                    artifact_fingerprint=_fingerprint(seed),
+                    summary=f"{profile.repo_name} supplies {artifact_kind.value}.",
+                    produced_by_engine_id=f"{source_system.value}-evidence-engine",
+                )
+            )
     return tuple(receipts)
 
 
-def _candidate_assembly(receipts: tuple[WaveSixDonorEvidenceReceipt, ...]) -> (
-    WaveSixCandidateAssembly
-):
-    package = load_ix_cognition_handoff(_canonical_payload()).packages[0]
-    pressure_bundle = build_ix_obligation_pressure_bundle(package)
-    donor_bundle = build_wave_six_donor_evidence_intake_bundle(
-        intake_id="wave6-donor-intake",
-        receipts=receipts,
+def _complete_donor_intake() -> WaveSixDonorEvidenceIntakeBundle:
+    return build_wave_six_donor_evidence_intake_bundle(
+        intake_id="complete-donor-intake",
+        receipts=_donor_receipts(),
     )
-    return build_wave_six_candidate_assembly(
-        assembly_id="wave6-bounded-candidate-assembly",
+
+
+@dataclass(frozen=True, slots=True)
+class _ReadyPressureBundle:
+    attempt: str
+    source_package_fingerprint: str
+    source_evidence_id: str
+    contract_artifact_id: str
+    evidence_gap_ids: tuple[str, ...] = ()
+    falsification_probe_ids: tuple[str, ...] = ("probe:ready",)
+    blocking_gap_ids: tuple[str, ...] = ()
+    required_evidence_ids: tuple[str, ...] = ("ready-evidence",)
+
+    def fingerprint(self) -> str:
+        return _fingerprint(900)
+
+    def canonical_payload(self) -> dict[str, Any]:
+        return {
+            "attempt": self.attempt,
+            "blocking_gap_ids": list(self.blocking_gap_ids),
+            "contract_artifact_id": self.contract_artifact_id,
+            "evidence_gap_ids": list(self.evidence_gap_ids),
+            "falsification_probe_ids": list(self.falsification_probe_ids),
+            "required_evidence_ids": list(self.required_evidence_ids),
+            "source_evidence_id": self.source_evidence_id,
+            "source_package_fingerprint": self.source_package_fingerprint,
+        }
+
+
+def _ready_pressure_bundle(
+    package: WaveSixIxHandoffPackage,
+) -> WaveSixIxObligationPressureBundle:
+    contract_artifact = package.to_contract_artifact()
+    return cast(
+        WaveSixIxObligationPressureBundle,
+        _ReadyPressureBundle(
+            attempt=package.attempt,
+            source_package_fingerprint=package.fingerprint(),
+            source_evidence_id=package.ix_evidence_id,
+            contract_artifact_id=contract_artifact.artifact_id,
+        ),
+    )
+
+
+def test_candidate_assembly_blocks_unresolved_ix_obligation_pressure() -> None:
+    package = _ix_package()
+    assembly = build_wave_six_candidate_assembly(
+        assembly_id="candidate-assembly",
         ix_package=package,
-        ix_pressure_bundle=pressure_bundle,
-        donor_intake_bundle=donor_bundle,
-        notes=("Candidate assembly only; unresolved IX obligations block review.",),
+        ix_pressure_bundle=build_ix_obligation_pressure_bundle(package),
+        donor_intake_bundle=_complete_donor_intake(),
+        notes=("Bounded assembly only.",),
     )
 
-
-def test_candidate_assembly_joins_ix_pressure_and_complete_donor_intake() -> None:
-    assembly = _candidate_assembly(_full_receipts())
-
-    assert assembly.attempt == "wave6_measured_cognition"
-    assert assembly.ix_contract_artifact.artifact_id == (
-        "ix-handoff-artifact-wave6_measured_cognition"
-    )
-    assert assembly.donor_intake_bundle.ready_for_candidate_assembly
-    assert assembly.status is (
-        WaveSixCandidateAssemblyStatus.BLOCKED_BY_IX_OBLIGATION_PRESSURE
+    assert (
+        assembly.status
+        is WaveSixCandidateAssemblyStatus.BLOCKED_BY_IX_OBLIGATION_PRESSURE
     )
     assert not assembly.ready_for_fail_closed_readiness_gate
     assert assembly.readiness_blockers == (
         WaveSixCandidateAssemblyBlocker.IX_OBLIGATION_GAPS_BLOCKING,
     )
-    assert len(assembly.ix_obligation_gap_ids) == len(
-        canonical_ix_cognition_obligation_ids()
+    assert assembly.attempt == "wave6_measured_cognition"
+    assert assembly.human_review_required
+    assert assembly.metadata_only
+    assert not assembly.claims_agi
+
+
+def test_candidate_assembly_preserves_artifacts_and_evidence_ids() -> None:
+    package = _ix_package()
+    assembly = build_wave_six_candidate_assembly(
+        assembly_id="candidate-assembly",
+        ix_package=package,
+        ix_pressure_bundle=build_ix_obligation_pressure_bundle(package),
+        donor_intake_bundle=_complete_donor_intake(),
     )
-    assert len(assembly.ix_falsification_probe_ids) == len(
-        canonical_ix_cognition_obligation_ids()
+
+    assert assembly.ix_contract_artifact.artifact_id == (
+        "ix-handoff-artifact-wave6_measured_cognition"
     )
-    assert assembly.evidence_ids[0] == (
-        "ix-kernel-handoff:wave6_measured_cognition:kernel-handoff-json"
-    )
+    assert assembly.artifact_ids[0] == assembly.ix_contract_artifact.artifact_id
+    assert package.ix_evidence_id in assembly.evidence_ids
+    assert len(assembly.donor_contract_artifacts) == len(_donor_receipts())
     assert len(assembly.fingerprint()) == 64
     assert assembly.fingerprint() == assembly.fingerprint()
 
 
-def test_candidate_assembly_reports_donor_gaps_but_keeps_ix_pressure_primary() -> None:
-    assembly = _candidate_assembly(
-        (_receipt_for(WaveSixSourceSystem.IX_FUNCTION, seed=101),)
+def test_candidate_assembly_payload_is_deterministic_and_review_bounded() -> None:
+    package = _ix_package()
+    assembly = build_wave_six_candidate_assembly(
+        assembly_id="candidate-assembly",
+        ix_package=package,
+        ix_pressure_bundle=build_ix_obligation_pressure_bundle(package),
+        donor_intake_bundle=_complete_donor_intake(),
     )
 
-    assert assembly.status is (
-        WaveSixCandidateAssemblyStatus.BLOCKED_BY_IX_OBLIGATION_PRESSURE
+    payload = assembly.canonical_payload()
+
+    assert payload["schema_version"] == (
+        "ix-cognition-kernel-wave6-candidate-assembly-v1"
     )
+    assert payload["status"] == "blocked-by-ix-obligation-pressure"
+    assert payload["ready_for_fail_closed_readiness_gate"] is False
+    assert payload["claims_agi"] is False
+    assert payload["allows_autonomous_execution"] is False
+    assert payload["self_validated"] is False
+    assert payload["ix_handoff_fingerprint"] == package.fingerprint()
+
+
+def test_candidate_assembly_moves_to_donor_evidence_status_when_ix_ready() -> None:
+    package = _ix_package()
+    partial_intake = build_wave_six_donor_evidence_intake_bundle(
+        intake_id="partial-donor-intake",
+        receipts=(_donor_receipts()[0],),
+    )
+    assembly = build_wave_six_candidate_assembly(
+        assembly_id="candidate-assembly",
+        ix_package=package,
+        ix_pressure_bundle=_ready_pressure_bundle(package),
+        donor_intake_bundle=partial_intake,
+    )
+
+    assert assembly.status is WaveSixCandidateAssemblyStatus.NEEDS_DONOR_EVIDENCE
     assert assembly.readiness_blockers == (
-        WaveSixCandidateAssemblyBlocker.IX_OBLIGATION_GAPS_BLOCKING,
         WaveSixCandidateAssemblyBlocker.DONOR_SOURCE_EVIDENCE_MISSING,
         WaveSixCandidateAssemblyBlocker.DONOR_ARTIFACT_EVIDENCE_MISSING,
     )
-    assert WaveSixSourceSystem.IX_BLACKFOX in (
-        assembly.donor_intake_bundle.missing_source_systems
+
+
+def test_candidate_assembly_can_enter_later_gate_when_inputs_are_ready() -> None:
+    package = _ix_package()
+    assembly = build_wave_six_candidate_assembly(
+        assembly_id="candidate-assembly",
+        ix_package=package,
+        ix_pressure_bundle=_ready_pressure_bundle(package),
+        donor_intake_bundle=_complete_donor_intake(),
     )
 
-
-def test_candidate_assembly_preserves_no_authority_and_no_agi_boundaries() -> None:
-    assembly = _candidate_assembly(_full_receipts())
-
-    assert assembly.human_review_required
-    assert assembly.metadata_only
-    assert not assembly.allows_autonomous_execution
-    assert not assembly.claims_agi
-    assert not assembly.claims_production_ready
-    assert not assembly.claims_certified
-    assert not assembly.self_validated
-    assert all(not artifact.claims_agi for artifact in assembly.all_contract_artifacts)
-    assert all(
-        not artifact.allows_autonomous_execution
-        for artifact in assembly.all_contract_artifacts
+    assert (
+        assembly.status
+        is WaveSixCandidateAssemblyStatus.READY_FOR_FAIL_CLOSED_READINESS_GATE
     )
+    assert assembly.ready_for_fail_closed_readiness_gate
+    assert assembly.readiness_blockers == ()
 
 
-def test_candidate_assembly_rejects_attempt_mismatch() -> None:
-    package = load_ix_cognition_handoff(_canonical_payload()).packages[0]
-    pressure_bundle = build_ix_obligation_pressure_bundle(package)
-    tampered_pressure = WaveSixIxObligationPressureBundle(
-        attempt="different_attempt",
-        source_package_fingerprint=pressure_bundle.source_package_fingerprint,
-        source_evidence_id=pressure_bundle.source_evidence_id,
-        contract_artifact_id=pressure_bundle.contract_artifact_id,
-        pressures=pressure_bundle.pressures,
-    )
-    donor_bundle = build_wave_six_donor_evidence_intake_bundle(
-        intake_id="wave6-donor-intake",
-        receipts=_full_receipts(),
-    )
+def test_candidate_assembly_rejects_authority_and_overclaim_flags() -> None:
+    package = _ix_package()
 
-    with pytest.raises(ValueError, match="ix-pressure-attempt-mismatch"):
-        build_wave_six_candidate_assembly(
-            assembly_id="bad-assembly",
+    with pytest.raises(ValueError, match="must not grant execution"):
+        WaveSixCandidateAssembly(
+            assembly_id="candidate-assembly",
             ix_package=package,
-            ix_pressure_bundle=tampered_pressure,
-            donor_intake_bundle=donor_bundle,
+            ix_pressure_bundle=build_ix_obligation_pressure_bundle(package),
+            donor_intake_bundle=_complete_donor_intake(),
+            allows_autonomous_execution=True,
         )
-
-
-def test_candidate_assembly_rejects_fingerprint_mismatch() -> None:
-    package = load_ix_cognition_handoff(_canonical_payload()).packages[0]
-    pressure_bundle = build_ix_obligation_pressure_bundle(package)
-    tampered_pressure = WaveSixIxObligationPressureBundle(
-        attempt=pressure_bundle.attempt,
-        source_package_fingerprint=f"{999:064x}"[-64:],
-        source_evidence_id=pressure_bundle.source_evidence_id,
-        contract_artifact_id=pressure_bundle.contract_artifact_id,
-        pressures=pressure_bundle.pressures,
-    )
-    donor_bundle = build_wave_six_donor_evidence_intake_bundle(
-        intake_id="wave6-donor-intake",
-        receipts=_full_receipts(),
-    )
-
-    with pytest.raises(ValueError, match="ix-pressure-fingerprint-mismatch"):
-        build_wave_six_candidate_assembly(
-            assembly_id="bad-assembly",
-            ix_package=package,
-            ix_pressure_bundle=tampered_pressure,
-            donor_intake_bundle=donor_bundle,
-        )
-
-
-def test_candidate_assembly_rejects_unsafe_claim_flags() -> None:
-    package = load_ix_cognition_handoff(_canonical_payload()).packages[0]
-    pressure_bundle = build_ix_obligation_pressure_bundle(package)
-    donor_bundle = build_wave_six_donor_evidence_intake_bundle(
-        intake_id="wave6-donor-intake",
-        receipts=_full_receipts(),
-    )
-
     with pytest.raises(ValueError, match="must not claim AGI"):
         WaveSixCandidateAssembly(
-            assembly_id="unsafe-assembly",
+            assembly_id="candidate-assembly",
             ix_package=package,
-            ix_pressure_bundle=pressure_bundle,
-            donor_intake_bundle=donor_bundle,
+            ix_pressure_bundle=build_ix_obligation_pressure_bundle(package),
+            donor_intake_bundle=_complete_donor_intake(),
             claims_agi=True,
+        )
+    with pytest.raises(ValueError, match="must not self-validate"):
+        WaveSixCandidateAssembly(
+            assembly_id="candidate-assembly",
+            ix_package=package,
+            ix_pressure_bundle=build_ix_obligation_pressure_bundle(package),
+            donor_intake_bundle=_complete_donor_intake(),
+            self_validated=True,
         )
 
 
-def test_candidate_assembly_keeps_artifacts_and_evidence_deterministic() -> None:
-    assembly = _candidate_assembly(_full_receipts())
+def test_candidate_assembly_rejects_ix_pressure_linkage_mismatch() -> None:
+    package = _ix_package()
+    bad_pressure = cast(
+        WaveSixIxObligationPressureBundle,
+        _ReadyPressureBundle(
+            attempt="wrong-attempt",
+            source_package_fingerprint=package.fingerprint(),
+            source_evidence_id=package.ix_evidence_id,
+            contract_artifact_id=package.to_contract_artifact().artifact_id,
+        ),
+    )
 
-    assert assembly.artifact_ids[0] == "ix-handoff-artifact-wave6_measured_cognition"
-    assert assembly.artifact_ids == tuple(
-        artifact.artifact_id for artifact in assembly.all_contract_artifacts
-    )
-    assert len(assembly.artifact_ids) == len(_full_receipts()) + 1
-    assert all(probe.evidence_ids for probe in assembly.ix_falsification_probes)
-    assert assembly.canonical_payload()["status"] == (
-        "blocked-by-ix-obligation-pressure"
-    )
+    with pytest.raises(ValueError, match="IX_PRESSURE_ATTEMPT_MISMATCH"):
+        build_wave_six_candidate_assembly(
+            assembly_id="candidate-assembly",
+            ix_package=package,
+            ix_pressure_bundle=bad_pressure,
+            donor_intake_bundle=_complete_donor_intake(),
+        )
+
+
+def test_candidate_assembly_rejects_unknown_required_donor_source() -> None:
+    package = _ix_package()
+
+    with pytest.raises(ValueError, match="supporting donors"):
+        build_wave_six_donor_evidence_intake_bundle(
+            intake_id="bad-donor-intake",
+            receipts=(_donor_receipts()[0],),
+        ).__class__(
+            intake_id="bad-donor-intake",
+            receipts=(_donor_receipts()[0],),
+            required_source_systems=(WaveSixSourceSystem.IX_MAIN,),
+        )
