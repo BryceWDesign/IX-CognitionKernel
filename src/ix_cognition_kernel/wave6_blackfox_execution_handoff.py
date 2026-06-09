@@ -285,7 +285,9 @@ class WaveSixBlackFoxExecutionHandoff:
     def expected_command_evidence_ids(self) -> tuple[str, ...]:
         """Return expected evidence ids from requested verification commands."""
 
-        return tuple(command.expected_evidence_id for command in self.verification_commands)
+        return tuple(
+            command.expected_evidence_id for command in self.verification_commands
+        )
 
     @property
     def blockers(self) -> tuple[WaveSixBlackFoxHandoffBlocker, ...]:
@@ -301,7 +303,9 @@ class WaveSixBlackFoxExecutionHandoff:
         if not self.candidate_gate.independent_reviewer_id.strip():
             blockers.append(WaveSixBlackFoxHandoffBlocker.INDEPENDENT_REVIEW_MISSING)
         if not _gate_falsification_probe_ids(self.candidate_gate):
-            blockers.append(WaveSixBlackFoxHandoffBlocker.FALSIFICATION_PRESSURE_MISSING)
+            blockers.append(
+                WaveSixBlackFoxHandoffBlocker.FALSIFICATION_PRESSURE_MISSING
+            )
         return tuple(blockers)
 
     @property
@@ -543,7 +547,5 @@ def _require_non_empty(value: str, label: str) -> str:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
