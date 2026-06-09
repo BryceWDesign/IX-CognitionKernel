@@ -247,8 +247,7 @@ class WaveSixAssuranceCaseBridgeBundle:
             or WaveSixAssuranceBridgeBlocker.CANDIDATE_GATE_HAS_BLOCKERS
             in self.blockers
             or WaveSixAssuranceBridgeBlocker.HUMAN_AUTHORITY_MISSING in self.blockers
-            or WaveSixAssuranceBridgeBlocker.INDEPENDENT_REVIEW_MISSING
-            in self.blockers
+            or WaveSixAssuranceBridgeBlocker.INDEPENDENT_REVIEW_MISSING in self.blockers
         ):
             return WaveSixAssuranceBridgeStatus.BLOCKED_BY_CANDIDATE_GATE
         if (
@@ -299,9 +298,7 @@ class WaveSixAssuranceCaseBridgeBundle:
             "independent_review_required": self.independent_review_required,
             "metadata_only": self.metadata_only,
             "notes": list(self.notes),
-            "ready_for_assurance_draft_export": (
-                self.ready_for_assurance_draft_export
-            ),
+            "ready_for_assurance_draft_export": self.ready_for_assurance_draft_export,
             "schema_version": self.schema_version,
             "self_validated": self.self_validated,
             "source_candidate_gate_fingerprint": self.candidate_gate.fingerprint(),
