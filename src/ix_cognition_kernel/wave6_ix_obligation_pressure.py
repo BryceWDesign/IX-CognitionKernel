@@ -51,9 +51,7 @@ class WaveSixIxObligationPressureDecision(StrEnum):
     """Fail-closed decision for imported IX obligation pressure."""
 
     NEEDS_MORE_EVIDENCE = "needs-more-evidence"
-    BLOCKED_BY_MISSING_OBLIGATION_EVIDENCE = (
-        "blocked-by-missing-obligation-evidence"
-    )
+    BLOCKED_BY_MISSING_OBLIGATION_EVIDENCE = "blocked-by-missing-obligation-evidence"
 
 
 class WaveSixIxObligationPressureStatus(StrEnum):
@@ -105,13 +103,9 @@ _SAFETY_GATE_OBLIGATION_IDS: frozenset[str] = frozenset(
     }
 )
 
-_TRANSFER_OBLIGATION_IDS: frozenset[str] = frozenset(
-    {"cross_domain_transfer_probe"}
-)
+_TRANSFER_OBLIGATION_IDS: frozenset[str] = frozenset({"cross_domain_transfer_probe"})
 
-_NOVELTY_OBLIGATION_IDS: frozenset[str] = frozenset(
-    {"novelty_generality_pressure"}
-)
+_NOVELTY_OBLIGATION_IDS: frozenset[str] = frozenset({"novelty_generality_pressure"})
 
 _CONTRADICTION_OBLIGATION_IDS: frozenset[str] = frozenset(
     {
@@ -603,7 +597,5 @@ def _require_sha256(value: str, label: str) -> str:
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
     """Return deterministic SHA-256 over a canonical JSON payload."""
 
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
