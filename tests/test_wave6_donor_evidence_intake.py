@@ -61,16 +61,14 @@ def _all_required_receipts() -> tuple[WaveSixDonorEvidenceReceipt, ...]:
                     source_system=source_system,
                     repo_name=profile.repo_name,
                     evidence_id=(
-                        f"donor-evidence:{source_system.value}:"
-                        f"{artifact_kind.value}"
+                        f"donor-evidence:{source_system.value}:{artifact_kind.value}"
                     ),
                     artifact_kind=artifact_kind,
                     capability_area=profile.supplied_capability_areas[0],
                     loop_stages=(profile.supported_loop_stages[0],),
                     artifact_fingerprint=_fingerprint(seed),
                     summary=(
-                        f"{profile.repo_name} supplies {artifact_kind.value} "
-                        "evidence."
+                        f"{profile.repo_name} supplies {artifact_kind.value} evidence."
                     ),
                     produced_by_engine_id=f"{source_system.value}-evidence-engine",
                 )
@@ -107,7 +105,11 @@ def test_donor_evidence_receipt_converts_to_contract_artifact() -> None:
     receipt = _receipt_for_source(WaveSixSourceSystem.IX_INTENT_REALITY_LOOP)
     artifact = receipt.to_contract_artifact()
 
-    assert artifact.artifact_id == "donor-evidence-artifact-receipt:ix-irl"
+    expected_artifact_id = (
+        "donor-evidence-artifact-receipt:"
+        f"{WaveSixSourceSystem.IX_INTENT_REALITY_LOOP.value}"
+    )
+    assert artifact.artifact_id == expected_artifact_id
     assert artifact.source_system is WaveSixSourceSystem.IX_INTENT_REALITY_LOOP
     assert artifact.evidence_ids == (receipt.evidence_id,)
     assert artifact.produced_by_engine_id == "wave6-donor-evidence-intake-engine"
@@ -131,13 +133,17 @@ def test_donor_evidence_intake_bundle_reports_missing_coverage() -> None:
     assert bundle.receipt_for_evidence_id("missing") is None
 
 
-def test_donor_evidence_intake_bundle_ready_when_all_required_artifacts_present() -> None:
+def test_donor_evidence_intake_bundle_ready_when_all_required_artifacts_present() -> (
+    None
+):
     bundle = build_wave_six_donor_evidence_intake_bundle(
         intake_id="complete-donor-intake",
         receipts=_all_required_receipts(),
     )
 
-    assert bundle.status is WaveSixDonorEvidenceIntakeStatus.READY_FOR_CANDIDATE_ASSEMBLY
+    assert (
+        bundle.status is WaveSixDonorEvidenceIntakeStatus.READY_FOR_CANDIDATE_ASSEMBLY
+    )
     assert bundle.ready_for_candidate_assembly
     assert bundle.missing_source_systems == ()
     assert bundle.missing_required_artifact_keys == ()
@@ -165,7 +171,9 @@ def test_donor_evidence_intake_bundle_payload_is_deterministic() -> None:
 
 
 def test_donor_evidence_receipt_rejects_wrong_repo_name() -> None:
-    profile = canonical_wave_six_donor_profile_for_source(WaveSixSourceSystem.IX_FUNCTION)
+    profile = canonical_wave_six_donor_profile_for_source(
+        WaveSixSourceSystem.IX_FUNCTION
+    )
     assert profile is not None
 
     with pytest.raises(ValueError, match="repo name"):
