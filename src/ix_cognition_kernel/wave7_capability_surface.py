@@ -120,9 +120,7 @@ class CapabilityScope:
         object.__setattr__(
             self,
             "authority_refs",
-            _normalize_unique_text_tuple(
-                self.authority_refs, label="authority_ref"
-            ),
+            _normalize_unique_text_tuple(self.authority_refs, label="authority_ref"),
         )
         object.__setattr__(
             self,
@@ -214,9 +212,7 @@ class CapabilityRestriction:
         object.__setattr__(
             self,
             "authority_refs",
-            _normalize_unique_text_tuple(
-                self.authority_refs, label="authority_ref"
-            ),
+            _normalize_unique_text_tuple(self.authority_refs, label="authority_ref"),
         )
         object.__setattr__(
             self,
@@ -365,9 +361,7 @@ class CapabilitySurface:
     def restriction_ids(self) -> tuple[str, ...]:
         """Return restriction ids attached to this capability surface."""
 
-        return tuple(
-            restriction.restriction_id for restriction in self.restrictions
-        )
+        return tuple(restriction.restriction_id for restriction in self.restrictions)
 
     @property
     def active_restriction_ids(self) -> tuple[str, ...]:
@@ -397,8 +391,7 @@ class CapabilitySurface:
             self.status is CapabilityStatus.RESTRICTED
             or self.risk in {CapabilityRisk.HIGH, CapabilityRisk.CRITICAL}
             or any(
-                restriction.kind
-                is CapabilityRestrictionKind.HUMAN_REVIEW_REQUIRED
+                restriction.kind is CapabilityRestrictionKind.HUMAN_REVIEW_REQUIRED
                 for restriction in self.restrictions
             )
         )
@@ -431,7 +424,7 @@ class CapabilitySurface:
             evidence.extend(scope.evidence_ids)
         for restriction in self.restrictions:
             evidence.extend(restriction.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic capability-surface payload."""
@@ -597,9 +590,7 @@ class CapabilityUseDecision:
             raise ValueError("Capability use decisions require evidence ids.")
         if self.status is CapabilityUseDecisionStatus.ALLOWED_FOR_SIMULATION:
             if self.required_authority_refs:
-                raise ValueError(
-                    "Simulation decisions cannot require authority refs."
-                )
+                raise ValueError("Simulation decisions cannot require authority refs.")
             if self.matched_restriction_ids:
                 raise ValueError(
                     "Simulation decisions cannot have matched restrictions."
@@ -640,7 +631,7 @@ class CapabilityUseDecision:
         evidence: list[str] = list(self.evidence_ids)
         evidence.extend(self.request.evidence_ids)
         evidence.extend(self.capability.evidence_bundle_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic capability-use-decision payload."""
@@ -807,7 +798,7 @@ class CapabilitySurfaceReport:
             evidence.extend(capability.evidence_bundle_ids)
         for decision in self.decisions:
             evidence.extend(decision.evidence_bundle_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def blocks_claim(self) -> bool:
@@ -830,13 +821,9 @@ class CapabilitySurfaceReport:
             ],
             "decision_ids": list(self.decision_ids),
             "evidence_ids": list(self.evidence_ids),
-            "more_evidence_decision_ids": list(
-                self.more_evidence_decision_ids
-            ),
+            "more_evidence_decision_ids": list(self.more_evidence_decision_ids),
             "notes": list(self.notes),
-            "ready_for_review_decision_ids": list(
-                self.ready_for_review_decision_ids
-            ),
+            "ready_for_review_decision_ids": list(self.ready_for_review_decision_ids),
             "report_id": self.report_id,
             "review_capability_ids": list(self.review_capability_ids),
             "schema_version": self.schema_version,
@@ -906,7 +893,9 @@ def decide_capability_use(
         capability=capability,
         status=status,
         reasons=tuple(reasons),
-        required_authority_refs=tuple(authority_refs),
+        required_authority_refs=_dedupe_text_tuple(
+            authority_refs, label="required_authority_ref"
+        ),
         evidence_ids=tuple(evidence_ids),
         matched_restriction_ids=tuple(
             restriction.restriction_id for restriction in matched_restrictions
@@ -939,7 +928,7 @@ def _capability_authority_refs(
         authority_refs.extend(scope.authority_refs)
     for restriction in capability.restrictions:
         authority_refs.extend(restriction.authority_refs)
-    return _normalize_unique_text_tuple(authority_refs, label="authority_ref")
+    return _dedupe_text_tuple(authority_refs, label="authority_ref")
 
 
 def _require_non_empty(value: str, label: str) -> str:
@@ -967,6 +956,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -976,7 +977,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
