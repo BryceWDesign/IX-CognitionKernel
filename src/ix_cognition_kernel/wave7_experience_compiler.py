@@ -32,12 +32,8 @@ from ix_cognition_kernel.wave7_observation_action_schema import (
 WAVE_SEVEN_PREDICTION_OUTCOME_DELTA_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-prediction-outcome-delta-v1"
 )
-WAVE_SEVEN_LEARNING_DELTA_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-learning-delta-v1"
-)
-WAVE_SEVEN_MEMORY_PATCH_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-memory-patch-v1"
-)
+WAVE_SEVEN_LEARNING_DELTA_SCHEMA_VERSION = "ix-cognition-kernel-wave7-learning-delta-v1"
+WAVE_SEVEN_MEMORY_PATCH_SCHEMA_VERSION = "ix-cognition-kernel-wave7-memory-patch-v1"
 WAVE_SEVEN_FUTURE_REASONING_CONSTRAINT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-future-reasoning-constraint-v1"
 )
@@ -142,10 +138,14 @@ class PredictionOutcomeDelta:
             raise ValueError("Prediction-outcome deltas require evidence ids.")
         if self.alignment is OutcomeAlignment.NOT_MEASURED:
             raise ValueError("Prediction-outcome deltas require measured outcomes.")
-        if self.alignment in {
-            OutcomeAlignment.PARTIAL,
-            OutcomeAlignment.MISMATCHED,
-        } and not self.lesson:
+        if (
+            self.alignment
+            in {
+                OutcomeAlignment.PARTIAL,
+                OutcomeAlignment.MISMATCHED,
+            }
+            and not self.lesson
+        ):
             raise ValueError("Partial or mismatched deltas require a lesson.")
 
     @property
@@ -245,9 +245,7 @@ class LearningDelta:
         if not self.evidence_ids:
             raise ValueError("Learning deltas require evidence ids.")
         if not self.affected_belief_ids and not self.affected_skill_ids:
-            raise ValueError(
-                "Learning deltas require affected belief or skill ids."
-            )
+            raise ValueError("Learning deltas require affected belief or skill ids.")
 
     @property
     def corrective(self) -> bool:
@@ -533,10 +531,7 @@ class ExperienceRecord:
             (patch.patch_id for patch in self.memory_patches), label="patch_id"
         )
         _ensure_unique(
-            (
-                constraint.constraint_id
-                for constraint in self.future_constraints
-            ),
+            (constraint.constraint_id for constraint in self.future_constraints),
             label="constraint_id",
         )
         if self.delta.delta_id != self.learning_delta.source_delta_id:
@@ -546,9 +541,7 @@ class ExperienceRecord:
                 raise ValueError("Memory patches must reference learning delta.")
         for constraint in self.future_constraints:
             if constraint.source_learning_id != self.learning_delta.learning_id:
-                raise ValueError(
-                    "Future constraints must reference learning delta."
-                )
+                raise ValueError("Future constraints must reference learning delta.")
         if (
             self.decision is ExperienceCompilationDecision.READY_FOR_REVIEW
             and self.blocking_patch_ids
@@ -570,9 +563,7 @@ class ExperienceRecord:
     def constraint_ids(self) -> tuple[str, ...]:
         """Return future reasoning constraint ids."""
 
-        return tuple(
-            constraint.constraint_id for constraint in self.future_constraints
-        )
+        return tuple(constraint.constraint_id for constraint in self.future_constraints)
 
     @property
     def quarantined_patch_ids(self) -> tuple[str, ...]:
@@ -609,7 +600,7 @@ class ExperienceRecord:
             evidence.extend(patch.evidence_ids)
         for constraint in self.future_constraints:
             evidence.extend(constraint.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def changes_future_reasoning(self) -> bool:
@@ -702,9 +693,7 @@ class ExperienceCompilationReport:
         )
         if not self.records:
             raise ValueError("Experience compilation reports require records.")
-        _ensure_unique(
-            (record.record_id for record in self.records), label="record_id"
-        )
+        _ensure_unique((record.record_id for record in self.records), label="record_id")
 
     @property
     def record_ids(self) -> tuple[str, ...]:
@@ -743,7 +732,7 @@ class ExperienceCompilationReport:
         evidence: list[str] = []
         for record in self.records:
             evidence.extend(record.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def ready_for_review(self) -> bool:
@@ -759,9 +748,8 @@ class ExperienceCompilationReport:
     def blocks_claim(self) -> bool:
         """Return whether this report blocks stronger experience claims."""
 
-        return (
-            self.decision is ExperienceCompilationDecision.BLOCKED
-            or bool(self.blocking_record_ids)
+        return self.decision is ExperienceCompilationDecision.BLOCKED or bool(
+            self.blocking_record_ids
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -771,13 +759,9 @@ class ExperienceCompilationReport:
             "blocking_record_ids": list(self.blocking_record_ids),
             "decision": self.decision.value,
             "evidence_ids": list(self.evidence_ids),
-            "future_reasoning_record_ids": list(
-                self.future_reasoning_record_ids
-            ),
+            "future_reasoning_record_ids": list(self.future_reasoning_record_ids),
             "notes": list(self.notes),
-            "record_fingerprints": [
-                record.fingerprint() for record in self.records
-            ],
+            "record_fingerprints": [record.fingerprint() for record in self.records],
             "record_ids": list(self.record_ids),
             "report_id": self.report_id,
             "review_ready_record_ids": list(self.review_ready_record_ids),
@@ -932,7 +916,10 @@ def _future_constraint_rule(alignment: OutcomeAlignment, lesson: str) -> str:
     if lesson:
         return lesson
     if alignment is OutcomeAlignment.MATCHED:
-        return "Future reasoning may reuse this bounded pattern only with matching evidence."
+        return (
+            "Future reasoning may reuse this bounded pattern only "
+            "with matching evidence."
+        )
     if alignment is OutcomeAlignment.PARTIAL:
         return "Future reasoning must check the missing condition before reuse."
     if alignment is OutcomeAlignment.MISMATCHED:
@@ -965,6 +952,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -974,7 +973,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
