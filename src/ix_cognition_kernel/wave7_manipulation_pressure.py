@@ -347,9 +347,11 @@ class PressurePattern:
             and not self.requires_human_review
         ):
             raise ValueError("Review-required patterns must require human review.")
-        if self.kind is PressurePatternKind.CROSS_SESSION:
-            if len(self.fragment_ids) < 2:
-                raise ValueError("Cross-session patterns require multiple fragments.")
+        if (
+            self.kind is PressurePatternKind.CROSS_SESSION
+            and len(self.fragment_ids) < 2
+        ):
+            raise ValueError("Cross-session patterns require multiple fragments.")
 
     @property
     def blocking(self) -> bool:
@@ -431,10 +433,14 @@ class ManipulationDecision:
             raise ValueError("Manipulation decisions require reason ids.")
         if not self.evidence_ids:
             raise ValueError("Manipulation decisions require evidence ids.")
-        if self.status in {
-            ManipulationDecisionStatus.READY_FOR_HUMAN_REVIEW,
-            ManipulationDecisionStatus.BLOCKED,
-        } and not self.required_authority_refs:
+        if (
+            self.status
+            in {
+                ManipulationDecisionStatus.READY_FOR_HUMAN_REVIEW,
+                ManipulationDecisionStatus.BLOCKED,
+            }
+            and not self.required_authority_refs
+        ):
             raise ValueError("Review or blocked decisions require authority refs.")
         if (
             self.status is ManipulationDecisionStatus.CLEAR
@@ -548,7 +554,9 @@ class ManipulationPressureReport:
                 if fragment_id not in fragment_ids
             )
             missing_signals = tuple(
-                signal_id for signal_id in pattern.signal_ids if signal_id not in signal_ids
+                signal_id
+                for signal_id in pattern.signal_ids
+                if signal_id not in signal_ids
             )
             if missing_fragments:
                 raise ValueError(
@@ -603,13 +611,17 @@ class ManipulationPressureReport:
     def blocking_pattern_ids(self) -> tuple[str, ...]:
         """Return patterns that block progress."""
 
-        return tuple(pattern.pattern_id for pattern in self.patterns if pattern.blocking)
+        return tuple(
+            pattern.pattern_id for pattern in self.patterns if pattern.blocking
+        )
 
     @property
     def review_pattern_ids(self) -> tuple[str, ...]:
         """Return patterns requiring human review."""
 
-        return tuple(pattern.pattern_id for pattern in self.patterns if pattern.needs_review)
+        return tuple(
+            pattern.pattern_id for pattern in self.patterns if pattern.needs_review
+        )
 
     @property
     def evidence_ids(self) -> tuple[str, ...]:
@@ -622,7 +634,7 @@ class ManipulationPressureReport:
             evidence.extend(signal.evidence_ids)
         for pattern in self.patterns:
             evidence.extend(pattern.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def assembled_intent_tags(self) -> tuple[str, ...]:
@@ -631,7 +643,7 @@ class ManipulationPressureReport:
         tags: list[str] = []
         for fragment in self.fragments:
             tags.extend(fragment.normalized_intent_tags)
-        return _normalize_unique_text_tuple(tags, label="normalized_intent_tag")
+        return _dedupe_text_tuple(tags, label="normalized_intent_tag")
 
     @property
     def risk_tag_values(self) -> tuple[str, ...]:
@@ -640,7 +652,7 @@ class ManipulationPressureReport:
         tags: list[str] = []
         for fragment in self.fragments:
             tags.extend(fragment.risk_tag_values)
-        return _normalize_unique_text_tuple(tags, label="risk_tag")
+        return _dedupe_text_tuple(tags, label="risk_tag")
 
     @property
     def blocks_claim(self) -> bool:
@@ -687,9 +699,7 @@ class ManipulationPressureReport:
             "risk_tag_values": list(self.risk_tag_values),
             "risky_fragment_ids": list(self.risky_fragment_ids),
             "schema_version": self.schema_version,
-            "signal_fingerprints": [
-                signal.fingerprint() for signal in self.signals
-            ],
+            "signal_fingerprints": [signal.fingerprint() for signal in self.signals],
             "signal_ids": list(self.signal_ids),
         }
 
@@ -806,8 +816,7 @@ def _signals_from_fragments(
                 summary=f"Detected {risk.value} manipulation pressure.",
                 evidence_ids=_collect_fragment_evidence(matching),
                 fragment_ids=tuple(fragment.fragment_id for fragment in matching),
-                requires_human_review=severity
-                is ManipulationSeverity.REVIEW_REQUIRED,
+                requires_human_review=severity is ManipulationSeverity.REVIEW_REQUIRED,
                 blocks_progress=severity is ManipulationSeverity.BLOCKING,
             )
         )
@@ -867,8 +876,7 @@ def _patterns_from_fragments_and_signals(
         )
 
     if any(
-        signal.kind is ManipulationSignalKind.AUTHORITY_LAUNDERING
-        for signal in signals
+        signal.kind is ManipulationSignalKind.AUTHORITY_LAUNDERING for signal in signals
     ):
         patterns.append(
             PressurePattern(
@@ -883,10 +891,7 @@ def _patterns_from_fragments_and_signals(
             )
         )
 
-    if any(
-        signal.kind is ManipulationSignalKind.CLAIM_INFLATION
-        for signal in signals
-    ):
+    if any(signal.kind is ManipulationSignalKind.CLAIM_INFLATION for signal in signals):
         patterns.append(
             PressurePattern(
                 pattern_id="pattern-claim-escalation-chain",
@@ -942,7 +947,7 @@ def _collect_fragment_evidence(
     evidence: list[str] = []
     for fragment in fragments:
         evidence.extend(fragment.evidence_ids)
-    return _normalize_unique_text_tuple(evidence, label="evidence_id")
+    return _dedupe_text_tuple(evidence, label="evidence_id")
 
 
 def _collect_evidence(
@@ -957,7 +962,7 @@ def _collect_evidence(
         evidence.extend(signal.evidence_ids)
     for pattern in patterns:
         evidence.extend(pattern.evidence_ids)
-    return _normalize_unique_text_tuple(evidence, label="evidence_id")
+    return _dedupe_text_tuple(evidence, label="evidence_id")
 
 
 def _require_non_empty(value: str, label: str) -> str:
@@ -981,6 +986,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -990,7 +1007,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
