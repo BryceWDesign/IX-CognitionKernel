@@ -34,9 +34,7 @@ def _scope(
 def _restriction(
     *,
     restriction_id: str = "restriction-review-1",
-    kind: CapabilityRestrictionKind = (
-        CapabilityRestrictionKind.HUMAN_REVIEW_REQUIRED
-    ),
+    kind: CapabilityRestrictionKind = (CapabilityRestrictionKind.HUMAN_REVIEW_REQUIRED),
     blocks_use: bool = False,
 ) -> CapabilityRestriction:
     return CapabilityRestriction(
