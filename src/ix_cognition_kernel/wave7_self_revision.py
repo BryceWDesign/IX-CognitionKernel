@@ -262,9 +262,11 @@ class RevisionImpactAssessment:
                 raise ValueError("High-risk self-revisions require sandbox review.")
             if not self.affected_doctrine_ids:
                 raise ValueError("High-risk self-revisions require doctrine impact.")
-        if self.scope is RevisionScope.DOCTRINE_BOUNDARY:
-            if not self.affected_doctrine_ids:
-                raise ValueError("Doctrine-boundary revisions require doctrine ids.")
+        if (
+            self.scope is RevisionScope.DOCTRINE_BOUNDARY
+            and not self.affected_doctrine_ids
+        ):
+            raise ValueError("Doctrine-boundary revisions require doctrine ids.")
 
     @property
     def elevated_review_required(self) -> bool:
@@ -414,9 +416,7 @@ class SelfRevisionProposal:
         if self.bypasses_review:
             raise ValueError("Self-revision proposals must not bypass review.")
         if self.modifies_authority_model:
-            raise ValueError(
-                "Self-revision proposals must not modify authority model."
-            )
+            raise ValueError("Self-revision proposals must not modify authority model.")
         object.__setattr__(
             self,
             "proposal_id",
@@ -425,9 +425,7 @@ class SelfRevisionProposal:
         object.__setattr__(
             self,
             "proposed_change_summary",
-            _require_non_empty(
-                self.proposed_change_summary, "proposed_change_summary"
-            ),
+            _require_non_empty(self.proposed_change_summary, "proposed_change_summary"),
         )
         object.__setattr__(
             self,
@@ -662,12 +660,16 @@ class SelfRevisionDecision:
                 raise ValueError("Review-ready self-revision cannot miss evidence.")
             if not self.required_authority_refs:
                 raise ValueError("Review-ready self-revision needs authority refs.")
-        if self.status is SelfRevisionDecisionStatus.NEEDS_MORE_EVIDENCE:
-            if not self.missing_evidence_finding_ids:
-                raise ValueError("Needs-more-evidence decision needs missing evidence.")
-        if self.status is SelfRevisionDecisionStatus.BLOCKED:
-            if not self.blocking_finding_ids:
-                raise ValueError("Blocked self-revision decisions require blockers.")
+        if (
+            self.status is SelfRevisionDecisionStatus.NEEDS_MORE_EVIDENCE
+            and not self.missing_evidence_finding_ids
+        ):
+            raise ValueError("Needs-more-evidence decision needs missing evidence.")
+        if (
+            self.status is SelfRevisionDecisionStatus.BLOCKED
+            and not self.blocking_finding_ids
+        ):
+            raise ValueError("Blocked self-revision decisions require blockers.")
         if self.status is SelfRevisionDecisionStatus.APPROVED_BY_HUMAN_REVIEW:
             if not self.human_review_ref:
                 raise ValueError("Approved self-revisions require human_review_ref.")
@@ -675,9 +677,11 @@ class SelfRevisionDecision:
                 raise ValueError("Approved self-revisions cannot have blockers.")
             if not self.required_authority_refs:
                 raise ValueError("Approved self-revisions require authority refs.")
-        if self.status is not SelfRevisionDecisionStatus.APPROVED_BY_HUMAN_REVIEW:
-            if self.human_review_ref:
-                raise ValueError("Only approved self-revisions may include review ref.")
+        if (
+            self.status is not SelfRevisionDecisionStatus.APPROVED_BY_HUMAN_REVIEW
+            and self.human_review_ref
+        ):
+            raise ValueError("Only approved self-revisions may include review ref.")
 
     @property
     def finding_ids(self) -> tuple[str, ...]:
@@ -758,9 +762,7 @@ class SelfRevisionDecision:
             ],
             "finding_ids": list(self.finding_ids),
             "human_review_ref": self.human_review_ref,
-            "missing_evidence_finding_ids": list(
-                self.missing_evidence_finding_ids
-            ),
+            "missing_evidence_finding_ids": list(self.missing_evidence_finding_ids),
             "notes": list(self.notes),
             "proposal_fingerprint": self.proposal.fingerprint(),
             "required_authority_refs": list(self.required_authority_refs),
@@ -855,9 +857,7 @@ class SelfRevisionReport:
         """Return approved decision ids."""
 
         return tuple(
-            decision.decision_id
-            for decision in self.decisions
-            if decision.approved
+            decision.decision_id for decision in self.decisions if decision.approved
         )
 
     @property
@@ -1082,7 +1082,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
