@@ -2,6 +2,9 @@ import pytest
 
 from ix_cognition_kernel.wave7_organism_scorecard import (
     OrganismDimensionId,
+    OrganismEvaluationSummary,
+    OrganismScorecard,
+    ScorecardDimension,
     ScorecardDimensionStatus,
     build_organism_evaluation_summary,
     build_organism_scorecard,
@@ -29,7 +32,7 @@ def _dimension(
     status: ScorecardDimensionStatus = ScorecardDimensionStatus.READY_FOR_REVIEW,
     score: float = 0.86,
     blocker_ids: tuple[str, ...] = (),
-):
+) -> ScorecardDimension:
     return build_scorecard_dimension(
         dimension_id=dimension_id,
         status=status,
@@ -42,16 +45,18 @@ def _dimension(
     )
 
 
-def _scorecard():
+def _scorecard() -> OrganismScorecard:
     return build_organism_scorecard(
         scorecard_id="wave7-scorecard-1",
-        dimensions=tuple(_dimension(dimension_id) for dimension_id in OrganismDimensionId),
+        dimensions=tuple(
+            _dimension(dimension_id) for dimension_id in OrganismDimensionId
+        ),
         evaluator_ref="wave7-release-evaluator",
         notes=("Scorecard covers all Wave 7 organism dimensions.",),
     )
 
 
-def _summary(scorecard):
+def _summary(scorecard: OrganismScorecard) -> OrganismEvaluationSummary:
     return build_organism_evaluation_summary(
         summary_id="wave7-summary-1",
         scorecard=scorecard,
@@ -70,7 +75,7 @@ def _summary(scorecard):
     )
 
 
-def _manifest():
+def _manifest() -> Wave7ReleaseManifest:
     scorecard = _scorecard()
     summary = _summary(scorecard)
     artifacts = build_wave7_release_artifacts(
@@ -156,7 +161,9 @@ def test_canonical_release_artifacts_cover_every_required_kind() -> None:
     )
 
     assert len(artifacts) == len(REQUIRED_WAVE7_ARTIFACT_KINDS)
-    assert tuple(artifact.kind for artifact in artifacts) == REQUIRED_WAVE7_ARTIFACT_KINDS
+    assert (
+        tuple(artifact.kind for artifact in artifacts) == REQUIRED_WAVE7_ARTIFACT_KINDS
+    )
     assert artifacts[-1].kind is Wave7ReleaseArtifactKind.RELEASE_MANIFEST
     assert all(artifact.evidence_ids for artifact in artifacts)
 
