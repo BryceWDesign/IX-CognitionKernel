@@ -17,10 +17,10 @@ from ix_cognition_kernel.wave7_observation_action_schema import (
     ActionIntentKind,
     ActionProposalEnvelope,
     EvidenceRequirementStatus,
-    ObservedOutcome,
     ObservationActionTrace,
     ObservationFrame,
     ObservationReliability,
+    ObservedOutcome,
     OutcomeAlignment,
     ProposalEvidenceRequirement,
     ProposalReadiness,
@@ -329,8 +329,7 @@ def test_compile_experience_record_from_partial_trace_changes_reasoning() -> Non
     assert record.changes_future_reasoning
     assert record.learning_delta.kind is LearningDeltaKind.LIMITATION
     assert (
-        record.future_constraints[0].strength
-        is FutureConstraintStrength.REQUIRED_CHECK
+        record.future_constraints[0].strength is FutureConstraintStrength.REQUIRED_CHECK
     )
 
 
@@ -353,8 +352,7 @@ def test_compile_experience_record_from_mismatch_blocks_stronger_claim() -> None
     assert record.changes_future_reasoning
     assert record.learning_delta.kind is LearningDeltaKind.CORRECTION
     assert (
-        record.future_constraints[0].strength
-        is FutureConstraintStrength.BLOCKING_RULE
+        record.future_constraints[0].strength is FutureConstraintStrength.BLOCKING_RULE
     )
 
 
