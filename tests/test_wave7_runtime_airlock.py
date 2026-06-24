@@ -199,7 +199,9 @@ def test_evaluate_airlock_blocks_deployment_requests() -> None:
     assert decision.unsatisfied_authority_refs == ()
 
 
-def test_runtime_airlock_decision_rejects_simulation_with_authority_requirement() -> None:
+def test_runtime_airlock_decision_rejects_simulation_with_authority_requirement() -> (
+    None
+):
     request = _request()
     requirement = AirlockAuthorityRequirement(
         requirement_id="authority-1",
