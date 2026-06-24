@@ -162,10 +162,7 @@ class ContinuityLedgerEntry:
             and not self.blocks_continuity
         ):
             raise ValueError("Blocking ledger entries must block continuity.")
-        if (
-            self.finding is ContinuityLedgerFinding.RECORDED
-            and self.blocks_continuity
-        ):
+        if self.finding is ContinuityLedgerFinding.RECORDED and self.blocks_continuity:
             raise ValueError("Recorded ledger entries cannot block continuity.")
 
     @property
@@ -264,11 +261,11 @@ class ContinuityLedger:
         )
         if missing_previous:
             missing = ", ".join(sorted(missing_previous))
-            raise ValueError(f"Ledger entries reference missing previous ids: {missing}")
+            raise ValueError(
+                f"Ledger entries reference missing previous ids: {missing}"
+            )
 
-        marker_ids = {
-            entry.marker_id for entry in self.entries if entry.marker_id
-        }
+        marker_ids = {entry.marker_id for entry in self.entries if entry.marker_id}
         missing_markers = tuple(
             marker_id
             for marker_id in self.identity.continuity_marker_ids
@@ -318,7 +315,7 @@ class ContinuityLedger:
         evidence: list[str] = list(self.identity.evidence_ids)
         for entry in self.entries:
             evidence.extend(entry.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def review_entry_ids(self) -> tuple[str, ...]:
@@ -368,9 +365,8 @@ class ContinuityLedger:
     def blocks_claim(self) -> bool:
         """Return whether this ledger blocks stronger Wave 7 claims."""
 
-        return (
-            self.decision is ContinuityLedgerDecision.BLOCKED
-            or bool(self.blocked_entry_ids)
+        return self.decision is ContinuityLedgerDecision.BLOCKED or bool(
+            self.blocked_entry_ids
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -443,6 +439,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -452,7 +460,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
