@@ -1,6 +1,7 @@
 import pytest
 
 from ix_cognition_kernel.wave7_experience_compiler import (
+    ExperienceRecord,
     FutureConstraintStrength,
     FutureReasoningConstraint,
     LearningDelta,
@@ -13,10 +14,10 @@ from ix_cognition_kernel.wave7_observation_action_schema import (
     ActionIntentKind,
     ActionProposalEnvelope,
     EvidenceRequirementStatus,
-    ObservedOutcome,
     ObservationActionTrace,
     ObservationFrame,
     ObservationReliability,
+    ObservedOutcome,
     OutcomeAlignment,
     ProposalEvidenceRequirement,
     ProposalReadiness,
@@ -163,10 +164,9 @@ def _trace(
     )
 
 
-def _experience_record(trace: ObservationActionTrace):
+def _experience_record(trace: ObservationActionTrace) -> ExperienceRecord:
     from ix_cognition_kernel.wave7_experience_compiler import (
         ExperienceCompilationDecision,
-        ExperienceRecord,
     )
 
     delta = PredictionOutcomeDelta(
@@ -174,7 +174,9 @@ def _experience_record(trace: ObservationActionTrace):
         prediction_id="prediction-1",
         predicted_outcome="The simulation should preserve the safety boundary.",
         observed_outcome="The bounded simulation preserved the expected boundary.",
-        alignment=trace.outcome.alignment if trace.outcome else OutcomeAlignment.MATCHED,
+        alignment=trace.outcome.alignment
+        if trace.outcome
+        else OutcomeAlignment.MATCHED,
         delta_summary="Measured outcome matched prediction.",
         evidence_ids=("delta-evidence-1",),
         lesson=trace.outcome.lesson if trace.outcome else "",
