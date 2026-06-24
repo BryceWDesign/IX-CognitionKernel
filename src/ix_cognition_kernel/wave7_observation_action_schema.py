@@ -27,9 +27,7 @@ from typing import Any
 WAVE_SEVEN_OBSERVATION_FRAME_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-observation-frame-v1"
 )
-WAVE_SEVEN_ACTION_INTENT_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-action-intent-v1"
-)
+WAVE_SEVEN_ACTION_INTENT_SCHEMA_VERSION = "ix-cognition-kernel-wave7-action-intent-v1"
 WAVE_SEVEN_EVIDENCE_REQUIREMENT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-evidence-requirement-v1"
 )
@@ -256,9 +254,7 @@ class ActionIntent:
         object.__setattr__(
             self,
             "expected_state_change",
-            _require_non_empty(
-                self.expected_state_change, "expected_state_change"
-            ),
+            _require_non_empty(self.expected_state_change, "expected_state_change"),
         )
         object.__setattr__(
             self,
@@ -280,7 +276,10 @@ class ActionIntent:
         )
         if not self.evidence_ids:
             raise ValueError("Action intents require evidence ids.")
-        if self.kind is not ActionIntentKind.NOOP and not self.originating_observation_ids:
+        if (
+            self.kind is not ActionIntentKind.NOOP
+            and not self.originating_observation_ids
+        ):
             raise ValueError("Non-noop action intents require observation ids.")
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -474,15 +473,12 @@ class ActionProposalEnvelope:
         if not self.observations:
             raise ValueError("Action proposal envelopes require observations.")
         if not self.evidence_requirements:
-            raise ValueError(
-                "Action proposal envelopes require evidence requirements."
-            )
-        _ensure_unique((frame.frame_id for frame in self.observations), label="frame_id")
+            raise ValueError("Action proposal envelopes require evidence requirements.")
         _ensure_unique(
-            (
-                requirement.requirement_id
-                for requirement in self.evidence_requirements
-            ),
+            (frame.frame_id for frame in self.observations), label="frame_id"
+        )
+        _ensure_unique(
+            (requirement.requirement_id for requirement in self.evidence_requirements),
             label="requirement_id",
         )
         observation_ids = {frame.frame_id for frame in self.observations}
@@ -518,8 +514,7 @@ class ActionProposalEnvelope:
         """Return evidence requirement ids in this envelope."""
 
         return tuple(
-            requirement.requirement_id
-            for requirement in self.evidence_requirements
+            requirement.requirement_id for requirement in self.evidence_requirements
         )
 
     @property
@@ -557,7 +552,7 @@ class ActionProposalEnvelope:
         authority_refs: list[str] = []
         for requirement in self.evidence_requirements:
             authority_refs.extend(requirement.authority_refs)
-        return _normalize_unique_text_tuple(authority_refs, label="authority_ref")
+        return _dedupe_text_tuple(authority_refs, label="authority_ref")
 
     @property
     def evidence_ids(self) -> tuple[str, ...]:
@@ -568,7 +563,7 @@ class ActionProposalEnvelope:
             evidence.extend(frame.evidence_ids)
         for requirement in self.evidence_requirements:
             evidence.extend(requirement.satisfied_evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def ready_for_review(self) -> bool:
@@ -593,8 +588,7 @@ class ActionProposalEnvelope:
             "envelope_id": self.envelope_id,
             "evidence_ids": list(self.evidence_ids),
             "evidence_requirement_fingerprints": [
-                requirement.fingerprint()
-                for requirement in self.evidence_requirements
+                requirement.fingerprint() for requirement in self.evidence_requirements
             ],
             "intent_fingerprint": self.intent.fingerprint(),
             "observation_fingerprints": [
@@ -675,10 +669,14 @@ class ObservedOutcome:
                 raise ValueError("Unmeasured outcomes cannot have measured states.")
         elif not self.measured_state_ids:
             raise ValueError("Measured outcomes require measured state ids.")
-        if self.alignment in {
-            OutcomeAlignment.PARTIAL,
-            OutcomeAlignment.MISMATCHED,
-        } and not self.lesson:
+        if (
+            self.alignment
+            in {
+                OutcomeAlignment.PARTIAL,
+                OutcomeAlignment.MISMATCHED,
+            }
+            and not self.lesson
+        ):
             raise ValueError("Partial or mismatched outcomes require a lesson.")
 
     @property
@@ -751,7 +749,7 @@ class ObservationActionTrace:
         evidence: list[str] = list(self.envelope.evidence_ids)
         if self.outcome:
             evidence.extend(self.outcome.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def complete(self) -> bool:
@@ -788,9 +786,7 @@ class ObservationActionTrace:
             "evidence_ids": list(self.evidence_ids),
             "measured": self.measured,
             "notes": list(self.notes),
-            "outcome_fingerprint": self.outcome.fingerprint()
-            if self.outcome
-            else "",
+            "outcome_fingerprint": self.outcome.fingerprint() if self.outcome else "",
             "schema_version": self.schema_version,
             "trace_id": self.trace_id,
         }
@@ -813,7 +809,10 @@ def assess_proposal_readiness(
     requirement_tuple = tuple(requirements)
     if not observation_tuple or not requirement_tuple:
         return ProposalReadiness.NEEDS_MORE_EVIDENCE
-    if any(frame.reliability is ObservationReliability.CONTRADICTED for frame in observation_tuple):
+    if any(
+        frame.reliability is ObservationReliability.CONTRADICTED
+        for frame in observation_tuple
+    ):
         return ProposalReadiness.BLOCKED
     if any(
         requirement.status is EvidenceRequirementStatus.CONTRADICTED
@@ -822,7 +821,10 @@ def assess_proposal_readiness(
         return ProposalReadiness.BLOCKED
     if any(requirement.blocks_readiness for requirement in requirement_tuple):
         return ProposalReadiness.NEEDS_MORE_EVIDENCE
-    if any(frame.reliability is ObservationReliability.UNVERIFIED for frame in observation_tuple):
+    if any(
+        frame.reliability is ObservationReliability.UNVERIFIED
+        for frame in observation_tuple
+    ):
         return ProposalReadiness.NEEDS_MORE_EVIDENCE
     if risk in {ProposalRisk.HIGH, ProposalRisk.CRITICAL}:
         return ProposalReadiness.READY_FOR_REVIEW
@@ -873,6 +875,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -882,7 +896,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
