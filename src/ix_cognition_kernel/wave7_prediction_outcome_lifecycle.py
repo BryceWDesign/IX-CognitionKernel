@@ -38,9 +38,7 @@ WAVE_SEVEN_BOUNDED_PREDICTION_SCHEMA_VERSION = (
 WAVE_SEVEN_PREDICTION_EVIDENCE_GATE_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-prediction-evidence-gate-v1"
 )
-WAVE_SEVEN_TRIAL_PLAN_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-trial-plan-v1"
-)
+WAVE_SEVEN_TRIAL_PLAN_SCHEMA_VERSION = "ix-cognition-kernel-wave7-trial-plan-v1"
 WAVE_SEVEN_OUTCOME_DELTA_REVIEW_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-outcome-delta-review-v1"
 )
@@ -111,9 +109,7 @@ class BoundedPrediction:
         if self.claims_truth:
             raise ValueError("Bounded predictions must not claim truth.")
         if self.grants_execution_authority:
-            raise ValueError(
-                "Bounded predictions must not grant execution authority."
-            )
+            raise ValueError("Bounded predictions must not grant execution authority.")
         object.__setattr__(
             self,
             "prediction_id",
@@ -142,9 +138,7 @@ class BoundedPrediction:
         object.__setattr__(
             self,
             "uncertainty_ids",
-            _normalize_unique_text_tuple(
-                self.uncertainty_ids, label="uncertainty_id"
-            ),
+            _normalize_unique_text_tuple(self.uncertainty_ids, label="uncertainty_id"),
         )
         object.__setattr__(
             self,
@@ -239,9 +233,7 @@ class PredictionEvidenceGate:
         object.__setattr__(
             self,
             "evidence_notes",
-            _normalize_unique_text_tuple(
-                self.evidence_notes, label="evidence_note"
-            ),
+            _normalize_unique_text_tuple(self.evidence_notes, label="evidence_note"),
         )
         object.__setattr__(
             self,
@@ -447,11 +439,15 @@ class OutcomeDeltaReview:
             self.alignment is not OutcomeAlignment.MATCHED
         ):
             raise ValueError("Only matched outcomes may have no delta severity.")
-        if self.severity in {
-            OutcomeDeltaSeverity.MODERATE,
-            OutcomeDeltaSeverity.HIGH,
-            OutcomeDeltaSeverity.BLOCKING,
-        } and not self.lesson:
+        if (
+            self.severity
+            in {
+                OutcomeDeltaSeverity.MODERATE,
+                OutcomeDeltaSeverity.HIGH,
+                OutcomeDeltaSeverity.BLOCKING,
+            }
+            and not self.lesson
+        ):
             raise ValueError("Material delta reviews require a lesson.")
 
     @property
@@ -532,9 +528,12 @@ class PredictionOutcomeLifecycle:
                 raise ValueError("Outcome review must reference prediction id.")
             if self.trace and self.outcome_review.trace_id != self.trace.trace_id:
                 raise ValueError("Outcome review must reference trace id.")
-        if self.experience_record and self.trace:
-            if self.experience_record.trace.trace_id != self.trace.trace_id:
-                raise ValueError("Experience record must reference trace id.")
+        if (
+            self.experience_record
+            and self.trace
+            and self.experience_record.trace.trace_id != self.trace.trace_id
+        ):
+            raise ValueError("Experience record must reference trace id.")
         if self.decision is PredictionLifecycleDecision.READY_FOR_REVIEW:
             if not self.trace or not self.trace.measured:
                 raise ValueError("Review-ready lifecycle requires measured trace.")
@@ -544,12 +543,17 @@ class PredictionOutcomeLifecycle:
                 raise ValueError("Review-ready lifecycle requires experience record.")
             if not self.evidence_gate.satisfied:
                 raise ValueError("Review-ready lifecycle requires satisfied gate.")
-        if self.decision is PredictionLifecycleDecision.NEEDS_MEASURED_OUTCOME:
-            if self.trace and self.trace.measured:
-                raise ValueError("Measured lifecycle cannot need measured outcome.")
-        if self.decision is PredictionLifecycleDecision.BLOCKED:
-            if not self.blocking_reason_ids:
-                raise ValueError("Blocked lifecycle requires blocking reasons.")
+        if (
+            self.decision is PredictionLifecycleDecision.NEEDS_MEASURED_OUTCOME
+            and self.trace
+            and self.trace.measured
+        ):
+            raise ValueError("Measured lifecycle cannot need measured outcome.")
+        if (
+            self.decision is PredictionLifecycleDecision.BLOCKED
+            and not self.blocking_reason_ids
+        ):
+            raise ValueError("Blocked lifecycle requires blocking reasons.")
 
     @property
     def evidence_ids(self) -> tuple[str, ...]:
@@ -564,7 +568,7 @@ class PredictionOutcomeLifecycle:
             evidence.extend(self.outcome_review.evidence_ids)
         if self.experience_record:
             evidence.extend(self.experience_record.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def missing_evidence_ids(self) -> tuple[str, ...]:
@@ -589,7 +593,7 @@ class PredictionOutcomeLifecycle:
             reasons.append("outcome-delta-blocks-claim")
         if self.experience_record and self.experience_record.blocks_claim:
             reasons.append("experience-blocks-claim")
-        return _normalize_unique_text_tuple(reasons, label="blocking_reason_id")
+        return _dedupe_text_tuple(reasons, label="blocking_reason_id")
 
     @property
     def measured(self) -> bool:
@@ -611,9 +615,8 @@ class PredictionOutcomeLifecycle:
     def blocks_claim(self) -> bool:
         """Return whether lifecycle blocks stronger maturity claims."""
 
-        return (
-            self.decision is PredictionLifecycleDecision.BLOCKED
-            or bool(self.blocking_reason_ids)
+        return self.decision is PredictionLifecycleDecision.BLOCKED or bool(
+            self.blocking_reason_ids
         )
 
     @property
@@ -621,10 +624,7 @@ class PredictionOutcomeLifecycle:
         """Return whether measured outcome changed future reasoning."""
 
         return bool(
-            (
-                self.outcome_review
-                and self.outcome_review.changes_future_reasoning
-            )
+            (self.outcome_review and self.outcome_review.changes_future_reasoning)
             or (
                 self.experience_record
                 and self.experience_record.changes_future_reasoning
@@ -751,7 +751,7 @@ class PredictionLifecycleReport:
         evidence: list[str] = []
         for lifecycle in self.lifecycles:
             evidence.extend(lifecycle.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def ready_for_review(self) -> bool:
@@ -767,9 +767,8 @@ class PredictionLifecycleReport:
     def blocks_claim(self) -> bool:
         """Return whether this report blocks stronger prediction claims."""
 
-        return (
-            self.decision is PredictionLifecycleDecision.BLOCKED
-            or bool(self.blocking_lifecycle_ids)
+        return self.decision is PredictionLifecycleDecision.BLOCKED or bool(
+            self.blocking_lifecycle_ids
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -779,18 +778,14 @@ class PredictionLifecycleReport:
             "blocking_lifecycle_ids": list(self.blocking_lifecycle_ids),
             "decision": self.decision.value,
             "evidence_ids": list(self.evidence_ids),
-            "future_reasoning_lifecycle_ids": list(
-                self.future_reasoning_lifecycle_ids
-            ),
+            "future_reasoning_lifecycle_ids": list(self.future_reasoning_lifecycle_ids),
             "lifecycle_fingerprints": [
                 lifecycle.fingerprint() for lifecycle in self.lifecycles
             ],
             "lifecycle_ids": list(self.lifecycle_ids),
             "notes": list(self.notes),
             "report_id": self.report_id,
-            "review_ready_lifecycle_ids": list(
-                self.review_ready_lifecycle_ids
-            ),
+            "review_ready_lifecycle_ids": list(self.review_ready_lifecycle_ids),
             "schema_version": self.schema_version,
         }
 
@@ -918,6 +913,10 @@ def _require_non_empty(value: str, label: str) -> str:
     return normalized
 
 
+def _normalize_optional_text(value: str) -> str:
+    return value.strip()
+
+
 def _normalize_unique_text_tuple(
     values: Iterable[str], *, label: str
 ) -> tuple[str, ...]:
@@ -932,6 +931,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -941,7 +952,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
