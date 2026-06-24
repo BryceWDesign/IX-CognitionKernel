@@ -37,9 +37,7 @@ WAVE_SEVEN_AIRLOCK_AUTHORITY_REQUIREMENT_SCHEMA_VERSION = (
 WAVE_SEVEN_RUNTIME_AIRLOCK_DECISION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-runtime-airlock-decision-v1"
 )
-WAVE_SEVEN_AIRLOCK_REPORT_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-airlock-report-v1"
-)
+WAVE_SEVEN_AIRLOCK_REPORT_SCHEMA_VERSION = "ix-cognition-kernel-wave7-airlock-report-v1"
 
 
 class AirlockRequestKind(StrEnum):
@@ -148,7 +146,10 @@ class RuntimeAirlockRequest:
         )
         if not self.evidence_ids:
             raise ValueError("Runtime airlock requests require evidence ids.")
-        if self.kind is not AirlockRequestKind.SIMULATION and not self.upstream_decision_ids:
+        if (
+            self.kind is not AirlockRequestKind.SIMULATION
+            and not self.upstream_decision_ids
+        ):
             raise ValueError("Non-simulation airlock requests need upstream decisions.")
         if self.requests_deployment and not self.required_authority_refs:
             raise ValueError("Deployment requests require authority refs.")
@@ -157,7 +158,9 @@ class RuntimeAirlockRequest:
     def simulation_only(self) -> bool:
         """Return whether this request is simulation-only."""
 
-        return self.kind is AirlockRequestKind.SIMULATION and not self.requests_deployment
+        return (
+            self.kind is AirlockRequestKind.SIMULATION and not self.requests_deployment
+        )
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic request payload."""
@@ -387,10 +390,7 @@ class RuntimeAirlockDecision:
             label="finding_id",
         )
         _ensure_unique(
-            (
-                requirement.requirement_id
-                for requirement in self.authority_requirements
-            ),
+            (requirement.requirement_id for requirement in self.authority_requirements),
             label="requirement_id",
         )
         if self.status is AirlockDecisionStatus.ALLOWED_FOR_SIMULATION:
@@ -399,9 +399,7 @@ class RuntimeAirlockDecision:
             if self.missing_evidence_finding_ids:
                 raise ValueError("Simulation-allowed airlock cannot miss evidence.")
             if self.unsatisfied_authority_refs:
-                raise ValueError(
-                    "Simulation-allowed airlock cannot require authority."
-                )
+                raise ValueError("Simulation-allowed airlock cannot require authority.")
             if self.request.requests_deployment:
                 raise ValueError("Deployment requests cannot be simulation-allowed.")
         if self.status is AirlockDecisionStatus.READY_FOR_HUMAN_REVIEW:
@@ -409,12 +407,16 @@ class RuntimeAirlockDecision:
                 raise ValueError("Review-ready airlock cannot have blockers.")
             if not self.authority_requirements:
                 raise ValueError("Review-ready airlock needs authority requirements.")
-        if self.status is AirlockDecisionStatus.NEEDS_MORE_EVIDENCE:
-            if not self.missing_evidence_finding_ids:
-                raise ValueError("Needs-more-evidence airlock needs missing evidence.")
-        if self.status is AirlockDecisionStatus.BLOCKED:
-            if not self.blocking_finding_ids:
-                raise ValueError("Blocked airlock decisions require blockers.")
+        if (
+            self.status is AirlockDecisionStatus.NEEDS_MORE_EVIDENCE
+            and not self.missing_evidence_finding_ids
+        ):
+            raise ValueError("Needs-more-evidence airlock needs missing evidence.")
+        if (
+            self.status is AirlockDecisionStatus.BLOCKED
+            and not self.blocking_finding_ids
+        ):
+            raise ValueError("Blocked airlock decisions require blockers.")
 
     @property
     def finding_ids(self) -> tuple[str, ...]:
@@ -427,8 +429,7 @@ class RuntimeAirlockDecision:
         """Return authority requirement ids."""
 
         return tuple(
-            requirement.requirement_id
-            for requirement in self.authority_requirements
+            requirement.requirement_id for requirement in self.authority_requirements
         )
 
     @property
@@ -454,7 +455,9 @@ class RuntimeAirlockDecision:
         """Return finding ids that request more evidence."""
 
         return tuple(
-            finding.finding_id for finding in self.findings if finding.needs_more_evidence
+            finding.finding_id
+            for finding in self.findings
+            if finding.needs_more_evidence
         )
 
     @property
@@ -480,7 +483,7 @@ class RuntimeAirlockDecision:
             evidence.extend(finding.evidence_ids)
         for requirement in self.authority_requirements:
             evidence.extend(requirement.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def allowed_for_simulation(self) -> bool:
@@ -511,8 +514,7 @@ class RuntimeAirlockDecision:
 
         return {
             "authority_requirement_fingerprints": [
-                requirement.fingerprint()
-                for requirement in self.authority_requirements
+                requirement.fingerprint() for requirement in self.authority_requirements
             ],
             "authority_requirement_ids": list(self.authority_requirement_ids),
             "blocking_finding_ids": list(self.blocking_finding_ids),
@@ -523,9 +525,7 @@ class RuntimeAirlockDecision:
                 finding.fingerprint() for finding in self.findings
             ],
             "finding_ids": list(self.finding_ids),
-            "missing_evidence_finding_ids": list(
-                self.missing_evidence_finding_ids
-            ),
+            "missing_evidence_finding_ids": list(self.missing_evidence_finding_ids),
             "notes": list(self.notes),
             "request_fingerprint": self.request.fingerprint(),
             "review_finding_ids": list(self.review_finding_ids),
@@ -632,7 +632,7 @@ class AirlockReport:
         evidence: list[str] = []
         for decision in self.decisions:
             evidence.extend(decision.evidence_bundle_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def blocks_claim(self) -> bool:
@@ -676,7 +676,9 @@ def evaluate_runtime_airlock(
 ) -> RuntimeAirlockDecision:
     """Evaluate a runtime airlock request with fail-closed defaults."""
 
-    supplied = set(_normalize_unique_text_tuple(supplied_evidence_ids, label="evidence_id"))
+    supplied = set(
+        _normalize_unique_text_tuple(supplied_evidence_ids, label="evidence_id")
+    )
     satisfied_authorities = set(
         _normalize_unique_text_tuple(satisfied_authority_refs, label="authority_ref")
     )
@@ -725,7 +727,10 @@ def evaluate_runtime_airlock(
             )
         )
 
-    if not request.upstream_decision_ids and request.kind is not AirlockRequestKind.SIMULATION:
+    if (
+        not request.upstream_decision_ids
+        and request.kind is not AirlockRequestKind.SIMULATION
+    ):
         findings.append(
             AirlockFinding(
                 finding_id="missing-upstream-decision",
@@ -750,9 +755,8 @@ def evaluate_runtime_airlock(
 
     blocking = any(finding.blocks_handoff for finding in findings)
     missing = any(finding.needs_more_evidence for finding in findings)
-    review = (
-        any(finding.requires_human_review for finding in findings)
-        or any(not requirement.satisfied for requirement in requirements)
+    review = any(finding.requires_human_review for finding in findings) or any(
+        not requirement.satisfied for requirement in requirements
     )
 
     if blocking:
@@ -825,6 +829,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -834,7 +850,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
