@@ -26,19 +26,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-WAVE_SEVEN_RESEARCH_GOAL_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-research-goal-v1"
-)
+WAVE_SEVEN_RESEARCH_GOAL_SCHEMA_VERSION = "ix-cognition-kernel-wave7-research-goal-v1"
 WAVE_SEVEN_SUBGOAL_SCHEMA_VERSION = "ix-cognition-kernel-wave7-subgoal-v1"
-WAVE_SEVEN_GOAL_CONFLICT_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-goal-conflict-v1"
-)
+WAVE_SEVEN_GOAL_CONFLICT_SCHEMA_VERSION = "ix-cognition-kernel-wave7-goal-conflict-v1"
 WAVE_SEVEN_GOAL_RETIREMENT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-goal-retirement-v1"
 )
-WAVE_SEVEN_GOAL_PRESSURE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-goal-pressure-v1"
-)
+WAVE_SEVEN_GOAL_PRESSURE_SCHEMA_VERSION = "ix-cognition-kernel-wave7-goal-pressure-v1"
 WAVE_SEVEN_GOAL_PRESSURE_REPORT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-goal-pressure-report-v1"
 )
@@ -327,13 +321,16 @@ class Subgoal:
             raise ValueError("Blocked subgoals require blocked_reason.")
         if self.status is not SubgoalStatus.BLOCKED and self.blocked_reason:
             raise ValueError("Only blocked subgoals may include reason.")
-        if self.status in {
-            SubgoalStatus.IN_PROGRESS,
-            SubgoalStatus.READY_FOR_REVIEW,
-            SubgoalStatus.COMPLETE,
-        }:
-            if not self.completion_criteria:
-                raise ValueError("Active subgoals require completion criteria.")
+        if (
+            self.status
+            in {
+                SubgoalStatus.IN_PROGRESS,
+                SubgoalStatus.READY_FOR_REVIEW,
+                SubgoalStatus.COMPLETE,
+            }
+            and not self.completion_criteria
+        ):
+            raise ValueError("Active subgoals require completion criteria.")
 
     @property
     def blocked(self) -> bool:
@@ -365,9 +362,7 @@ class Subgoal:
         return {
             "authority_refs": list(self.authority_refs),
             "blocked_reason": self.blocked_reason,
-            "bounded_trial_recommendations": list(
-                self.bounded_trial_recommendations
-            ),
+            "bounded_trial_recommendations": list(self.bounded_trial_recommendations),
             "completion_criteria": list(self.completion_criteria),
             "evidence_ids": list(self.evidence_ids),
             "grants_permission": self.grants_permission,
@@ -681,7 +676,9 @@ class GoalPressure:
     def complete_subgoal_ids(self) -> tuple[str, ...]:
         """Return complete subgoal ids."""
 
-        return tuple(subgoal.subgoal_id for subgoal in self.subgoals if subgoal.complete)
+        return tuple(
+            subgoal.subgoal_id for subgoal in self.subgoals if subgoal.complete
+        )
 
     @property
     def blocked_subgoal_ids(self) -> tuple[str, ...]:
@@ -716,7 +713,7 @@ class GoalPressure:
             evidence.extend(conflict.evidence_ids)
         for retirement in self.retirements:
             evidence.extend(retirement.preserved_evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def blocking_reason_ids(self) -> tuple[str, ...]:
@@ -731,7 +728,7 @@ class GoalPressure:
             reasons.append("conflict-blocks-goal")
         if self.goal.retired and not self.retirements:
             reasons.append("retired-goal-missing-retirement-record")
-        return _normalize_unique_text_tuple(reasons, label="blocking_reason_id")
+        return _dedupe_text_tuple(reasons, label="blocking_reason_id")
 
     @property
     def ready_for_review(self) -> bool:
@@ -747,9 +744,8 @@ class GoalPressure:
     def blocks_claim(self) -> bool:
         """Return whether goal pressure blocks stronger organism claims."""
 
-        return (
-            self.decision is GoalPressureDecision.BLOCKED
-            or bool(self.blocking_reason_ids)
+        return self.decision is GoalPressureDecision.BLOCKED or bool(
+            self.blocking_reason_ids
         )
 
     @property
@@ -864,9 +860,7 @@ class GoalPressureReport:
         """Return pressure ids that block stronger claims."""
 
         return tuple(
-            pressure.pressure_id
-            for pressure in self.pressures
-            if pressure.blocks_claim
+            pressure.pressure_id for pressure in self.pressures if pressure.blocks_claim
         )
 
     @property
@@ -886,7 +880,7 @@ class GoalPressureReport:
         evidence: list[str] = []
         for pressure in self.pressures:
             evidence.extend(pressure.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def ready_for_review(self) -> bool:
@@ -902,9 +896,8 @@ class GoalPressureReport:
     def blocks_claim(self) -> bool:
         """Return whether this report blocks stronger goal claims."""
 
-        return (
-            self.decision is GoalPressureDecision.BLOCKED
-            or bool(self.blocking_pressure_ids)
+        return self.decision is GoalPressureDecision.BLOCKED or bool(
+            self.blocking_pressure_ids
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -1024,6 +1017,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -1033,7 +1038,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
