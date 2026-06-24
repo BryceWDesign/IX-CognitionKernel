@@ -24,19 +24,13 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-WAVE_SEVEN_SKILL_EVIDENCE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-skill-evidence-v1"
-)
-WAVE_SEVEN_SKILL_FAILURE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-skill-failure-v1"
-)
+WAVE_SEVEN_SKILL_EVIDENCE_SCHEMA_VERSION = "ix-cognition-kernel-wave7-skill-evidence-v1"
+WAVE_SEVEN_SKILL_FAILURE_SCHEMA_VERSION = "ix-cognition-kernel-wave7-skill-failure-v1"
 WAVE_SEVEN_TRANSFER_ATTEMPT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-transfer-attempt-v1"
 )
 WAVE_SEVEN_SKILL_GENE_SCHEMA_VERSION = "ix-cognition-kernel-wave7-skill-gene-v1"
-WAVE_SEVEN_SKILL_GENOME_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-skill-genome-v1"
-)
+WAVE_SEVEN_SKILL_GENOME_SCHEMA_VERSION = "ix-cognition-kernel-wave7-skill-genome-v1"
 WAVE_SEVEN_SKILL_GENOME_REPORT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-skill-genome-report-v1"
 )
@@ -322,11 +316,15 @@ class TransferAttempt:
             raise ValueError("Transfer attempts require evidence ids.")
         if self.result is TransferResult.NOT_ATTEMPTED:
             raise ValueError("Transfer attempts must have an attempted result.")
-        if self.result in {
-            TransferResult.PARTIAL,
-            TransferResult.FAILED,
-            TransferResult.BLOCKED,
-        } and not self.lesson:
+        if (
+            self.result
+            in {
+                TransferResult.PARTIAL,
+                TransferResult.FAILED,
+                TransferResult.BLOCKED,
+            }
+            and not self.lesson
+        ):
             raise ValueError("Partial, failed, or blocked transfer needs lesson.")
 
     @property
@@ -455,7 +453,9 @@ class SkillGene:
             raise ValueError("Skill genes require operations.")
         if not self.authority_refs:
             raise ValueError("Skill genes require authority refs.")
-        _ensure_unique((item.evidence_id for item in self.evidence), label="evidence_id")
+        _ensure_unique(
+            (item.evidence_id for item in self.evidence), label="evidence_id"
+        )
         _ensure_unique((item.failure_id for item in self.failures), label="failure_id")
         _ensure_unique(
             (item.transfer_id for item in self.transfer_attempts),
@@ -469,11 +469,15 @@ class SkillGene:
             raise ValueError("Stale skills require stale_reason.")
         if self.status is SkillStatus.REVOKED and not self.revoked_reason:
             raise ValueError("Revoked skills require revoked_reason.")
-        if self.status in {
-            SkillStatus.EMERGING,
-            SkillStatus.DEMONSTRATED,
-            SkillStatus.CONSTRAINED,
-        } and not self.evidence:
+        if (
+            self.status
+            in {
+                SkillStatus.EMERGING,
+                SkillStatus.DEMONSTRATED,
+                SkillStatus.CONSTRAINED,
+            }
+            and not self.evidence
+        ):
             raise ValueError("Active skill genes require evidence.")
 
     @property
@@ -487,7 +491,7 @@ class SkillGene:
             evidence_ids.extend(failure.evidence_ids)
         for transfer in self.transfer_attempts:
             evidence_ids.extend(transfer.evidence_ids)
-        return _normalize_unique_text_tuple(evidence_ids, label="evidence_id")
+        return _dedupe_text_tuple(evidence_ids, label="evidence_id")
 
     @property
     def failure_ids(self) -> tuple[str, ...]:
@@ -728,7 +732,7 @@ class SkillGenome:
         evidence_ids: list[str] = []
         for skill in self.skills:
             evidence_ids.extend(skill.evidence_ids)
-        return _normalize_unique_text_tuple(evidence_ids, label="evidence_id")
+        return _dedupe_text_tuple(evidence_ids, label="evidence_id")
 
     @property
     def blocks_claim(self) -> bool:
@@ -824,10 +828,7 @@ class SkillGenomeReport:
     def blocks_claim(self) -> bool:
         """Return whether this report blocks stronger skill claims."""
 
-        return (
-            self.decision is SkillGenomeDecision.BLOCKED
-            or self.genome.blocks_claim
-        )
+        return self.decision is SkillGenomeDecision.BLOCKED or self.genome.blocks_claim
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic skill-genome-report payload."""
@@ -910,6 +911,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -919,7 +932,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
