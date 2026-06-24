@@ -16,9 +16,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-WAVE_SEVEN_BODY_SURFACE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-body-surface-v1"
-)
+WAVE_SEVEN_BODY_SURFACE_SCHEMA_VERSION = "ix-cognition-kernel-wave7-body-surface-v1"
 WAVE_SEVEN_OBSERVATION_CHANNEL_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-observation-channel-v1"
 )
@@ -291,10 +289,14 @@ class CapabilityGrant:
         )
         if not self.evidence_ids:
             raise ValueError("Capability grants require evidence ids.")
-        if self.status in {
-            CapabilityGrantStatus.RESTRICTED,
-            CapabilityGrantStatus.REVIEW_REQUIRED,
-        } and not self.restrictions:
+        if (
+            self.status
+            in {
+                CapabilityGrantStatus.RESTRICTED,
+                CapabilityGrantStatus.REVIEW_REQUIRED,
+            }
+            and not self.restrictions
+        ):
             raise ValueError("Restricted or review-required grants need restrictions.")
 
     @property
@@ -634,7 +636,7 @@ class BodyContractDecision:
         evidence.extend(self.boundary.evidence_ids)
         for grant in self.grants:
             evidence.extend(grant.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def blocked(self) -> bool:
@@ -666,9 +668,7 @@ class BodyContractDecision:
             "grant_fingerprints": [grant.fingerprint() for grant in self.grants],
             "proposal_fingerprint": self.proposal.fingerprint(),
             "reasons": list(self.reasons),
-            "required_human_authority_refs": list(
-                self.required_human_authority_refs
-            ),
+            "required_human_authority_refs": list(self.required_human_authority_refs),
             "schema_version": self.schema_version,
             "status": self.status.value,
             "surface_fingerprint": self.surface.fingerprint(),
@@ -788,6 +788,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -797,7 +809,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
