@@ -29,9 +29,7 @@ from ix_cognition_kernel.wave7_organism_scorecard import (
 WAVE_SEVEN_RELEASE_ARTIFACT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-release-artifact-v1"
 )
-WAVE_SEVEN_RELEASE_GATE_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-release-gate-v1"
-)
+WAVE_SEVEN_RELEASE_GATE_SCHEMA_VERSION = "ix-cognition-kernel-wave7-release-gate-v1"
 WAVE_SEVEN_RELEASE_MANIFEST_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-release-manifest-v1"
 )
@@ -250,8 +248,7 @@ class Wave7ReleaseGate:
             "evidence_ids": list(self.evidence_ids),
             "gate_id": self.gate_id,
             "required_artifact_kinds": [
-                artifact_kind.value
-                for artifact_kind in self.required_artifact_kinds
+                artifact_kind.value for artifact_kind in self.required_artifact_kinds
             ],
             "schema_version": self.schema_version,
             "status": self.status.value,
@@ -339,10 +336,12 @@ class Wave7ReleaseManifest:
         missing = self.missing_artifact_kinds
         if missing:
             raise ValueError(
-                "Wave 7 release manifest missing artifacts: "
-                + ", ".join(missing)
+                "Wave 7 release manifest missing artifacts: " + ", ".join(missing)
             )
-        if self.evaluation_summary.scorecard.scorecard_id != self.scorecard.scorecard_id:
+        if (
+            self.evaluation_summary.scorecard.scorecard_id
+            != self.scorecard.scorecard_id
+        ):
             raise ValueError("Evaluation summary must reference scorecard.")
         lowered = self.claim_boundary.lower()
         if "agi" in lowered and "not" not in lowered:
@@ -355,13 +354,16 @@ class Wave7ReleaseManifest:
                     "Review-ready Wave 7 release cannot have evidence gaps."
                 )
             if not self.scorecard.ready_for_review:
-                raise ValueError("Review-ready release requires review-ready scorecard.")
-        if self.decision is Wave7ReleaseDecision.NEEDS_MORE_EVIDENCE:
-            if not self.evidence_gap_gate_ids:
-                raise ValueError("Needs-more-evidence release requires evidence gaps.")
-        if self.decision is Wave7ReleaseDecision.BLOCKED:
-            if not self.blocking_gate_ids:
-                raise ValueError("Blocked Wave 7 release requires blocking gates.")
+                raise ValueError(
+                    "Review-ready release requires review-ready scorecard."
+                )
+        if (
+            self.decision is Wave7ReleaseDecision.NEEDS_MORE_EVIDENCE
+            and not self.evidence_gap_gate_ids
+        ):
+            raise ValueError("Needs-more-evidence release requires evidence gaps.")
+        if self.decision is Wave7ReleaseDecision.BLOCKED and not self.blocking_gate_ids:
+            raise ValueError("Blocked Wave 7 release requires blocking gates.")
 
     @property
     def artifact_ids(self) -> tuple[str, ...]:
@@ -422,7 +424,7 @@ class Wave7ReleaseManifest:
             evidence.extend(artifact.evidence_ids)
         for gate in self.gates:
             evidence.extend(gate.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def ready_for_human_review(self) -> bool:
@@ -703,8 +705,14 @@ def build_wave7_release_artifacts(
             evidence_ids=(evidence_id,),
             fingerprint_ref=fingerprint_ref,
         )
-        for artifact_id, kind, path, summary, evidence_id, fingerprint_ref
-        in artifact_specs
+        for (
+            artifact_id,
+            kind,
+            path,
+            summary,
+            evidence_id,
+            fingerprint_ref,
+        ) in artifact_specs
     )
 
 
@@ -753,9 +761,7 @@ def build_wave7_release_gates(
             gate_id="gate-organism-scorecard",
             status=status,
             summary="Wave 7 organism scorecard is available for human review.",
-            required_artifact_kinds=(
-                Wave7ReleaseArtifactKind.ORGANISM_SCORECARD,
-            ),
+            required_artifact_kinds=(Wave7ReleaseArtifactKind.ORGANISM_SCORECARD,),
             evidence_ids=("wave7-scorecard-gate-evidence",),
             authority_refs=authority_tuple,
         ),
@@ -849,6 +855,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -858,7 +876,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
