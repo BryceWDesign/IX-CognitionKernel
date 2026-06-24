@@ -5,10 +5,10 @@ from ix_cognition_kernel.wave7_observation_action_schema import (
     ActionIntentKind,
     ActionProposalEnvelope,
     EvidenceRequirementStatus,
-    ObservedOutcome,
     ObservationActionTrace,
     ObservationFrame,
     ObservationReliability,
+    ObservedOutcome,
     OutcomeAlignment,
     ProposalEvidenceRequirement,
     ProposalReadiness,
@@ -247,9 +247,7 @@ def test_ready_envelope_requires_no_blockers_and_authority_refs() -> None:
 def test_envelope_rejects_missing_intent_observation() -> None:
     with pytest.raises(ValueError, match="missing intent observations"):
         _envelope(
-            observations=(
-                _observation(frame_id="frame-other"),
-            ),
+            observations=(_observation(frame_id="frame-other"),),
         )
 
 
