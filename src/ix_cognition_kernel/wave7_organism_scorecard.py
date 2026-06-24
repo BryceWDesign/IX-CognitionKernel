@@ -242,8 +242,7 @@ class OrganismScorecard:
         )
         if missing:
             raise ValueError(
-                "Organism scorecard missing required dimensions: "
-                + ", ".join(missing)
+                "Organism scorecard missing required dimensions: " + ", ".join(missing)
             )
         if self.decision is OrganismScorecardDecision.READY_FOR_REVIEW:
             if self.blocking_dimension_ids:
@@ -252,12 +251,16 @@ class OrganismScorecard:
                 raise ValueError("Review-ready scorecards cannot have evidence gaps.")
             if self.overall_score < 0.75:
                 raise ValueError("Review-ready scorecards require score >= 0.75.")
-        if self.decision is OrganismScorecardDecision.NEEDS_MORE_EVIDENCE:
-            if not self.evidence_gap_dimension_ids:
-                raise ValueError("Needs-more-evidence scorecards require evidence gaps.")
-        if self.decision is OrganismScorecardDecision.BLOCKED:
-            if not self.blocking_dimension_ids:
-                raise ValueError("Blocked scorecards require blocking dimensions.")
+        if (
+            self.decision is OrganismScorecardDecision.NEEDS_MORE_EVIDENCE
+            and not self.evidence_gap_dimension_ids
+        ):
+            raise ValueError("Needs-more-evidence scorecards require evidence gaps.")
+        if (
+            self.decision is OrganismScorecardDecision.BLOCKED
+            and not self.blocking_dimension_ids
+        ):
+            raise ValueError("Blocked scorecards require blocking dimensions.")
 
     @property
     def dimension_ids(self) -> tuple[str, ...]:
@@ -302,7 +305,7 @@ class OrganismScorecard:
         evidence: list[str] = []
         for dimension in self.dimensions:
             evidence.extend(dimension.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def authority_refs(self) -> tuple[str, ...]:
@@ -311,7 +314,7 @@ class OrganismScorecard:
         refs: list[str] = []
         for dimension in self.dimensions:
             refs.extend(dimension.authority_refs)
-        return _normalize_unique_text_tuple(refs, label="authority_ref")
+        return _dedupe_text_tuple(refs, label="authority_ref")
 
     @property
     def overall_score(self) -> float:
@@ -334,9 +337,8 @@ class OrganismScorecard:
     def blocks_claim(self) -> bool:
         """Return whether scorecard blocks stronger organism claims."""
 
-        return (
-            self.decision is OrganismScorecardDecision.BLOCKED
-            or bool(self.blocking_dimension_ids)
+        return self.decision is OrganismScorecardDecision.BLOCKED or bool(
+            self.blocking_dimension_ids
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -582,6 +584,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -591,7 +605,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
