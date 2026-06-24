@@ -21,9 +21,7 @@ WAVE_SEVEN_COGNITIVE_IDENTITY_SCHEMA_VERSION = (
 WAVE_SEVEN_CONTINUITY_MARKER_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-continuity-marker-v1"
 )
-WAVE_SEVEN_KNOWN_WEAKNESS_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave7-known-weakness-v1"
-)
+WAVE_SEVEN_KNOWN_WEAKNESS_SCHEMA_VERSION = "ix-cognition-kernel-wave7-known-weakness-v1"
 WAVE_SEVEN_IDENTITY_REVISION_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave7-identity-revision-v1"
 )
@@ -68,9 +66,7 @@ class ContinuityMarker:
         if self.claims_memory_truth:
             raise ValueError("Continuity markers must not treat memory as truth.")
         if self.allows_autonomous_execution:
-            raise ValueError(
-                "Continuity markers must not allow autonomous execution."
-            )
+            raise ValueError("Continuity markers must not allow autonomous execution.")
         object.__setattr__(
             self,
             "marker_id",
@@ -175,9 +171,7 @@ class KnownWeakness:
             self.status is WeaknessStatus.SUPERSEDED
             and not self.superseded_by_revision_id
         ):
-            raise ValueError(
-                "Superseded weaknesses require superseded_by_revision_id."
-            )
+            raise ValueError("Superseded weaknesses require superseded_by_revision_id.")
         if (
             self.status is not WeaknessStatus.SUPERSEDED
             and self.superseded_by_revision_id
@@ -245,9 +239,7 @@ class IdentityRevision:
         if self.claims_agi:
             raise ValueError("Identity revisions must not claim AGI.")
         if self.allows_autonomous_execution:
-            raise ValueError(
-                "Identity revisions must not allow autonomous execution."
-            )
+            raise ValueError("Identity revisions must not allow autonomous execution.")
         object.__setattr__(
             self,
             "revision_id",
@@ -290,9 +282,7 @@ class IdentityRevision:
         object.__setattr__(
             self,
             "future_reasoning_change",
-            _require_non_empty(
-                self.future_reasoning_change, "future_reasoning_change"
-            ),
+            _require_non_empty(self.future_reasoning_change, "future_reasoning_change"),
         )
         object.__setattr__(
             self,
@@ -304,9 +294,7 @@ class IdentityRevision:
         if not self.evidence_ids:
             raise ValueError("Identity revisions require evidence ids.")
         if not self.changed_belief_ids and not self.changed_memory_ids:
-            raise ValueError(
-                "Identity revisions require changed belief or memory ids."
-            )
+            raise ValueError("Identity revisions require changed belief or memory ids.")
 
     @property
     def changes_future_reasoning(self) -> bool:
@@ -363,9 +351,7 @@ class CognitiveIdentity:
         if self.claims_agi:
             raise ValueError("Cognitive identity must not claim AGI.")
         if self.allows_autonomous_execution:
-            raise ValueError(
-                "Cognitive identity must not allow autonomous execution."
-            )
+            raise ValueError("Cognitive identity must not allow autonomous execution.")
         object.__setattr__(
             self,
             "identity_id",
@@ -486,9 +472,7 @@ class IdentityContinuityReport:
             "schema_version",
             _require_non_empty(self.schema_version, "schema_version"),
         )
-        _ensure_unique(
-            (marker.marker_id for marker in self.markers), label="marker_id"
-        )
+        _ensure_unique((marker.marker_id for marker in self.markers), label="marker_id")
         _ensure_unique(
             (revision.revision_id for revision in self.revisions),
             label="revision_id",
@@ -556,7 +540,7 @@ class IdentityContinuityReport:
             evidence.extend(revision.evidence_ids)
         for weakness in self.weaknesses:
             evidence.extend(weakness.evidence_ids)
-        return _normalize_unique_text_tuple(evidence, label="evidence_id")
+        return _dedupe_text_tuple(evidence, label="evidence_id")
 
     @property
     def has_future_reasoning_revision(self) -> bool:
@@ -657,6 +641,18 @@ def _normalize_unique_text_tuple(
     return tuple(sorted(normalized))
 
 
+def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = _require_non_empty(value, label)
+        if text in seen:
+            continue
+        seen.add(text)
+        normalized.append(text)
+    return tuple(sorted(normalized))
+
+
 def _ensure_unique(values: Iterable[str], *, label: str) -> None:
     seen: set[str] = set()
     for value in values:
@@ -666,7 +662,5 @@ def _ensure_unique(values: Iterable[str], *, label: str) -> None:
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
-    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode(
-        "utf-8"
-    )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
