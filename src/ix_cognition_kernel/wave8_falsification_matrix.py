@@ -1,20 +1,12 @@
 """Wave 8 falsification matrix.
 
-This module adds a deterministic falsification matrix for the Recursive
-Reality-Corrected Learner. It does not certify intelligence. It records what
-would falsify the Wave 8 readiness story, whether those checks were exercised,
-which evidence-index entries they bind to, and whether any check failed open.
+The falsification matrix is the Wave 8 hard-stop layer for recursive learning
+evidence. It asks whether a release bundle would be falsified by blocked
+negative controls, missing review artifacts, unsafe public claims, unreplayable
+episodes, or failed readiness gates.
 
-Falsification doctrine:
-
-- readiness must remain falsifiable,
-- negative controls must be tied to review evidence,
-- transfer shortcuts must be detectable,
-- baseline regression must be visible,
-- unmeasured replay must block promotion,
-- human authority cannot be inferred,
-- claim boundaries cannot be bypassed,
-- a passed falsification matrix is still only review-bound evidence.
+It does not certify intelligence. It records whether bounded recursive learning
+evidence survived the explicit checks required before review handoff.
 """
 
 from __future__ import annotations
@@ -27,17 +19,29 @@ from enum import StrEnum
 from typing import Any
 
 from ix_cognition_kernel.wave8_evidence_index import (
-    EvidenceIndexEntryStatus,
+    EvidenceArtifactKind,
+    EvidenceIndexDecision,
     Wave8EvidenceIndex,
+)
+from ix_cognition_kernel.wave8_external_review_packet import (
+    ExternalReviewPacketDecision,
+    ExternalReviewPacketRecord,
 )
 from ix_cognition_kernel.wave8_negative_controls import (
     NegativeControlKind,
     NegativeControlReport,
-    NegativeControlSuiteDecision,
+)
+from ix_cognition_kernel.wave8_public_claim_guard import (
+    PublicClaimAssessment,
+    PublicClaimDecision,
 )
 from ix_cognition_kernel.wave8_readiness_scorecard import (
     Wave8ReadinessDecision,
     Wave8ReadinessScorecard,
+)
+from ix_cognition_kernel.wave8_replay_validator import (
+    ReplayValidationDecision,
+    ReplayValidationReport,
 )
 
 WAVE_EIGHT_FALSIFICATION_CHECK_SCHEMA_VERSION = (
@@ -49,7 +53,7 @@ WAVE_EIGHT_FALSIFICATION_MATRIX_SCHEMA_VERSION = (
 
 
 class FalsificationCheckKind(StrEnum):
-    """Kinds of Wave 8 falsification checks."""
+    """Kinds of falsification checks applied before review handoff."""
 
     CLAIM_BOUNDARY = "claim-boundary"
     TRANSFER_SHORTCUT = "transfer-shortcut"
@@ -57,32 +61,32 @@ class FalsificationCheckKind(StrEnum):
     UNMEASURED_REPLAY = "unmeasured-replay"
     SELF_AUTHORITY = "self-authority"
     LIVE_ACTUATION = "live-actuation"
-    HUMAN_AUTHORITY = "human-authority"
-    EVIDENCE_CHAIN = "evidence-chain"
-    NEGATIVE_CONTROLS = "negative-controls"
+    REPLAY_VALIDATION = "replay-validation"
+    EVIDENCE_INDEX = "evidence-index"
+    PUBLIC_CLAIM = "public-claim"
+    EXTERNAL_REVIEW = "external-review"
     READINESS_SCORE = "readiness-score"
 
 
 class FalsificationCheckDecision(StrEnum):
-    """Decision for one falsification check."""
+    """Fail-closed decision for a falsification check."""
 
     SURVIVED = "survived"
-    FAILED_OPEN = "failed-open"
+    FALSIFIED = "falsified"
     NEEDS_EVIDENCE = "needs-evidence"
 
 
 class FalsificationMatrixDecision(StrEnum):
     """Overall falsification matrix decision."""
 
-    SURVIVED_BOUNDED_FALSIFICATION = "survived-bounded-falsification"
-    FAILED_OPEN = "failed-open"
+    SURVIVED_FOR_REVIEW = "survived-for-review"
+    FALSIFIED = "falsified"
     NEEDS_EVIDENCE = "needs-evidence"
-    OVERCLAIM_BLOCKED = "overclaim-blocked"
 
 
 @dataclass(frozen=True, slots=True)
 class FalsificationCheckRecord:
-    """One evidence-bound falsification check."""
+    """One falsification check and the evidence that supports its decision."""
 
     check_id: str
     kind: FalsificationCheckKind
@@ -91,12 +95,12 @@ class FalsificationCheckRecord:
     observed_outcome: str
     decision: FalsificationCheckDecision
     evidence_ids: tuple[str, ...]
-    linked_entry_ids: tuple[str, ...]
+    linked_entry_ids: tuple[str, ...] = ()
     findings: tuple[str, ...] = ()
     schema_version: str = WAVE_EIGHT_FALSIFICATION_CHECK_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate falsification check evidence and fail-closed findings."""
+        """Validate falsification check consistency."""
 
         object.__setattr__(
             self,
@@ -106,7 +110,10 @@ class FalsificationCheckRecord:
         object.__setattr__(
             self,
             "hypothesis_under_test",
-            _require_non_empty(self.hypothesis_under_test, "hypothesis_under_test"),
+            _require_non_empty(
+                self.hypothesis_under_test,
+                "hypothesis_under_test",
+            ),
         )
         object.__setattr__(
             self,
@@ -118,9 +125,6 @@ class FalsificationCheckRecord:
             "observed_outcome",
             _require_non_empty(self.observed_outcome, "observed_outcome"),
         )
-        _reject_overclaiming_text(self.hypothesis_under_test, "hypothesis_under_test")
-        _reject_overclaiming_text(self.falsify_if, "falsify_if")
-        _reject_overclaiming_text(self.observed_outcome, "observed_outcome")
         object.__setattr__(
             self,
             "evidence_ids",
@@ -146,25 +150,21 @@ class FalsificationCheckRecord:
         )
         if not self.evidence_ids:
             raise ValueError("Falsification checks require evidence ids.")
-        if not self.linked_entry_ids:
-            raise ValueError("Falsification checks require linked entry ids.")
-        if (
-            self.decision is not FalsificationCheckDecision.SURVIVED
-            and not self.findings
-        ):
-            raise ValueError("Non-surviving falsification checks require findings.")
+        if self.decision is not FalsificationCheckDecision.SURVIVED:
+            if not self.findings:
+                raise ValueError("Non-surviving falsification checks require findings.")
 
     @property
     def survived(self) -> bool:
-        """Return whether this falsification check survived."""
+        """Return whether this check survived falsification."""
 
         return self.decision is FalsificationCheckDecision.SURVIVED
 
     @property
-    def failed_open(self) -> bool:
-        """Return whether this falsification check failed open."""
+    def blocking(self) -> bool:
+        """Return whether this check blocks review handoff."""
 
-        return self.decision is FalsificationCheckDecision.FAILED_OPEN
+        return self.decision is FalsificationCheckDecision.FALSIFIED
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic falsification-check payload."""
@@ -183,28 +183,24 @@ class FalsificationCheckRecord:
         }
 
     def fingerprint(self) -> str:
-        """Return deterministic SHA-256 fingerprint for this check."""
+        """Return deterministic SHA-256 fingerprint."""
 
         return _stable_sha256(self.canonical_payload())
 
 
 @dataclass(frozen=True, slots=True)
-class Wave8FalsificationMatrix:
-    """Evidence-bound Wave 8 falsification matrix."""
+class FalsificationMatrix:
+    """Review-handoff falsification matrix."""
 
     matrix_id: str
-    purpose: str
     claim_boundary: str
-    evidence_index_fingerprint: str
-    readiness_scorecard_fingerprint: str
-    negative_control_report_fingerprint: str
     checks: tuple[FalsificationCheckRecord, ...]
-    decision: FalsificationMatrixDecision
-    findings: tuple[str, ...]
+    evidence_ids: tuple[str, ...]
+    findings: tuple[str, ...] = ()
     schema_version: str = WAVE_EIGHT_FALSIFICATION_MATRIX_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        """Validate matrix coverage and decision findings."""
+        """Validate matrix identity and required coverage."""
 
         object.__setattr__(
             self,
@@ -213,44 +209,18 @@ class Wave8FalsificationMatrix:
         )
         object.__setattr__(
             self,
-            "purpose",
-            _require_non_empty(self.purpose, "purpose"),
-        )
-        object.__setattr__(
-            self,
             "claim_boundary",
             _require_non_empty(self.claim_boundary, "claim_boundary"),
-        )
-        _reject_overclaiming_text(self.purpose, "purpose")
-        _reject_overclaiming_text(self.claim_boundary, "claim_boundary")
-        object.__setattr__(
-            self,
-            "evidence_index_fingerprint",
-            _require_sha256(
-                self.evidence_index_fingerprint,
-                "evidence_index_fingerprint",
-            ),
-        )
-        object.__setattr__(
-            self,
-            "readiness_scorecard_fingerprint",
-            _require_sha256(
-                self.readiness_scorecard_fingerprint,
-                "readiness_scorecard_fingerprint",
-            ),
-        )
-        object.__setattr__(
-            self,
-            "negative_control_report_fingerprint",
-            _require_sha256(
-                self.negative_control_report_fingerprint,
-                "negative_control_report_fingerprint",
-            ),
         )
         object.__setattr__(
             self,
             "checks",
             tuple(self.checks),
+        )
+        object.__setattr__(
+            self,
+            "evidence_ids",
+            _normalize_unique_text_tuple(self.evidence_ids, label="evidence_id"),
         )
         object.__setattr__(
             self,
@@ -262,44 +232,55 @@ class Wave8FalsificationMatrix:
             "schema_version",
             _require_non_empty(self.schema_version, "schema_version"),
         )
+        _reject_overclaiming_text(self.claim_boundary, "claim_boundary")
         if not self.checks:
-            raise ValueError("Wave 8 falsification matrices require checks.")
-        seen_ids: set[str] = set()
+            raise ValueError("Falsification matrices require checks.")
+        if not self.evidence_ids:
+            raise ValueError("Falsification matrices require evidence ids.")
+        seen: set[str] = set()
         for check in self.checks:
-            if check.check_id in seen_ids:
+            if check.check_id in seen:
                 raise ValueError(f"Duplicate falsification check id: {check.check_id}")
-            seen_ids.add(check.check_id)
-        missing = _missing_required_check_kinds(self.checks)
+            seen.add(check.check_id)
+        missing = _missing_required_kinds(self.checks)
         if missing:
             raise ValueError(
-                "Wave 8 falsification matrices are missing checks: "
+                "Falsification matrices are missing check kinds: "
                 f"{','.join(missing)}"
             )
-        if (
-            self.decision
-            is not FalsificationMatrixDecision.SURVIVED_BOUNDED_FALSIFICATION
-            and not self.findings
+
+    @property
+    def decision(self) -> FalsificationMatrixDecision:
+        """Return fail-closed overall matrix decision."""
+
+        if any(check.decision is FalsificationCheckDecision.FALSIFIED for check in self.checks):
+            return FalsificationMatrixDecision.FALSIFIED
+        if any(
+            check.decision is FalsificationCheckDecision.NEEDS_EVIDENCE
+            for check in self.checks
         ):
-            raise ValueError("Non-surviving falsification matrices require findings.")
+            return FalsificationMatrixDecision.NEEDS_EVIDENCE
+        return FalsificationMatrixDecision.SURVIVED_FOR_REVIEW
 
     @property
     def survived(self) -> bool:
-        """Return whether all bounded falsification checks survived."""
+        """Return whether the matrix survived for review handoff."""
 
-        return (
-            self.decision
-            is FalsificationMatrixDecision.SURVIVED_BOUNDED_FALSIFICATION
+        return self.decision is FalsificationMatrixDecision.SURVIVED_FOR_REVIEW
+
+    @property
+    def blocking_check_count(self) -> int:
+        """Return number of falsified checks."""
+
+        return sum(
+            1
+            for check in self.checks
+            if check.decision is FalsificationCheckDecision.FALSIFIED
         )
 
     @property
-    def failed_open_count(self) -> int:
-        """Return count of failed-open checks."""
-
-        return sum(1 for check in self.checks if check.failed_open)
-
-    @property
     def needs_evidence_count(self) -> int:
-        """Return count of checks needing evidence."""
+        """Return number of checks that need more evidence."""
 
         return sum(
             1
@@ -308,87 +289,42 @@ class Wave8FalsificationMatrix:
         )
 
     def canonical_payload(self) -> dict[str, Any]:
-        """Return deterministic falsification-matrix payload."""
+        """Return deterministic matrix payload."""
 
         return {
             "check_fingerprints": [check.fingerprint() for check in self.checks],
             "claim_boundary": self.claim_boundary,
             "decision": self.decision.value,
-            "evidence_index_fingerprint": self.evidence_index_fingerprint,
+            "evidence_ids": list(self.evidence_ids),
             "findings": list(self.findings),
             "matrix_id": self.matrix_id,
-            "negative_control_report_fingerprint": (
-                self.negative_control_report_fingerprint
-            ),
-            "purpose": self.purpose,
-            "readiness_scorecard_fingerprint": (
-                self.readiness_scorecard_fingerprint
-            ),
             "schema_version": self.schema_version,
         }
 
     def fingerprint(self) -> str:
-        """Return deterministic SHA-256 fingerprint for this matrix."""
+        """Return deterministic SHA-256 fingerprint."""
 
         return _stable_sha256(self.canonical_payload())
 
 
-def build_wave8_falsification_matrix(
+def build_falsification_matrix(
     *,
     matrix_id: str,
-    purpose: str,
     claim_boundary: str,
     evidence_index: Wave8EvidenceIndex,
-    readiness_scorecard: Wave8ReadinessScorecard,
     negative_control_report: NegativeControlReport,
-) -> Wave8FalsificationMatrix:
-    """Build a deterministic Wave 8 falsification matrix."""
-
-    checks = _checks_from_evidence(
-        evidence_index=evidence_index,
-        readiness_scorecard=readiness_scorecard,
-        negative_control_report=negative_control_report,
-    )
-    findings = _matrix_findings(
-        checks=checks,
-        readiness_scorecard=readiness_scorecard,
-        negative_control_report=negative_control_report,
-    )
-    decision = _matrix_decision(
-        checks=checks,
-        readiness_scorecard=readiness_scorecard,
-        negative_control_report=negative_control_report,
-        findings=findings,
-    )
-    return Wave8FalsificationMatrix(
-        matrix_id=matrix_id,
-        purpose=purpose,
-        claim_boundary=claim_boundary,
-        evidence_index_fingerprint=evidence_index.fingerprint(),
-        readiness_scorecard_fingerprint=readiness_scorecard.fingerprint(),
-        negative_control_report_fingerprint=negative_control_report.fingerprint(),
-        checks=checks,
-        decision=decision,
-        findings=findings,
-    )
-
-
-def _checks_from_evidence(
-    *,
-    evidence_index: Wave8EvidenceIndex,
+    replay_report: ReplayValidationReport,
+    public_claim_assessment: PublicClaimAssessment,
+    external_review_packet: ExternalReviewPacketRecord,
     readiness_scorecard: Wave8ReadinessScorecard,
-    negative_control_report: NegativeControlReport,
-) -> tuple[FalsificationCheckRecord, ...]:
-    return (
-        _index_check(
-            check_id="check-claim-boundary",
-            kind=FalsificationCheckKind.CLAIM_BOUNDARY,
-            hypothesis="Public-facing claims remain bounded to review evidence.",
-            falsify_if="Claim boundary is missing or bypassed by indexed artifacts.",
-            observed="Claim boundary is attached to index and scorecard evidence.",
-            entry_ids=("entry-readiness-scorecard",),
-            evidence_index=evidence_index,
-        ),
+    evidence_ids: Iterable[str],
+    extra_checks: Iterable[FalsificationCheckRecord] = (),
+    findings: Iterable[str] = (),
+) -> FalsificationMatrix:
+    """Build a falsification matrix from Wave 8 review artifacts."""
+
+    checks = (
+        _claim_boundary_check(evidence_index=evidence_index),
         _negative_control_check(
             check_id="check-transfer-shortcut",
             kind=FalsificationCheckKind.TRANSFER_SHORTCUT,
@@ -412,7 +348,9 @@ def _checks_from_evidence(
             kind=FalsificationCheckKind.UNMEASURED_REPLAY,
             control_kind=NegativeControlKind.UNMEASURED_RESULT_BLOCK,
             hypothesis="Unmeasured results cannot promote replay or learning evidence.",
-            falsify_if="Unmeasured results are accepted as replayable learning evidence.",
+            falsify_if=(
+                "Unmeasured results are accepted as replayable learning evidence."
+            ),
             negative_control_report=negative_control_report,
             linked_entry_ids=("entry-replay-report",),
         ),
@@ -432,45 +370,82 @@ def _checks_from_evidence(
             hypothesis="Live actuation stays outside bounded review evidence.",
             falsify_if="Live actuation is accepted inside bounded replay evidence.",
             negative_control_report=negative_control_report,
-            linked_entry_ids=("entry-task-suite",),
+            linked_entry_ids=("entry-replay-report",),
         ),
-        _negative_control_check(
-            check_id="check-human-authority",
-            kind=FalsificationCheckKind.HUMAN_AUTHORITY,
-            control_kind=NegativeControlKind.MISSING_HUMAN_AUTHORITY_BLOCK,
-            hypothesis="Human authority evidence is required for release readiness.",
-            falsify_if="Release readiness passes without human authority evidence.",
-            negative_control_report=negative_control_report,
-            linked_entry_ids=("entry-release-manifest",),
-        ),
-        _index_check(
-            check_id="check-evidence-chain",
-            kind=FalsificationCheckKind.EVIDENCE_CHAIN,
-            hypothesis="Evidence-index parent links preserve the review chain.",
-            falsify_if="Required linked evidence entries are missing or blocked.",
-            observed="Evidence-index entries bind task, replay, review, and scorecard.",
-            entry_ids=(
-                "entry-task-suite",
-                "entry-replay-report",
-                "entry-release-manifest",
-                "entry-readiness-scorecard",
-            ),
-            evidence_index=evidence_index,
-        ),
-        _negative_control_check(
-            check_id="check-negative-controls",
-            kind=FalsificationCheckKind.NEGATIVE_CONTROLS,
-            control_kind=NegativeControlKind.OVERCLAIM_BLOCK,
-            hypothesis="Required negative controls fail closed.",
-            falsify_if="A required negative control fails open.",
-            negative_control_report=negative_control_report,
-            linked_entry_ids=("entry-negative-control-report",),
-        ),
+        _replay_validation_check(replay_report=replay_report),
+        _evidence_index_check(evidence_index=evidence_index),
+        _public_claim_check(public_claim_assessment=public_claim_assessment),
+        _external_review_check(external_review_packet=external_review_packet),
         _scorecard_check(
-            check_id="check-readiness-score",
+            check_id="check-readiness-scorecard",
             readiness_scorecard=readiness_scorecard,
             evidence_index=evidence_index,
         ),
+        *tuple(extra_checks),
+    )
+    matrix_findings = tuple(findings) + _matrix_findings(checks)
+    return FalsificationMatrix(
+        matrix_id=matrix_id,
+        claim_boundary=claim_boundary,
+        checks=checks,
+        evidence_ids=tuple(evidence_ids),
+        findings=matrix_findings,
+    )
+
+
+def build_falsification_check(
+    *,
+    check_id: str,
+    kind: FalsificationCheckKind,
+    hypothesis_under_test: str,
+    falsify_if: str,
+    observed_outcome: str,
+    decision: FalsificationCheckDecision,
+    evidence_ids: Iterable[str],
+    linked_entry_ids: Iterable[str] = (),
+    findings: Iterable[str] = (),
+) -> FalsificationCheckRecord:
+    """Build a falsification check record."""
+
+    return FalsificationCheckRecord(
+        check_id=check_id,
+        kind=kind,
+        hypothesis_under_test=hypothesis_under_test,
+        falsify_if=falsify_if,
+        observed_outcome=observed_outcome,
+        decision=decision,
+        evidence_ids=tuple(evidence_ids),
+        linked_entry_ids=tuple(linked_entry_ids),
+        findings=tuple(findings),
+    )
+
+
+def _claim_boundary_check(
+    *,
+    evidence_index: Wave8EvidenceIndex,
+) -> FalsificationCheckRecord:
+    if evidence_index.claim_boundary:
+        return FalsificationCheckRecord(
+            check_id="check-claim-boundary",
+            kind=FalsificationCheckKind.CLAIM_BOUNDARY,
+            hypothesis_under_test=(
+                "Public-facing claims remain bounded to review evidence."
+            ),
+            falsify_if="Claim boundary is missing or bypassed by indexed artifacts.",
+            observed_outcome="Claim boundary is attached to index and scorecard evidence.",
+            decision=FalsificationCheckDecision.SURVIVED,
+            evidence_ids=(evidence_index.fingerprint(),),
+            linked_entry_ids=("entry-readiness-scorecard",),
+        )
+    return FalsificationCheckRecord(
+        check_id="check-claim-boundary",
+        kind=FalsificationCheckKind.CLAIM_BOUNDARY,
+        hypothesis_under_test="Review evidence must carry a claim boundary.",
+        falsify_if="Evidence index has no bounded claim statement.",
+        observed_outcome="Evidence index claim boundary is missing.",
+        decision=FalsificationCheckDecision.FALSIFIED,
+        evidence_ids=(evidence_index.fingerprint(),),
+        findings=("claim-boundary-missing",),
     )
 
 
@@ -484,82 +459,167 @@ def _negative_control_check(
     negative_control_report: NegativeControlReport,
     linked_entry_ids: tuple[str, ...],
 ) -> FalsificationCheckRecord:
-    matching = tuple(
-        record
-        for record in negative_control_report.records
-        if record.kind is control_kind
-    )
-    if not matching:
+    control = negative_control_report.control_by_kind(control_kind)
+    if control is None:
         return FalsificationCheckRecord(
             check_id=check_id,
             kind=kind,
             hypothesis_under_test=hypothesis,
             falsify_if=falsify_if,
-            observed_outcome="Required negative-control record is missing.",
+            observed_outcome=f"Missing negative control: {control_kind.value}",
             decision=FalsificationCheckDecision.NEEDS_EVIDENCE,
             evidence_ids=(negative_control_report.fingerprint(),),
             linked_entry_ids=linked_entry_ids,
-            findings=("missing-negative-control-record",),
+            findings=(f"missing-negative-control:{control_kind.value}",),
         )
-    record = matching[0]
-    if record.passed:
-        decision = FalsificationCheckDecision.SURVIVED
-        findings: tuple[str, ...] = ()
-        observed = f"Negative control blocked as designed: {record.observed_decision}."
-    else:
-        decision = FalsificationCheckDecision.FAILED_OPEN
-        findings = ("negative-control-failed-open",)
-        observed = f"Negative control failed open: {record.observed_decision}."
+    if control.passed:
+        return FalsificationCheckRecord(
+            check_id=check_id,
+            kind=kind,
+            hypothesis_under_test=hypothesis,
+            falsify_if=falsify_if,
+            observed_outcome=f"Negative control passed: {control_kind.value}",
+            decision=FalsificationCheckDecision.SURVIVED,
+            evidence_ids=(control.fingerprint(), negative_control_report.fingerprint()),
+            linked_entry_ids=linked_entry_ids,
+        )
     return FalsificationCheckRecord(
         check_id=check_id,
         kind=kind,
         hypothesis_under_test=hypothesis,
         falsify_if=falsify_if,
-        observed_outcome=observed,
-        decision=decision,
-        evidence_ids=(record.fingerprint(), negative_control_report.fingerprint()),
+        observed_outcome=f"Negative control failed: {control_kind.value}",
+        decision=FalsificationCheckDecision.FALSIFIED,
+        evidence_ids=(control.fingerprint(), negative_control_report.fingerprint()),
         linked_entry_ids=linked_entry_ids,
-        findings=findings,
+        findings=(f"negative-control-failed:{control_kind.value}",),
     )
 
 
-def _index_check(
+def _replay_validation_check(
     *,
-    check_id: str,
-    kind: FalsificationCheckKind,
-    hypothesis: str,
-    falsify_if: str,
-    observed: str,
-    entry_ids: tuple[str, ...],
+    replay_report: ReplayValidationReport,
+) -> FalsificationCheckRecord:
+    if replay_report.decision is ReplayValidationDecision.READY_FOR_REVIEW:
+        return FalsificationCheckRecord(
+            check_id="check-replay-validation",
+            kind=FalsificationCheckKind.REPLAY_VALIDATION,
+            hypothesis_under_test=(
+                "Replay evidence requires measured, replayable artifacts."
+            ),
+            falsify_if="Replay packet lacks ready replay validation.",
+            observed_outcome="Replay validation is ready for review.",
+            decision=FalsificationCheckDecision.SURVIVED,
+            evidence_ids=(replay_report.fingerprint(),),
+            linked_entry_ids=("entry-replay-report",),
+        )
+    return FalsificationCheckRecord(
+        check_id="check-replay-validation",
+        kind=FalsificationCheckKind.REPLAY_VALIDATION,
+        hypothesis_under_test="Replay evidence requires measured, replayable artifacts.",
+        falsify_if="Replay packet lacks ready replay validation.",
+        observed_outcome=f"Replay validation decision: {replay_report.decision.value}",
+        decision=FalsificationCheckDecision.FALSIFIED,
+        evidence_ids=(replay_report.fingerprint(),),
+        linked_entry_ids=("entry-replay-report",),
+        findings=(f"replay-validation-not-ready:{replay_report.decision.value}",),
+    )
+
+
+def _evidence_index_check(
+    *,
     evidence_index: Wave8EvidenceIndex,
 ) -> FalsificationCheckRecord:
-    findings: list[str] = []
-    evidence_ids: list[str] = [evidence_index.fingerprint()]
-    for entry_id in entry_ids:
-        try:
-            entry = evidence_index.entry_by_id(entry_id)
-        except KeyError:
-            findings.append(f"missing-entry:{entry_id}")
-            continue
-        evidence_ids.append(entry.fingerprint())
-        if entry.status is EvidenceIndexEntryStatus.BLOCKED:
-            findings.append(f"blocked-entry:{entry_id}")
-
-    decision = (
-        FalsificationCheckDecision.SURVIVED
-        if not findings
-        else FalsificationCheckDecision.NEEDS_EVIDENCE
-    )
+    if evidence_index.decision is EvidenceIndexDecision.READY_FOR_REVIEW_QUERY:
+        return FalsificationCheckRecord(
+            check_id="check-evidence-index",
+            kind=FalsificationCheckKind.EVIDENCE_INDEX,
+            hypothesis_under_test="Evidence index exposes all required review artifacts.",
+            falsify_if="Review evidence is missing or hidden from the index.",
+            observed_outcome="Evidence index is ready for review query.",
+            decision=FalsificationCheckDecision.SURVIVED,
+            evidence_ids=(evidence_index.fingerprint(),),
+            linked_entry_ids=(
+                "entry-transfer-report",
+                "entry-baseline-report",
+                "entry-replay-report",
+                "entry-readiness-scorecard",
+                "entry-public-claim-assessment",
+                "entry-external-review-packet",
+                "entry-falsification-matrix",
+            ),
+        )
     return FalsificationCheckRecord(
-        check_id=check_id,
-        kind=kind,
-        hypothesis_under_test=hypothesis,
-        falsify_if=falsify_if,
-        observed_outcome=observed if not findings else "Index evidence needs review.",
-        decision=decision,
-        evidence_ids=tuple(evidence_ids),
-        linked_entry_ids=entry_ids,
-        findings=tuple(findings),
+        check_id="check-evidence-index",
+        kind=FalsificationCheckKind.EVIDENCE_INDEX,
+        hypothesis_under_test="Evidence index exposes all required review artifacts.",
+        falsify_if="Review evidence is missing or hidden from the index.",
+        observed_outcome=f"Evidence index decision: {evidence_index.decision.value}",
+        decision=FalsificationCheckDecision.FALSIFIED,
+        evidence_ids=(evidence_index.fingerprint(),),
+        findings=(f"evidence-index-not-ready:{evidence_index.decision.value}",),
+    )
+
+
+def _public_claim_check(
+    *,
+    public_claim_assessment: PublicClaimAssessment,
+) -> FalsificationCheckRecord:
+    if public_claim_assessment.decision is PublicClaimDecision.ALLOWED_FOR_REVIEW:
+        return FalsificationCheckRecord(
+            check_id="check-public-claim",
+            kind=FalsificationCheckKind.PUBLIC_CLAIM,
+            hypothesis_under_test=(
+                "Public claims stay bounded to review evidence only."
+            ),
+            falsify_if="Public claim overstates capability or certification.",
+            observed_outcome="Public claim guard allowed bounded review statement.",
+            decision=FalsificationCheckDecision.SURVIVED,
+            evidence_ids=(public_claim_assessment.fingerprint(),),
+            linked_entry_ids=("entry-public-claim-assessment",),
+        )
+    return FalsificationCheckRecord(
+        check_id="check-public-claim",
+        kind=FalsificationCheckKind.PUBLIC_CLAIM,
+        hypothesis_under_test="Public claims stay bounded to review evidence only.",
+        falsify_if="Public claim overstates capability or certification.",
+        observed_outcome=f"Public claim decision: {public_claim_assessment.decision.value}",
+        decision=FalsificationCheckDecision.FALSIFIED,
+        evidence_ids=(public_claim_assessment.fingerprint(),),
+        linked_entry_ids=("entry-public-claim-assessment",),
+        findings=(f"public-claim-not-allowed:{public_claim_assessment.decision.value}",),
+    )
+
+
+def _external_review_check(
+    *,
+    external_review_packet: ExternalReviewPacketRecord,
+) -> FalsificationCheckRecord:
+    if external_review_packet.decision is ExternalReviewPacketDecision.READY_FOR_EXTERNAL_REVIEW:
+        return FalsificationCheckRecord(
+            check_id="check-external-review-packet",
+            kind=FalsificationCheckKind.EXTERNAL_REVIEW,
+            hypothesis_under_test="External review packet is explicit and bounded.",
+            falsify_if="External review is missing, self-approved, or overclaiming.",
+            observed_outcome="External review packet is ready.",
+            decision=FalsificationCheckDecision.SURVIVED,
+            evidence_ids=(external_review_packet.fingerprint(),),
+            linked_entry_ids=("entry-external-review-packet",),
+        )
+    return FalsificationCheckRecord(
+        check_id="check-external-review-packet",
+        kind=FalsificationCheckKind.EXTERNAL_REVIEW,
+        hypothesis_under_test="External review packet is explicit and bounded.",
+        falsify_if="External review is missing, self-approved, or overclaiming.",
+        observed_outcome=(
+            f"External review decision: {external_review_packet.decision.value}"
+        ),
+        decision=FalsificationCheckDecision.FALSIFIED,
+        evidence_ids=(external_review_packet.fingerprint(),),
+        linked_entry_ids=("entry-external-review-packet",),
+        findings=(
+            f"external-review-packet-not-ready:{external_review_packet.decision.value}",
+        ),
     )
 
 
@@ -569,10 +629,7 @@ def _scorecard_check(
     readiness_scorecard: Wave8ReadinessScorecard,
     evidence_index: Wave8EvidenceIndex,
 ) -> FalsificationCheckRecord:
-    if (
-        readiness_scorecard.decision
-        is Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF
-    ):
+    if readiness_scorecard.decision is Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF:
         decision = FalsificationCheckDecision.SURVIVED
         findings: tuple[str, ...] = ()
         observed = "Readiness scorecard is review-handoff ready."
@@ -584,7 +641,9 @@ def _scorecard_check(
     return FalsificationCheckRecord(
         check_id=check_id,
         kind=FalsificationCheckKind.READINESS_SCORE,
-        hypothesis_under_test="Readiness scoring cannot override failed evidence gates.",
+        hypothesis_under_test=(
+            "Readiness scoring cannot override failed evidence gates."
+        ),
         falsify_if="Scorecard reports readiness despite failed evidence gates.",
         observed_outcome=observed,
         decision=decision,
@@ -595,67 +654,21 @@ def _scorecard_check(
 
 
 def _matrix_findings(
-    *,
-    checks: tuple[FalsificationCheckRecord, ...],
-    readiness_scorecard: Wave8ReadinessScorecard,
-    negative_control_report: NegativeControlReport,
+    checks: Iterable[FalsificationCheckRecord],
 ) -> tuple[str, ...]:
     findings: list[str] = []
-    failed_open = tuple(sorted(check.check_id for check in checks if check.failed_open))
-    needs_evidence = tuple(
-        sorted(
-            check.check_id
-            for check in checks
-            if check.decision is FalsificationCheckDecision.NEEDS_EVIDENCE
-        )
-    )
-    if failed_open:
-        findings.append(f"falsification-checks-failed-open:{','.join(failed_open)}")
-    if needs_evidence:
-        findings.append(
-            f"falsification-checks-need-evidence:{','.join(needs_evidence)}"
-        )
-    if negative_control_report.decision is NegativeControlSuiteDecision.FAILED_OPEN:
-        findings.append("negative-control-report-failed-open")
-    if (
-        readiness_scorecard.decision
-        is not Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF
-    ):
-        findings.append(
-            f"readiness-scorecard-not-ready:{readiness_scorecard.decision.value}"
-        )
+    for check in checks:
+        if check.decision is FalsificationCheckDecision.FALSIFIED:
+            findings.append(f"falsified:{check.kind.value}")
+        elif check.decision is FalsificationCheckDecision.NEEDS_EVIDENCE:
+            findings.append(f"needs-evidence:{check.kind.value}")
     return tuple(findings)
 
 
-def _matrix_decision(
-    *,
-    checks: tuple[FalsificationCheckRecord, ...],
-    readiness_scorecard: Wave8ReadinessScorecard,
-    negative_control_report: NegativeControlReport,
-    findings: tuple[str, ...],
-) -> FalsificationMatrixDecision:
-    if "negative-control-report-failed-open" in findings:
-        return FalsificationMatrixDecision.FAILED_OPEN
-    if any(check.failed_open for check in checks):
-        return FalsificationMatrixDecision.FAILED_OPEN
-    if any(
-        check.decision is FalsificationCheckDecision.NEEDS_EVIDENCE
-        for check in checks
-    ):
-        return FalsificationMatrixDecision.NEEDS_EVIDENCE
-    if negative_control_report.decision is NegativeControlSuiteDecision.NEEDS_EVIDENCE:
-        return FalsificationMatrixDecision.NEEDS_EVIDENCE
-    if (
-        readiness_scorecard.decision
-        is not Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF
-    ):
-        return FalsificationMatrixDecision.NEEDS_EVIDENCE
-    return FalsificationMatrixDecision.SURVIVED_BOUNDED_FALSIFICATION
-
-
-def _missing_required_check_kinds(
+def _missing_required_kinds(
     checks: Iterable[FalsificationCheckRecord],
 ) -> tuple[str, ...]:
+    present = {check.kind for check in checks}
     required = {
         FalsificationCheckKind.CLAIM_BOUNDARY,
         FalsificationCheckKind.TRANSFER_SHORTCUT,
@@ -663,43 +676,41 @@ def _missing_required_check_kinds(
         FalsificationCheckKind.UNMEASURED_REPLAY,
         FalsificationCheckKind.SELF_AUTHORITY,
         FalsificationCheckKind.LIVE_ACTUATION,
-        FalsificationCheckKind.HUMAN_AUTHORITY,
-        FalsificationCheckKind.EVIDENCE_CHAIN,
-        FalsificationCheckKind.NEGATIVE_CONTROLS,
+        FalsificationCheckKind.REPLAY_VALIDATION,
+        FalsificationCheckKind.EVIDENCE_INDEX,
+        FalsificationCheckKind.PUBLIC_CLAIM,
+        FalsificationCheckKind.EXTERNAL_REVIEW,
         FalsificationCheckKind.READINESS_SCORE,
     }
-    present = {check.kind for check in checks}
-    return tuple(sorted(kind.value for kind in required - present))
+    return tuple(sorted(kind.value for kind in required.difference(present)))
 
 
 def _reject_overclaiming_text(value: str, label: str) -> None:
+    if _contains_overclaiming_text(value):
+        raise ValueError(f"{label} contains blocked overclaiming language.")
+
+
+def _contains_overclaiming_text(value: str) -> bool:
     lowered = value.casefold()
     blocked_terms = (
         "agi",
         "artificial general intelligence",
+        "certified intelligence",
+        "certifies intelligence",
+        "certifies artificial general intelligence",
+        "deployment approved",
         "general intelligence achieved",
-        "universal intelligence",
+        "human-level intelligence",
         "superintelligence",
+        "universal intelligence",
     )
-    if any(term in lowered for term in blocked_terms):
-        raise ValueError(f"{label} contains blocked overclaiming language.")
+    return any(term in lowered for term in blocked_terms)
 
 
 def _require_non_empty(value: str, label: str) -> str:
     normalized = value.strip()
     if not normalized:
         raise ValueError(f"{label} must not be empty.")
-    return normalized
-
-
-def _require_sha256(value: str, label: str) -> str:
-    normalized = _require_non_empty(value, label)
-    if len(normalized) != 64:
-        raise ValueError(f"{label} must be a SHA-256 hex digest.")
-    try:
-        int(normalized, 16)
-    except ValueError as exc:
-        raise ValueError(f"{label} must be a SHA-256 hex digest.") from exc
     return normalized
 
 
