@@ -255,7 +255,9 @@ class UnknownTaskInstance:
         if not self.initial_observation.measured:
             raise ValueError("Unknown task instances require measured observations.")
         if not self.expected_outcome_features:
-            raise ValueError("Unknown task instances require expected outcome features.")
+            raise ValueError(
+                "Unknown task instances require expected outcome features."
+            )
         if not self.transfer_tags:
             raise ValueError("Unknown task instances require transfer tags.")
         if not self.evidence_ids:
@@ -424,9 +426,11 @@ class TaskSuiteValidationReport:
             "schema_version",
             _require_non_empty(self.schema_version, "schema_version"),
         )
-        if self.decision is not TaskSuiteValidationDecision.READY_FOR_EPISODES:
-            if not self.findings:
-                raise ValueError("Non-ready task suite reports require findings.")
+        if (
+            self.decision is not TaskSuiteValidationDecision.READY_FOR_EPISODES
+            and not self.findings
+        ):
+            raise ValueError("Non-ready task suite reports require findings.")
 
     @property
     def ready(self) -> bool:
