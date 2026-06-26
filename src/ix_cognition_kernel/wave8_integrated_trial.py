@@ -34,7 +34,11 @@ from ix_cognition_kernel.wave8_baseline_comparison import (
     evaluate_baseline_comparison,
 )
 from ix_cognition_kernel.wave8_environment_protocol import EnvironmentActionResult
-from ix_cognition_kernel.wave8_episode_runner import BoundedEpisodeRun, run_single_step_episode
+from ix_cognition_kernel.wave8_episode_runner import (
+    BoundedEpisodeRun,
+    EpisodeRunStatus,
+    run_single_step_episode,
+)
 from ix_cognition_kernel.wave8_external_review_packet import (
     ExternalReviewPacket,
     ExternalReviewerRole,
@@ -142,7 +146,9 @@ class IntegratedWave8TrialResult:
             raise ValueError("Integrated Wave 8 trials require episode runs.")
         suite_task_ids = {task.task_id for task in self.suite.tasks}
         run_episode_ids = {run.episode_id for run in self.runs}
-        suite_episode_ids = {task.initial_observation.episode_id for task in self.suite.tasks}
+        suite_episode_ids = {
+            task.initial_observation.episode_id for task in self.suite.tasks
+        }
         if not suite_episode_ids.issubset(run_episode_ids):
             raise ValueError("Integrated Wave 8 trial runs must cover every suite task.")
         transfer_trial_task_ids = {
@@ -186,7 +192,9 @@ class IntegratedWave8TrialResult:
 
         return {
             "baseline_report_fingerprint": self.baseline_report.fingerprint(),
-            "external_review_packet_fingerprint": self.external_review_packet.fingerprint(),
+            "external_review_packet_fingerprint": (
+                self.external_review_packet.fingerprint()
+            ),
             "release_manifest_fingerprint": self.release_manifest.fingerprint(),
             "replay_report_fingerprint": self.replay_report.fingerprint(),
             "run_fingerprints": [run.fingerprint() for run in self.runs],
@@ -294,13 +302,23 @@ def build_integrated_wave8_trial(
     )
 
 
+def is_replayable_run(run: BoundedEpisodeRun) -> bool:
+    """Return whether an episode run is replayable without relying on aliases."""
+
+    return run.status is EpisodeRunStatus.REPLAYABLE
+
+
 def _build_tasks(trial_id: str) -> tuple[UnknownTaskInstance, ...]:
     template = build_grid_transition_template(template_id=f"{trial_id}:grid-template")
     task_specs = (
         ("seed", TaskDifficulty.SEED, TaskDisclosureLevel.PARTIALLY_WITHHELD),
         ("near", TaskDifficulty.NEAR_TRANSFER, TaskDisclosureLevel.PARTIALLY_WITHHELD),
         ("far", TaskDifficulty.FAR_TRANSFER, TaskDisclosureLevel.PARTIALLY_WITHHELD),
-        ("adversarial", TaskDifficulty.ADVERSARIAL, TaskDisclosureLevel.PARTIALLY_WITHHELD),
+        (
+            "adversarial",
+            TaskDifficulty.ADVERSARIAL,
+            TaskDisclosureLevel.PARTIALLY_WITHHELD,
+        ),
         ("hidden", TaskDifficulty.HIDDEN_VALIDATION, TaskDisclosureLevel.HIDDEN_GOAL),
     )
     return tuple(
@@ -366,7 +384,10 @@ def _run_candidate_task(task: UnknownTaskInstance) -> BoundedEpisodeRun:
         frame_id=f"{task.task_id}:candidate-frame",
         environment=task.environment,
         observation=task.initial_observation,
-        adapter=_adapter(adapter_id=f"{task.task_id}:candidate-adapter", operation_id="move-east"),
+        adapter=_adapter(
+            adapter_id=f"{task.task_id}:candidate-adapter",
+            operation_id="move-east",
+        ),
         result=_result_for_task(task=task, action_id=action_id),
     )
 
@@ -382,7 +403,10 @@ def _run_baseline_task(task: UnknownTaskInstance) -> BoundedEpisodeRun:
         frame_id=f"{task.task_id}:baseline-frame",
         environment=task.environment,
         observation=task.initial_observation,
-        adapter=_adapter(adapter_id=f"{task.task_id}:baseline-adapter", operation_id="move-east"),
+        adapter=_adapter(
+            adapter_id=f"{task.task_id}:baseline-adapter",
+            operation_id="move-east",
+        ),
         result=_result_for_task(task=task, action_id=action_id),
     )
 
