@@ -203,14 +203,12 @@ class PublicClaimReview:
             _require_non_empty(self.schema_version, "schema_version"),
         )
         if (
-            self.decision
-            is not PublicClaimDecision.APPROVED_BOUNDED_REVIEW_CLAIM
+            self.decision is not PublicClaimDecision.APPROVED_BOUNDED_REVIEW_CLAIM
             and not self.findings
         ):
             raise ValueError("Non-approved public claim reviews require findings.")
         if (
-            self.decision
-            is PublicClaimDecision.APPROVED_BOUNDED_REVIEW_CLAIM
+            self.decision is PublicClaimDecision.APPROVED_BOUNDED_REVIEW_CLAIM
             and not self.matched_entry_ids
         ):
             raise ValueError("Approved public claim reviews require matched entries.")
@@ -292,8 +290,7 @@ def review_public_claim(
         is not FalsificationMatrixDecision.SURVIVED_BOUNDED_FALSIFICATION
     ):
         findings.append(
-            "falsification-matrix-not-survived:"
-            f"{falsification_matrix.decision.value}"
+            f"falsification-matrix-not-survived:{falsification_matrix.decision.value}"
         )
     if not matched_entry_ids:
         findings.append("missing-source-artifact-kinds")
@@ -320,9 +317,7 @@ def _matched_entry_ids(
     requested = set(source_artifact_kinds)
     return tuple(
         sorted(
-            entry.entry_id
-            for entry in evidence_index.entries
-            if entry.kind in requested
+            entry.entry_id for entry in evidence_index.entries if entry.kind in requested
         )
     )
 
@@ -335,8 +330,7 @@ def _public_claim_decision(findings: list[str]) -> PublicClaimDecision:
     if any(finding.startswith("readiness-scorecard-not-ready") for finding in findings):
         return PublicClaimDecision.NEEDS_READY_SCORECARD
     if any(
-        finding.startswith("falsification-matrix-not-survived")
-        for finding in findings
+        finding.startswith("falsification-matrix-not-survived") for finding in findings
     ):
         return PublicClaimDecision.NEEDS_FALSIFICATION_SURVIVAL
     if "missing-source-artifact-kinds" in findings:
@@ -394,9 +388,7 @@ def _require_sha256(value: str, label: str) -> str:
     return normalized
 
 
-def _normalize_unique_text_tuple(
-    values: Iterable[str], *, label: str
-) -> tuple[str, ...]:
+def _normalize_unique_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
     normalized: list[str] = []
     seen: set[str] = set()
     for value in values:
