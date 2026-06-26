@@ -35,9 +35,7 @@ from ix_cognition_kernel.wave8_readiness_scorecard import Wave8ReadinessScorecar
 WAVE_EIGHT_EVIDENCE_INDEX_ENTRY_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave8-evidence-index-entry-v1"
 )
-WAVE_EIGHT_EVIDENCE_INDEX_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave8-evidence-index-v1"
-)
+WAVE_EIGHT_EVIDENCE_INDEX_SCHEMA_VERSION = "ix-cognition-kernel-wave8-evidence-index-v1"
 
 
 class EvidenceArtifactKind(StrEnum):
@@ -243,9 +241,11 @@ class Wave8EvidenceIndex:
                 "Wave 8 evidence indexes are missing artifact kinds: "
                 f"{','.join(missing)}"
             )
-        if self.decision is not EvidenceIndexDecision.READY_FOR_REVIEW_QUERY:
-            if not self.findings:
-                raise ValueError("Non-ready evidence indexes require findings.")
+        if (
+            self.decision is not EvidenceIndexDecision.READY_FOR_REVIEW_QUERY
+            and not self.findings
+        ):
+            raise ValueError("Non-ready evidence indexes require findings.")
 
     @property
     def ready(self) -> bool:
@@ -420,7 +420,9 @@ def _entries_from_wave8_evidence(
             kind=EvidenceArtifactKind.WORLD_MODEL_SNAPSHOT,
             title="World-model snapshot",
             source_fingerprint=integrated_trial.world_snapshot.fingerprint(),
-            status=_status_from_bool(bool(integrated_trial.world_snapshot.active_rules)),
+            status=_status_from_bool(
+                bool(integrated_trial.world_snapshot.active_rules)
+            ),
             claim_boundary=claim_boundary,
             evidence_ids=(integrated_trial.world_snapshot.fingerprint(),),
             parent_entry_ids=("entry-transfer-report",),
@@ -522,9 +524,7 @@ def _entries_from_wave8_evidence(
                 "entry-negative-control-report",
             ),
             findings=(
-                ()
-                if readiness_scorecard.ready
-                else ("readiness-scorecard-not-ready",)
+                () if readiness_scorecard.ready else ("readiness-scorecard-not-ready",)
             ),
         ),
     )
@@ -558,10 +558,7 @@ def _index_decision(
 ) -> EvidenceIndexDecision:
     if any(entry.blocked for entry in entries):
         return EvidenceIndexDecision.BLOCKED
-    if any(
-        entry.status is EvidenceIndexEntryStatus.WARNING
-        for entry in entries
-    ):
+    if any(entry.status is EvidenceIndexEntryStatus.WARNING for entry in entries):
         return EvidenceIndexDecision.READY_WITH_WARNINGS
     if findings:
         return EvidenceIndexDecision.NEEDS_EVIDENCE
