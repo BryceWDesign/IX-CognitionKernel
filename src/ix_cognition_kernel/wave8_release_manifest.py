@@ -438,7 +438,10 @@ def _manifest_decision(
     gates: tuple[ReleaseGateRecord, ...],
     findings: tuple[str, ...],
 ) -> Wave8ReleaseDecision:
-    if external_review_packet.decision is ExternalReviewPacketDecision.OVERCLAIM_BLOCKED:
+    if (
+        external_review_packet.decision
+        is ExternalReviewPacketDecision.OVERCLAIM_BLOCKED
+    ):
         return Wave8ReleaseDecision.OVERCLAIM_BLOCKED
     if any(finding.startswith("blocked-release-gates") for finding in findings):
         return Wave8ReleaseDecision.BLOCKED
@@ -487,7 +490,9 @@ def _require_non_empty(value: str, label: str) -> str:
     return normalized
 
 
-def _normalize_unique_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+def _normalize_unique_text_tuple(
+    values: Iterable[str], *, label: str
+) -> tuple[str, ...]:
     normalized: list[str] = []
     seen: set[str] = set()
     for value in values:
