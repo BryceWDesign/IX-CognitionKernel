@@ -47,9 +47,7 @@ from ix_cognition_kernel.wave8_review_query import (
     ReviewQueryResult,
 )
 
-WAVE_EIGHT_REVIEW_HANDOFF_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave8-review-handoff-v1"
-)
+WAVE_EIGHT_REVIEW_HANDOFF_SCHEMA_VERSION = "ix-cognition-kernel-wave8-review-handoff-v1"
 
 
 class ReviewHandoffDecision(StrEnum):
@@ -141,9 +139,11 @@ class Wave8ReviewHandoff:
             self.falsification_matrix.fingerprint(),
             "public_claim_falsification_fingerprint",
         )
-        if self.decision is not ReviewHandoffDecision.READY_FOR_HUMAN_REVIEW:
-            if not self.findings:
-                raise ValueError("Non-ready Wave 8 review handoffs require findings.")
+        if (
+            self.decision is not ReviewHandoffDecision.READY_FOR_HUMAN_REVIEW
+            and not self.findings
+        ):
+            raise ValueError("Non-ready Wave 8 review handoffs require findings.")
 
     @property
     def ready(self) -> bool:
@@ -233,8 +233,7 @@ def _handoff_findings(
         FalsificationMatrixDecision.SURVIVED_BOUNDED_FALSIFICATION
     ):
         findings.append(
-            f"falsification-matrix-not-survived:"
-            f"{falsification_matrix.decision.value}"
+            f"falsification-matrix-not-survived:{falsification_matrix.decision.value}"
         )
     if review_query_result.decision is not ReviewQueryDecision.MATCHES_READY:
         findings.append(f"review-query-not-ready:{review_query_result.decision.value}")
@@ -243,7 +242,9 @@ def _handoff_findings(
     elif public_claim_review.decision is not (
         PublicClaimDecision.APPROVED_BOUNDED_REVIEW_CLAIM
     ):
-        findings.append(f"public-claim-not-approved:{public_claim_review.decision.value}")
+        findings.append(
+            f"public-claim-not-approved:{public_claim_review.decision.value}"
+        )
     return tuple(findings)
 
 
@@ -257,7 +258,9 @@ def _handoff_decision(
         return ReviewHandoffDecision.NEEDS_READY_SCORECARD
     if any(finding.startswith("evidence-index-not-ready") for finding in findings):
         return ReviewHandoffDecision.NEEDS_READY_EVIDENCE_INDEX
-    if any(finding.startswith("falsification-matrix-not-survived") for finding in findings):
+    if any(
+        finding.startswith("falsification-matrix-not-survived") for finding in findings
+    ):
         return ReviewHandoffDecision.NEEDS_FALSIFICATION_SURVIVAL
     if any(finding.startswith("review-query-not-ready") for finding in findings):
         return ReviewHandoffDecision.NEEDS_REVIEW_QUERY_MATCHES
