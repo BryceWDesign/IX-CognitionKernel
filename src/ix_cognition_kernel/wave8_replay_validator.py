@@ -191,9 +191,11 @@ class ReplayValidationReport:
             if artifact.artifact_id in seen:
                 raise ValueError(f"Duplicate artifact_id: {artifact.artifact_id}")
             seen.add(artifact.artifact_id)
-        if self.decision is not ReplayValidationDecision.READY_FOR_REVIEW:
-            if not self.findings:
-                raise ValueError("Non-ready replay reports require findings.")
+        if (
+            self.decision is not ReplayValidationDecision.READY_FOR_REVIEW
+            and not self.findings
+        ):
+            raise ValueError("Non-ready replay reports require findings.")
 
     @property
     def ready(self) -> bool:
@@ -270,10 +272,7 @@ def artifact_from_transfer_report(
         source_fingerprint=report.fingerprint(),
         status=status,
         evidence_ids=tuple(evidence_ids),
-        summary=(
-            f"Transfer report {report.report_id} decision "
-            f"{report.decision.value}."
-        ),
+        summary=f"Transfer report {report.report_id} decision {report.decision.value}.",
     )
 
 
@@ -378,9 +377,7 @@ def validate_replay_packet(
         for artifact in artifact_tuple
     ):
         findings.append("overclaim-artifact-present")
-    if any(
-        artifact.status is ReplayArtifactStatus.BLOCKED for artifact in artifact_tuple
-    ):
+    if any(artifact.status is ReplayArtifactStatus.BLOCKED for artifact in artifact_tuple):
         findings.append("blocked-artifact-present")
     if any(
         artifact.status is ReplayArtifactStatus.NEEDS_MEASURED_RESULT
@@ -439,9 +436,7 @@ def _require_sha256(value: str, label: str) -> str:
     return normalized
 
 
-def _normalize_unique_text_tuple(
-    values: Iterable[str], *, label: str
-) -> tuple[str, ...]:
+def _normalize_unique_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
     normalized: list[str] = []
     seen: set[str] = set()
     for value in values:
