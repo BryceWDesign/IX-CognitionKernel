@@ -76,9 +76,7 @@ def test_public_claim_guard_approves_bounded_review_claim() -> None:
         ),
         source_artifact_kinds=(
             EvidenceArtifactKind.READINESS_SCORECARD,
-            EvidenceArtifactKind.FALSIFICATION_MATRIX
-            if hasattr(EvidenceArtifactKind, "FALSIFICATION_MATRIX")
-            else EvidenceArtifactKind.NEGATIVE_CONTROL_REPORT,
+            EvidenceArtifactKind.NEGATIVE_CONTROL_REPORT,
         ),
         evidence_ids=("claim-evidence-1",),
     )
@@ -94,6 +92,7 @@ def test_public_claim_guard_approves_bounded_review_claim() -> None:
     assert review.decision is PublicClaimDecision.APPROVED_BOUNDED_REVIEW_CLAIM
     assert review.findings == ()
     assert "entry-readiness-scorecard" in review.matched_entry_ids
+    assert "entry-negative-control-report" in review.matched_entry_ids
     assert review.fingerprint() == review.fingerprint()
     assert len(review.fingerprint()) == 64
 
