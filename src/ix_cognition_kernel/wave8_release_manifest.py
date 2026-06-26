@@ -226,9 +226,11 @@ class Wave8ReleaseManifest:
                 "Wave 8 release manifests are missing gate kinds: "
                 f"{','.join(missing_gate_kinds)}"
             )
-        if self.decision is not Wave8ReleaseDecision.READY_FOR_REVIEW_HANDOFF:
-            if not self.findings:
-                raise ValueError("Non-ready release manifests require findings.")
+        if (
+            self.decision is not Wave8ReleaseDecision.READY_FOR_REVIEW_HANDOFF
+            and not self.findings
+        ):
+            raise ValueError("Non-ready release manifests require findings.")
 
     @property
     def ready(self) -> bool:
@@ -316,8 +318,7 @@ def default_wave8_release_gates(
     ):
         review_decision = ReleaseGateDecision.BLOCK
         review_findings = (
-            f"external-review-packet-not-ready:"
-            f"{external_review_packet.decision.value}",
+            f"external-review-packet-not-ready:{external_review_packet.decision.value}",
         )
 
     return (
@@ -442,8 +443,7 @@ def _manifest_decision(
     if any(finding.startswith("blocked-release-gates") for finding in findings):
         return Wave8ReleaseDecision.BLOCKED
     if any(
-        finding.startswith("external-review-packet-not-ready")
-        for finding in findings
+        finding.startswith("external-review-packet-not-ready") for finding in findings
     ):
         return Wave8ReleaseDecision.NEEDS_REVIEW_PACKET
     if any(finding.startswith("missing-release-gates") for finding in findings):
@@ -487,9 +487,7 @@ def _require_non_empty(value: str, label: str) -> str:
     return normalized
 
 
-def _normalize_unique_text_tuple(
-    values: Iterable[str], *, label: str
-) -> tuple[str, ...]:
+def _normalize_unique_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
     normalized: list[str] = []
     seen: set[str] = set()
     for value in values:
