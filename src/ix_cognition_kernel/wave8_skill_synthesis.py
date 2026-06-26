@@ -478,7 +478,9 @@ def validate_skill_candidate(
     elif "blocked-transfer-trials-present" in findings:
         decision = SkillPromotionDecision.BLOCKED_BY_FAILURE
     elif any(finding.startswith("transfer-report-not-ready") for finding in findings):
-        if transfer_report.decision is TransferClaimDecision.NEEDS_HIDDEN_VALIDATION:
+        if transfer_report.decision is TransferClaimDecision.BLOCKED:
+            decision = SkillPromotionDecision.BLOCKED_BY_FAILURE
+        elif transfer_report.decision is TransferClaimDecision.NEEDS_HIDDEN_VALIDATION:
             decision = SkillPromotionDecision.NEEDS_HIDDEN_VALIDATION
         elif (
             transfer_report.decision is TransferClaimDecision.NEEDS_REPLAYABLE_EVIDENCE
