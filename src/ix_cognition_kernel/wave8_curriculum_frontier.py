@@ -32,7 +32,6 @@ from ix_cognition_kernel.wave8_task_suite import (
     UnknownTaskSuite,
 )
 from ix_cognition_kernel.wave8_transfer_challenge import (
-    TransferBand,
     TransferTrialRecord,
     TransferTrialStatus,
 )
@@ -40,12 +39,8 @@ from ix_cognition_kernel.wave8_transfer_challenge import (
 WAVE_EIGHT_CURRICULUM_SIGNAL_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave8-curriculum-signal-v1"
 )
-WAVE_EIGHT_FRONTIER_ITEM_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave8-frontier-item-v1"
-)
-WAVE_EIGHT_FRONTIER_PLAN_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave8-frontier-plan-v1"
-)
+WAVE_EIGHT_FRONTIER_ITEM_SCHEMA_VERSION = "ix-cognition-kernel-wave8-frontier-item-v1"
+WAVE_EIGHT_FRONTIER_PLAN_SCHEMA_VERSION = "ix-cognition-kernel-wave8-frontier-plan-v1"
 
 
 class CurriculumSignalKind(StrEnum):
@@ -129,6 +124,7 @@ class CurriculumSignal:
         return (
             self.kind is CurriculumSignalKind.HIDDEN_VALIDATION_GAP
             and self.task.is_hidden_validation
+            and self.score < _gap_score_for_task(self.task)
         )
 
     def canonical_payload(self) -> dict[str, Any]:
@@ -183,12 +179,15 @@ class FrontierItem:
         for signal in self.signals:
             if signal.task.task_id != self.task.task_id:
                 raise ValueError("Frontier item signals must bind to the same task.")
-        if self.priority is FrontierPriority.BLOCKED:
-            if not any(signal.blocks_selection for signal in self.signals):
-                raise ValueError("Blocked frontier items require a blocking signal.")
-        if any(signal.blocks_selection for signal in self.signals):
-            if self.priority is not FrontierPriority.BLOCKED:
-                raise ValueError("Blocking signals require BLOCKED priority.")
+        if self.priority is FrontierPriority.BLOCKED and not any(
+            signal.blocks_selection for signal in self.signals
+        ):
+            raise ValueError("Blocked frontier items require a blocking signal.")
+        if (
+            any(signal.blocks_selection for signal in self.signals)
+            and self.priority is not FrontierPriority.BLOCKED
+        ):
+            raise ValueError("Blocking signals require BLOCKED priority.")
 
     @property
     def score(self) -> int:
@@ -267,7 +266,9 @@ class CurriculumFrontierPlan:
             if self.selected_task_id not in suite_task_ids:
                 raise ValueError("Selected task id is not in the suite.")
             selected_items = [
-                item for item in self.items if item.task.task_id == self.selected_task_id
+                item
+                for item in self.items
+                if item.task.task_id == self.selected_task_id
             ]
             if not selected_items or not selected_items[0].selectable:
                 raise ValueError("Selected task must be selectable.")
@@ -380,7 +381,9 @@ def _signals_for_task(
     hold_hidden_validation: bool,
 ) -> tuple[CurriculumSignal, ...]:
     if trial is None:
-        return (_new_task_signal(task=task, hold_hidden_validation=hold_hidden_validation),)
+        return (
+            _new_task_signal(task=task, hold_hidden_validation=hold_hidden_validation),
+        )
 
     if trial.status is TransferTrialStatus.BLOCKED:
         return (
@@ -420,7 +423,9 @@ def _signals_for_task(
             signal_id=f"{task.task_id}:too-easy",
             task=task,
             kind=CurriculumSignalKind.TOO_EASY,
-            rationale="Replayable pass already exists; prefer harder frontier pressure.",
+            rationale=(
+                "Replayable pass already exists; prefer harder frontier pressure."
+            ),
             evidence_ids=(trial.fingerprint(),),
             score=5,
         ),
@@ -435,7 +440,9 @@ def _new_task_signal(
             signal_id=f"{task.task_id}:hidden-validation-gap",
             task=task,
             kind=CurriculumSignalKind.HIDDEN_VALIDATION_GAP,
-            rationale="Hidden validation is preserved until seed and transfer pressure exist.",
+            rationale=(
+                "Hidden validation is preserved until seed and transfer pressure exist."
+            ),
             evidence_ids=task.evidence_ids,
             score=60,
         )
@@ -444,7 +451,9 @@ def _new_task_signal(
             signal_id=f"{task.task_id}:new-seed",
             task=task,
             kind=CurriculumSignalKind.NEW_SEED,
-            rationale="Seed task has no prior trial and can establish baseline evidence.",
+            rationale=(
+                "Seed task has no prior trial and can establish baseline evidence."
+            ),
             evidence_ids=task.evidence_ids,
             score=40,
         )
