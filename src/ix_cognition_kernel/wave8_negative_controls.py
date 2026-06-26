@@ -203,9 +203,11 @@ class NegativeControlReport:
                 "Negative-control reports are missing required controls: "
                 f"{','.join(missing)}"
             )
-        if self.decision is not NegativeControlSuiteDecision.PASSED:
-            if not self.findings:
-                raise ValueError("Non-passing negative-control reports require findings.")
+        if (
+            self.decision is not NegativeControlSuiteDecision.PASSED
+            and not self.findings
+        ):
+            raise ValueError("Non-passing negative-control reports require findings.")
 
     @property
     def passed(self) -> bool:
