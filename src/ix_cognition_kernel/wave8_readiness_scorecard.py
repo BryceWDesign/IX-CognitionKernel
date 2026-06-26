@@ -26,7 +26,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-from ix_cognition_kernel.wave8_integrated_trial import IntegratedWave8TrialResult
+from ix_cognition_kernel.wave8_integrated_trial import (
+    IntegratedWave8TrialResult,
+    is_replayable_run,
+)
 from ix_cognition_kernel.wave8_negative_controls import (
     NegativeControlReport,
     NegativeControlSuiteDecision,
@@ -232,7 +235,9 @@ class Wave8ReadinessScorecard:
         seen_ids: set[str] = set()
         for dimension in self.dimensions:
             if dimension.dimension_id in seen_ids:
-                raise ValueError(f"Duplicate readiness dimension id: {dimension.dimension_id}")
+                raise ValueError(
+                    f"Duplicate readiness dimension id: {dimension.dimension_id}"
+                )
             seen_ids.add(dimension.dimension_id)
         missing = _missing_required_dimensions(self.dimensions)
         if missing:
@@ -351,7 +356,7 @@ def _dimension_records_from_evidence(
         _dimension(
             dimension_id="dimension-episode-replay",
             kind=ReadinessDimensionKind.EPISODE_REPLAY,
-            passed=all(run.replayable for run in integrated_trial.runs),
+            passed=all(is_replayable_run(run) for run in integrated_trial.runs),
             summary="Episode runs are replayable and measured.",
             evidence_ids=tuple(run.fingerprint() for run in integrated_trial.runs),
             failed_finding="episode-run-not-replayable",
@@ -360,14 +365,20 @@ def _dimension_records_from_evidence(
             dimension_id="dimension-transfer-generalization",
             kind=ReadinessDimensionKind.TRANSFER_GENERALIZATION,
             passed=integrated_trial.transfer_report.ready,
-            summary="Transfer report demonstrates seed, near, far, adversarial, and hidden pressure.",
+            summary=(
+                "Transfer report demonstrates seed, near, far, adversarial, "
+                "and hidden pressure."
+            ),
             evidence_ids=(integrated_trial.transfer_report.fingerprint(),),
             failed_finding="transfer-report-not-ready",
         ),
         _dimension(
             dimension_id="dimension-skill-reuse",
             kind=ReadinessDimensionKind.SKILL_REUSE,
-            passed=integrated_trial.skill_validation.ready and integrated_trial.skill_entry.reusable,
+            passed=(
+                integrated_trial.skill_validation.ready
+                and integrated_trial.skill_entry.reusable
+            ),
             summary="Skill validation and reusable library entry are evidence-bound.",
             evidence_ids=(
                 integrated_trial.skill_validation.fingerprint(),
@@ -467,8 +478,12 @@ def _scorecard_findings(
     negative_control_report: NegativeControlReport,
 ) -> tuple[str, ...]:
     findings: list[str] = []
-    blocked = tuple(sorted(dimension.dimension_id for dimension in dimensions if dimension.blocked))
-    warnings = tuple(sorted(dimension.dimension_id for dimension in dimensions if dimension.warned))
+    blocked = tuple(
+        sorted(dimension.dimension_id for dimension in dimensions if dimension.blocked)
+    )
+    warnings = tuple(
+        sorted(dimension.dimension_id for dimension in dimensions if dimension.warned)
+    )
     if blocked:
         findings.append(f"blocked-readiness-dimensions:{','.join(blocked)}")
     if warnings:
