@@ -32,9 +32,7 @@ from ix_cognition_kernel.wave8_task_suite import (
     UnknownTaskSuite,
 )
 
-WAVE_EIGHT_TRANSFER_TRIAL_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave8-transfer-trial-v1"
-)
+WAVE_EIGHT_TRANSFER_TRIAL_SCHEMA_VERSION = "ix-cognition-kernel-wave8-transfer-trial-v1"
 WAVE_EIGHT_TRANSFER_REPORT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave8-transfer-report-v1"
 )
@@ -248,9 +246,11 @@ class TransferChallengeReport:
             seen_trial_ids.add(trial.trial_id)
             if trial.task.task_id not in suite_task_ids:
                 raise ValueError(f"Trial task is not in suite: {trial.task.task_id}")
-        if self.decision is not TransferClaimDecision.TRANSFER_DEMONSTRATED:
-            if not self.findings:
-                raise ValueError("Non-demonstrated transfer reports require findings.")
+        if (
+            self.decision is not TransferClaimDecision.TRANSFER_DEMONSTRATED
+            and not self.findings
+        ):
+            raise ValueError("Non-demonstrated transfer reports require findings.")
 
     @property
     def ready(self) -> bool:
@@ -268,15 +268,15 @@ class TransferChallengeReport:
     def blocked_count(self) -> int:
         """Return blocked trial count."""
 
-        return sum(1 for trial in self.trials if trial.status is TransferTrialStatus.BLOCKED)
+        return sum(
+            1 for trial in self.trials if trial.status is TransferTrialStatus.BLOCKED
+        )
 
     def pass_count_for_band(self, band: TransferBand) -> int:
         """Return replayable passing count for a transfer band."""
 
         return sum(
-            1
-            for trial in self.trials
-            if trial.band is band and trial.replayable_pass
+            1 for trial in self.trials if trial.band is band and trial.replayable_pass
         )
 
     def canonical_payload(self) -> dict[str, Any]:
