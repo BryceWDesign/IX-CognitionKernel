@@ -31,9 +31,7 @@ from ix_cognition_kernel.wave8_task_suite import UnknownTaskInstance
 WAVE_EIGHT_BASELINE_OUTCOME_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave8-baseline-outcome-v1"
 )
-WAVE_EIGHT_BASELINE_PAIR_SCHEMA_VERSION = (
-    "ix-cognition-kernel-wave8-baseline-pair-v1"
-)
+WAVE_EIGHT_BASELINE_PAIR_SCHEMA_VERSION = "ix-cognition-kernel-wave8-baseline-pair-v1"
 WAVE_EIGHT_BASELINE_REPORT_SCHEMA_VERSION = (
     "ix-cognition-kernel-wave8-baseline-report-v1"
 )
@@ -150,9 +148,7 @@ class BaselineOutcomeRecord:
 
         observed = set(self.observed_feature_ids)
         return tuple(
-            feature
-            for feature in self.expected_feature_ids
-            if feature in observed
+            feature for feature in self.expected_feature_ids if feature in observed
         )
 
     @property
@@ -259,9 +255,11 @@ class BaselineComparisonPair:
         )
         if self.baseline.system_kind is self.candidate.system_kind:
             raise ValueError("Baseline comparison pairs require distinct systems.")
-        if self.decision is not BaselineImprovementDecision.CANDIDATE_IMPROVED:
-            if not self.findings:
-                raise ValueError("Non-improved comparison pairs require findings.")
+        if (
+            self.decision is not BaselineImprovementDecision.CANDIDATE_IMPROVED
+            and not self.findings
+        ):
+            raise ValueError("Non-improved comparison pairs require findings.")
 
     @property
     def score_delta(self) -> float:
@@ -342,9 +340,11 @@ class BaselineComparisonReport:
             if pair.pair_id in seen:
                 raise ValueError(f"Duplicate pair_id: {pair.pair_id}")
             seen.add(pair.pair_id)
-        if self.decision is not BaselineComparisonDecision.IMPROVEMENT_DEMONSTRATED:
-            if not self.findings:
-                raise ValueError("Non-improved reports require findings.")
+        if (
+            self.decision is not BaselineComparisonDecision.IMPROVEMENT_DEMONSTRATED
+            and not self.findings
+        ):
+            raise ValueError("Non-improved reports require findings.")
 
     @property
     def improved_pair_count(self) -> int:
@@ -466,10 +466,7 @@ def evaluate_baseline_comparison(
     findings: list[str] = []
     if len(pair_tuple) < minimum_pair_count:
         findings.append("insufficient-comparison-pair-count")
-    if any(
-        pair.decision is BaselineImprovementDecision.BLOCKED
-        for pair in pair_tuple
-    ):
+    if any(pair.decision is BaselineImprovementDecision.BLOCKED for pair in pair_tuple):
         findings.append("blocked-comparison-pair-present")
     if any(
         pair.decision is BaselineImprovementDecision.NEEDS_REPLAYABLE_EVIDENCE
@@ -497,7 +494,9 @@ def evaluate_baseline_comparison(
         decision = BaselineComparisonDecision.REGRESSION_DETECTED
     elif "insufficient-comparison-pair-count" in findings:
         decision = BaselineComparisonDecision.NEEDS_MORE_TASKS
-    elif "candidate-tie-present" in findings or "no-improved-comparison-pair" in findings:
+    elif (
+        "candidate-tie-present" in findings or "no-improved-comparison-pair" in findings
+    ):
         decision = BaselineComparisonDecision.MIXED_OR_TIED
     else:
         decision = BaselineComparisonDecision.IMPROVEMENT_DEMONSTRATED
