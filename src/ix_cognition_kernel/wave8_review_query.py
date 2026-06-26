@@ -57,7 +57,7 @@ class ReviewQueryDecision(StrEnum):
 
     MATCHES_READY = "matches-ready"
     NO_MATCHES = "no-matches"
-    INDEX_NOT_READY = "index-not-ready"
+    BLOCKED_INDEX = "blocked-index"
     BLOCKED_OVERCLAIM = "blocked-overclaim"
 
 
@@ -201,6 +201,12 @@ class ReviewQueryResult:
         return tuple(entry.entry_id for entry in self.matched_entries)
 
     @property
+    def match_count(self) -> int:
+        """Return number of matched entries."""
+
+        return len(self.matched_entries)
+
+    @property
     def ready(self) -> bool:
         """Return whether the query produced ready matches."""
 
@@ -234,20 +240,27 @@ def build_review_query_request(
     artifact_kinds: Iterable[EvidenceArtifactKind] = (),
     statuses: Iterable[EvidenceIndexEntryStatus] = (),
     text_terms: Iterable[str] = (),
+    search_terms: Iterable[str] = (),
     parent_entry_ids: Iterable[str] = (),
     allow_blocked_index: bool = False,
+    require_ready_index: bool = True,
     evidence_ids: Iterable[str],
 ) -> ReviewQueryRequest:
     """Build a deterministic bounded evidence-index query request."""
+
+    normalized_text_terms = tuple(text_terms)
+    normalized_search_terms = tuple(search_terms)
+    if normalized_text_terms and normalized_search_terms:
+        raise ValueError("Use text_terms or search_terms, not both.")
 
     return ReviewQueryRequest(
         query_id=query_id,
         mode=mode,
         artifact_kinds=tuple(artifact_kinds),
         statuses=tuple(statuses),
-        text_terms=tuple(text_terms),
+        text_terms=(normalized_text_terms or normalized_search_terms),
         parent_entry_ids=tuple(parent_entry_ids),
-        allow_blocked_index=allow_blocked_index,
+        allow_blocked_index=allow_blocked_index or not require_ready_index,
         evidence_ids=tuple(evidence_ids),
     )
 
@@ -278,9 +291,9 @@ def execute_review_query(
             result_id=result_id,
             request=request,
             index_fingerprint=index.fingerprint(),
-            decision=ReviewQueryDecision.INDEX_NOT_READY,
+            decision=ReviewQueryDecision.BLOCKED_INDEX,
             matched_entries=(),
-            findings=(f"evidence-index-not-ready:{index.decision.value}",),
+            findings=(f"index-not-ready:{index.decision.value}",),
         )
 
     matches = _matches_for_request(index=index, request=request)
@@ -291,7 +304,7 @@ def execute_review_query(
             index_fingerprint=index.fingerprint(),
             decision=ReviewQueryDecision.NO_MATCHES,
             matched_entries=(),
-            findings=("review-query-produced-no-matches",),
+            findings=("query-produced-no-matches",),
         )
 
     return ReviewQueryResult(
@@ -315,7 +328,9 @@ def _matches_for_request(
         entries = tuple(entry for entry in entries if entry.kind in requested_kinds)
     elif request.mode is ReviewQueryMode.BY_STATUS:
         requested_statuses = set(request.statuses)
-        entries = tuple(entry for entry in entries if entry.status in requested_statuses)
+        entries = tuple(
+            entry for entry in entries if entry.status in requested_statuses
+        )
     elif request.mode is ReviewQueryMode.BY_TEXT:
         entries = tuple(
             entry for entry in entries if _entry_matches_text_terms(entry, request)
@@ -358,13 +373,13 @@ def _request_overclaims(request: ReviewQueryRequest) -> bool:
 
 def _validate_mode_fields(request: ReviewQueryRequest) -> None:
     if request.mode is ReviewQueryMode.BY_KIND and not request.artifact_kinds:
-        raise ValueError("BY_KIND review queries require artifact kinds.")
+        raise ValueError("BY_KIND queries require artifact kinds.")
     if request.mode is ReviewQueryMode.BY_STATUS and not request.statuses:
-        raise ValueError("BY_STATUS review queries require statuses.")
+        raise ValueError("BY_STATUS queries require statuses.")
     if request.mode is ReviewQueryMode.BY_TEXT and not request.text_terms:
-        raise ValueError("BY_TEXT review queries require text terms.")
+        raise ValueError("BY_TEXT queries require text terms.")
     if request.mode is ReviewQueryMode.BY_PARENT and not request.parent_entry_ids:
-        raise ValueError("BY_PARENT review queries require parent entry ids.")
+        raise ValueError("BY_PARENT queries require parent entry ids.")
 
 
 def _normalize_unique_artifact_kinds(
