@@ -117,7 +117,9 @@ class BoundedEnvironmentSpec:
         object.__setattr__(
             self,
             "action_space_ids",
-            _normalize_unique_text_tuple(self.action_space_ids, label="action_space_id"),
+            _normalize_unique_text_tuple(
+                self.action_space_ids, label="action_space_id"
+            ),
         )
         object.__setattr__(
             self,
@@ -145,7 +147,9 @@ class BoundedEnvironmentSpec:
         if not self.reset_evidence_ids:
             raise ValueError("Bounded environments require reset evidence ids.")
         if self.permits_live_actuation:
-            raise ValueError("Wave 8 bounded environments must not permit live actuation.")
+            raise ValueError(
+                "Wave 8 bounded environments must not permit live actuation."
+            )
 
     def canonical_payload(self) -> dict[str, Any]:
         """Return deterministic environment payload."""
@@ -224,7 +228,9 @@ class EnvironmentObservation:
         object.__setattr__(
             self,
             "visible_features",
-            _normalize_unique_text_tuple(self.visible_features, label="visible_feature"),
+            _normalize_unique_text_tuple(
+                self.visible_features, label="visible_feature"
+            ),
         )
         object.__setattr__(
             self,
