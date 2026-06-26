@@ -10,7 +10,6 @@ from ix_cognition_kernel.wave8_task_suite import (
     TaskDifficulty,
     TaskDisclosureLevel,
     TaskFamily,
-    UnknownTaskSuite,
     build_grid_transition_task,
     build_grid_transition_template,
 )
@@ -305,22 +304,21 @@ def test_snapshot_rejects_duplicate_rule_ids() -> None:
         trials=(_passing_trial(seed),),
         evidence_ids=("world-rule-evidence-1",),
     )
-    update = build_world_model_update(
-        update_id="update-hypothesis",
+    first_update = build_world_model_update(
+        update_id="update-hypothesis-1",
+        rule=rule,
+        trials=(_passing_trial(seed),),
+    )
+    second_update = build_world_model_update(
+        update_id="update-hypothesis-2",
         rule=rule,
         trials=(_passing_trial(seed),),
     )
 
     with pytest.raises(ValueError, match="Duplicate rule_id"):
-        UnknownTaskSuite(
-            suite_id="suite-unused",
-            purpose="Unused construction keeps imports exercised.",
-            tasks=(seed,),
-            evidence_ids=("suite-evidence-1",),
-        )
         build_world_model_snapshot(
             snapshot_id="snapshot-duplicate",
             purpose="Duplicate rules should fail.",
-            updates=(update, update),
+            updates=(first_update, second_update),
             evidence_ids=("snapshot-evidence-1",),
         )
