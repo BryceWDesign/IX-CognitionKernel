@@ -27,12 +27,10 @@ from typing import Any
 from ix_cognition_kernel.wave8_environment_protocol import (
     BoundedEnvironmentSpec,
     EnvironmentActionResult,
+    EnvironmentObservation,
     EnvironmentReplayFrame,
     EnvironmentTransitionStatus,
     build_environment_replay_frame,
-)
-from ix_cognition_kernel.wave8_environment_protocol import (
-    EnvironmentObservation,
 )
 from ix_cognition_kernel.wave8_model_adapter import (
     BoundedModelOutput,
@@ -300,14 +298,42 @@ def run_single_step_episode(
         action_draft=action_draft,
         replay_frame=replay_frame,
         decision=_step_decision(action_draft=action_draft, replay_frame=replay_frame),
+        notes=tuple(notes),
     )
+
     return BoundedEpisodeRun(
         run_id=run_id,
         episode_id=observation.episode_id,
         environment=environment,
         initial_observation=observation,
         steps=(step,),
-        terminal=bool(result and result.terminal),
+        terminal=(
+            replay_frame.result.status is EnvironmentTransitionStatus.TERMINAL
+            if replay_frame and replay_frame.result
+            else False
+        ),
+    )
+
+
+def build_episode_run(
+    *,
+    run_id: str,
+    episode_id: str,
+    environment: BoundedEnvironmentSpec,
+    initial_observation: EnvironmentObservation,
+    steps: Iterable[EpisodeStepTrace],
+    terminal: bool = False,
+    notes: Iterable[str] = (),
+) -> BoundedEpisodeRun:
+    """Build a bounded episode run from pre-computed step traces."""
+
+    return BoundedEpisodeRun(
+        run_id=run_id,
+        episode_id=episode_id,
+        environment=environment,
+        initial_observation=initial_observation,
+        steps=tuple(steps),
+        terminal=terminal,
         notes=tuple(notes),
     )
 
@@ -317,14 +343,14 @@ def _step_decision(
     action_draft: ModelActionDraft,
     replay_frame: EnvironmentReplayFrame | None,
 ) -> EpisodeStepDecision:
-    if not action_draft.ready:
+    if action_draft.action_proposal is None:
         return EpisodeStepDecision.BLOCKED_MODEL_ACTION_DRAFT
     if replay_frame is None:
-        return EpisodeStepDecision.BLOCKED_ENVIRONMENT_ACTION
-    if replay_frame.status is EnvironmentTransitionStatus.BLOCKED:
-        return EpisodeStepDecision.BLOCKED_ENVIRONMENT_ACTION
-    if replay_frame.status is EnvironmentTransitionStatus.NEEDS_MEASURED_RESULT:
+        return EpisodeStepDecision.BLOCKED_MODEL_ACTION_DRAFT
+    if not replay_frame.result:
         return EpisodeStepDecision.NEEDS_MEASURED_RESULT
+    if replay_frame.result.blocked:
+        return EpisodeStepDecision.BLOCKED_ENVIRONMENT_ACTION
     return EpisodeStepDecision.COMPLETED_REPLAYABLE
 
 
@@ -333,6 +359,11 @@ def _require_non_empty(value: str, label: str) -> str:
     if not normalized:
         raise ValueError(f"{label} must not be empty.")
     return normalized
+
+
+def _require_same_text(left: str, right: str, label: str) -> None:
+    if left != right:
+        raise ValueError(f"Mismatched {label}: {left!r} != {right!r}")
 
 
 def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
@@ -345,11 +376,6 @@ def _dedupe_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
         seen.add(text)
         normalized.append(text)
     return tuple(sorted(normalized))
-
-
-def _require_same_text(left: str, right: str, label: str) -> None:
-    if left != right:
-        raise ValueError(f"Mismatched {label}: {left} != {right}")
 
 
 def _stable_sha256(payload: Mapping[str, Any]) -> str:
