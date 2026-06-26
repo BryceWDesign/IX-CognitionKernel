@@ -202,8 +202,6 @@ class ExternalReviewPacket:
             "schema_version",
             _require_non_empty(self.schema_version, "schema_version"),
         )
-        if not self.questions:
-            raise ValueError("External review packets require questions.")
         if not self.evidence_ids:
             raise ValueError("External review packets require evidence ids.")
         seen_questions: set[str] = set()
@@ -211,9 +209,11 @@ class ExternalReviewPacket:
             if question.question_id in seen_questions:
                 raise ValueError(f"Duplicate question_id: {question.question_id}")
             seen_questions.add(question.question_id)
-        if self.decision is not ExternalReviewPacketDecision.READY_FOR_EXTERNAL_REVIEW:
-            if not self.findings:
-                raise ValueError("Non-ready external review packets require findings.")
+        if (
+            self.decision is not ExternalReviewPacketDecision.READY_FOR_EXTERNAL_REVIEW
+            and not self.findings
+        ):
+            raise ValueError("Non-ready external review packets require findings.")
 
     @property
     def ready(self) -> bool:
@@ -381,15 +381,15 @@ def _packet_findings(
         ExternalReviewerRole.BASELINE_REVIEWER,
         ExternalReviewerRole.TRANSFER_REVIEWER,
     }
-    missing_roles = tuple(sorted(role.value for role in required_roles - set(reviewer_roles)))
+    missing_roles = tuple(
+        sorted(role.value for role in required_roles - set(reviewer_roles))
+    )
     if missing_roles:
         findings.append(f"missing-reviewer-roles:{','.join(missing_roles)}")
 
     if not questions:
         findings.append("missing-review-questions")
-    artifact_kinds = {
-        artifact.kind for artifact in replay_report.artifacts
-    }
+    artifact_kinds = {artifact.kind for artifact in replay_report.artifacts}
     question_artifact_kinds = {
         kind for question in questions for kind in question.required_artifact_kinds
     }
@@ -431,7 +431,10 @@ def _packet_decision(
         return ExternalReviewPacketDecision.BLOCKED
     if any(finding.startswith("replay-report-not-ready") for finding in findings):
         return ExternalReviewPacketDecision.NEEDS_REPLAY_VALIDATION
-    if any(finding.startswith("question-artifacts-not-in-replay-report") for finding in findings):
+    if any(
+        finding.startswith("question-artifacts-not-in-replay-report")
+        for finding in findings
+    ):
         return ExternalReviewPacketDecision.NEEDS_REQUIRED_ARTIFACTS
     if any(finding.startswith("missing-reviewer-roles") for finding in findings):
         return ExternalReviewPacketDecision.NEEDS_REQUIRED_REVIEWERS
