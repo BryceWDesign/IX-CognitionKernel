@@ -25,7 +25,10 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-from ix_cognition_kernel.wave8_integrated_trial import IntegratedWave8TrialResult
+from ix_cognition_kernel.wave8_integrated_trial import (
+    IntegratedWave8TrialResult,
+    is_replayable_run,
+)
 from ix_cognition_kernel.wave8_negative_controls import NegativeControlReport
 from ix_cognition_kernel.wave8_readiness_scorecard import Wave8ReadinessScorecard
 
@@ -346,13 +349,13 @@ def _entries_from_wave8_evidence(
             source_fingerprint=run.fingerprint(),
             status=(
                 EvidenceIndexEntryStatus.READY
-                if run.replayable
+                if is_replayable_run(run)
                 else EvidenceIndexEntryStatus.BLOCKED
             ),
             claim_boundary=claim_boundary,
             evidence_ids=(run.fingerprint(),),
             parent_entry_ids=("entry-task-suite",),
-            findings=() if run.replayable else ("episode-run-not-replayable",),
+            findings=() if is_replayable_run(run) else ("episode-run-not-replayable",),
         )
         for index, run in enumerate(integrated_trial.runs, start=1)
     )
