@@ -124,7 +124,9 @@ class SkillCandidate:
         object.__setattr__(
             self,
             "expected_effects",
-            _normalize_unique_text_tuple(self.expected_effects, label="expected_effect"),
+            _normalize_unique_text_tuple(
+                self.expected_effects, label="expected_effect"
+            ),
         )
         object.__setattr__(
             self,
@@ -214,10 +216,14 @@ class SkillValidationRecord:
         report_task_ids = {trial.task.task_id for trial in self.transfer_report.trials}
         for task_id in self.candidate.source_task_ids:
             if task_id not in report_task_ids:
-                raise ValueError(f"Skill source task is not in transfer report: {task_id}")
-        if self.decision is not SkillPromotionDecision.READY_FOR_REUSE:
-            if not self.findings:
-                raise ValueError("Non-ready skill validations require findings.")
+                raise ValueError(
+                    f"Skill source task is not in transfer report: {task_id}"
+                )
+        if (
+            self.decision is not SkillPromotionDecision.READY_FOR_REUSE
+            and not self.findings
+        ):
+            raise ValueError("Non-ready skill validations require findings.")
 
     @property
     def ready(self) -> bool:
@@ -333,7 +339,9 @@ class SkillReusePlan:
         object.__setattr__(
             self,
             "matched_transfer_tags",
-            _dedupe_text_tuple(self.matched_transfer_tags, label="matched_transfer_tag"),
+            _dedupe_text_tuple(
+                self.matched_transfer_tags, label="matched_transfer_tag"
+            ),
         )
         object.__setattr__(
             self,
@@ -353,9 +361,8 @@ class SkillReusePlan:
             "schema_version",
             _require_non_empty(self.schema_version, "schema_version"),
         )
-        if self.decision is not SkillReuseDecision.REUSE_READY:
-            if not self.findings:
-                raise ValueError("Non-ready skill reuse plans require findings.")
+        if self.decision is not SkillReuseDecision.REUSE_READY and not self.findings:
+            raise ValueError("Non-ready skill reuse plans require findings.")
 
     @property
     def ready(self) -> bool:
@@ -397,23 +404,29 @@ def synthesize_skill_candidate(
     if not trial_tuple:
         raise ValueError("Skill synthesis requires transfer trials.")
     source_task_ids = tuple(trial.task.task_id for trial in trial_tuple)
-    operation_ids = tuple(
-        _expected_operation_from_task(trial.task)
-        for trial in trial_tuple
-        if _expected_operation_from_task(trial.task)
+    operation_ids = _dedupe_text_tuple(
+        (
+            _expected_operation_from_task(trial.task)
+            for trial in trial_tuple
+            if _expected_operation_from_task(trial.task)
+        ),
+        label="operation_id",
     )
-    preconditions = tuple(
-        feature
-        for trial in trial_tuple
-        for feature in trial.task.initial_observation.visible_features
+    preconditions = _dedupe_text_tuple(
+        (
+            feature
+            for trial in trial_tuple
+            for feature in trial.task.initial_observation.visible_features
+        ),
+        label="precondition",
     )
-    expected_effects = tuple(
-        feature
-        for trial in trial_tuple
-        for feature in trial.expected_feature_ids
+    expected_effects = _dedupe_text_tuple(
+        (feature for trial in trial_tuple for feature in trial.expected_feature_ids),
+        label="expected_effect",
     )
-    transfer_tags = tuple(
-        tag for trial in trial_tuple for tag in trial.task.transfer_tags
+    transfer_tags = _dedupe_text_tuple(
+        (tag for trial in trial_tuple for tag in trial.task.transfer_tags),
+        label="transfer_tag",
     )
     failure_modes = tuple(
         f"{trial.trial_id}:{trial.status.value}"
@@ -467,7 +480,9 @@ def validate_skill_candidate(
     elif any(finding.startswith("transfer-report-not-ready") for finding in findings):
         if transfer_report.decision is TransferClaimDecision.NEEDS_HIDDEN_VALIDATION:
             decision = SkillPromotionDecision.NEEDS_HIDDEN_VALIDATION
-        elif transfer_report.decision is TransferClaimDecision.NEEDS_REPLAYABLE_EVIDENCE:
+        elif (
+            transfer_report.decision is TransferClaimDecision.NEEDS_REPLAYABLE_EVIDENCE
+        ):
             decision = SkillPromotionDecision.NEEDS_REPLAYABLE_EVIDENCE
         else:
             decision = SkillPromotionDecision.NEEDS_TRANSFER_EVIDENCE
