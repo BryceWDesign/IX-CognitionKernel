@@ -441,7 +441,10 @@ def _manifest_decision(
         return Wave8ReleaseDecision.OVERCLAIM_BLOCKED
     if any(finding.startswith("blocked-release-gates") for finding in findings):
         return Wave8ReleaseDecision.BLOCKED
-    if any(finding.startswith("external-review-packet-not-ready") for finding in findings):
+    if any(
+        finding.startswith("external-review-packet-not-ready")
+        for finding in findings
+    ):
         return Wave8ReleaseDecision.NEEDS_REVIEW_PACKET
     if any(finding.startswith("missing-release-gates") for finding in findings):
         return Wave8ReleaseDecision.NEEDS_GATE_EVIDENCE
