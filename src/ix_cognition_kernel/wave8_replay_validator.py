@@ -436,7 +436,9 @@ def _require_sha256(value: str, label: str) -> str:
     return normalized
 
 
-def _normalize_unique_text_tuple(values: Iterable[str], *, label: str) -> tuple[str, ...]:
+def _normalize_unique_text_tuple(
+    values: Iterable[str], *, label: str
+) -> tuple[str, ...]:
     normalized: list[str] = []
     seen: set[str] = set()
     for value in values:
