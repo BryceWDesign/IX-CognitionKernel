@@ -27,7 +27,6 @@ from enum import StrEnum
 from typing import Any
 
 from ix_cognition_kernel.wave8_evidence_index import (
-    EvidenceArtifactKind,
     EvidenceIndexEntryStatus,
     Wave8EvidenceIndex,
 )
@@ -149,9 +148,11 @@ class FalsificationCheckRecord:
             raise ValueError("Falsification checks require evidence ids.")
         if not self.linked_entry_ids:
             raise ValueError("Falsification checks require linked entry ids.")
-        if self.decision is not FalsificationCheckDecision.SURVIVED:
-            if not self.findings:
-                raise ValueError("Non-surviving falsification checks require findings.")
+        if (
+            self.decision is not FalsificationCheckDecision.SURVIVED
+            and not self.findings
+        ):
+            raise ValueError("Non-surviving falsification checks require findings.")
 
     @property
     def survived(self) -> bool:
@@ -285,7 +286,10 @@ class Wave8FalsificationMatrix:
     def survived(self) -> bool:
         """Return whether all bounded falsification checks survived."""
 
-        return self.decision is FalsificationMatrixDecision.SURVIVED_BOUNDED_FALSIFICATION
+        return (
+            self.decision
+            is FalsificationMatrixDecision.SURVIVED_BOUNDED_FALSIFICATION
+        )
 
     @property
     def failed_open_count(self) -> int:
@@ -481,7 +485,9 @@ def _negative_control_check(
     linked_entry_ids: tuple[str, ...],
 ) -> FalsificationCheckRecord:
     matching = tuple(
-        record for record in negative_control_report.records if record.kind is control_kind
+        record
+        for record in negative_control_report.records
+        if record.kind is control_kind
     )
     if not matching:
         return FalsificationCheckRecord(
@@ -606,11 +612,18 @@ def _matrix_findings(
     if failed_open:
         findings.append(f"falsification-checks-failed-open:{','.join(failed_open)}")
     if needs_evidence:
-        findings.append(f"falsification-checks-need-evidence:{','.join(needs_evidence)}")
+        findings.append(
+            f"falsification-checks-need-evidence:{','.join(needs_evidence)}"
+        )
     if negative_control_report.decision is NegativeControlSuiteDecision.FAILED_OPEN:
         findings.append("negative-control-report-failed-open")
-    if readiness_scorecard.decision is not Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF:
-        findings.append(f"readiness-scorecard-not-ready:{readiness_scorecard.decision.value}")
+    if (
+        readiness_scorecard.decision
+        is not Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF
+    ):
+        findings.append(
+            f"readiness-scorecard-not-ready:{readiness_scorecard.decision.value}"
+        )
     return tuple(findings)
 
 
@@ -632,7 +645,10 @@ def _matrix_decision(
         return FalsificationMatrixDecision.NEEDS_EVIDENCE
     if negative_control_report.decision is NegativeControlSuiteDecision.NEEDS_EVIDENCE:
         return FalsificationMatrixDecision.NEEDS_EVIDENCE
-    if readiness_scorecard.decision is not Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF:
+    if (
+        readiness_scorecard.decision
+        is not Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF
+    ):
         return FalsificationMatrixDecision.NEEDS_EVIDENCE
     return FalsificationMatrixDecision.SURVIVED_BOUNDED_FALSIFICATION
 
