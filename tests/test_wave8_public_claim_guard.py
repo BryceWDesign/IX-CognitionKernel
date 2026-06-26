@@ -1,5 +1,3 @@
-import pytest
-
 from ix_cognition_kernel.wave8_evidence_index import (
     EvidenceArtifactKind,
     EvidenceIndexDecision,
