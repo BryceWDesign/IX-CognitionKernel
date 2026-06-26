@@ -215,7 +215,9 @@ class ModelActionDraft:
         )
         if self.decision is ModelActionDraftDecision.READY_FOR_ACTION_PROPOSAL:
             if self.action_proposal is None:
-                raise ValueError("Ready model action drafts require an action proposal.")
+                raise ValueError(
+                    "Ready model action drafts require an action proposal."
+                )
             _require_same_text(
                 self.model_output.environment_id,
                 self.action_proposal.environment_id,
