@@ -40,8 +40,8 @@ from ix_cognition_kernel.wave8_episode_runner import (
     run_single_step_episode,
 )
 from ix_cognition_kernel.wave8_external_review_packet import (
-    ExternalReviewPacket,
     ExternalReviewerRole,
+    ExternalReviewPacket,
     build_external_review_packet,
     default_wave8_review_questions,
 )
@@ -150,7 +150,9 @@ class IntegratedWave8TrialResult:
             task.initial_observation.episode_id for task in self.suite.tasks
         }
         if not suite_episode_ids.issubset(run_episode_ids):
-            raise ValueError("Integrated Wave 8 trial runs must cover every suite task.")
+            raise ValueError(
+                "Integrated Wave 8 trial runs must cover every suite task."
+            )
         transfer_trial_task_ids = {
             trial.task.task_id for trial in self.transfer_report.trials
         }
@@ -165,7 +167,9 @@ class IntegratedWave8TrialResult:
         if not self.world_snapshot.active_rules:
             raise ValueError("Integrated trial requires active world-model rules.")
         if not self.baseline_report.ready:
-            raise ValueError("Integrated trial requires demonstrated baseline improvement.")
+            raise ValueError(
+                "Integrated trial requires demonstrated baseline improvement."
+            )
         if not self.replay_report.ready:
             raise ValueError("Integrated trial requires ready replay report.")
         if not self.external_review_packet.ready:
@@ -444,7 +448,9 @@ def _build_world_snapshot(
 ) -> WorldModelSnapshot:
     rule = derive_world_rule_from_trials(
         rule_id=f"{trial_id}:world-rule-grid-transition",
-        statement="Visible east-empty grid states support a bounded move-east transition.",
+        statement=(
+            "Visible east-empty grid states support a bounded move-east transition."
+        ),
         family=TaskFamily.GRID_ABSTRACTION,
         trials=trials,
         evidence_ids=(f"{trial_id}:world-rule-evidence",),
