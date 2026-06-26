@@ -121,9 +121,11 @@ class HumanReviewItem:
             raise ValueError("Human review items require source entry ids.")
         if not self.evidence_ids:
             raise ValueError("Human review items require evidence ids.")
-        if self.decision is not HumanReviewItemDecision.READY_FOR_REVIEW:
-            if not self.findings:
-                raise ValueError("Non-ready human review items require findings.")
+        if (
+            self.decision is not HumanReviewItemDecision.READY_FOR_REVIEW
+            and not self.findings
+        ):
+            raise ValueError("Non-ready human review items require findings.")
 
     @property
     def ready(self) -> bool:
@@ -214,12 +216,13 @@ class Wave8HumanReviewDocket:
         missing = _missing_required_roles(self.items)
         if missing:
             raise ValueError(
-                "Wave 8 human review dockets are missing roles: "
-                f"{','.join(missing)}"
+                f"Wave 8 human review dockets are missing roles: {','.join(missing)}"
             )
-        if self.decision is not HumanReviewDocketDecision.READY_FOR_HUMAN_REVIEW:
-            if not self.findings:
-                raise ValueError("Non-ready human review dockets require findings.")
+        if (
+            self.decision is not HumanReviewDocketDecision.READY_FOR_HUMAN_REVIEW
+            and not self.findings
+        ):
+            raise ValueError("Non-ready human review dockets require findings.")
 
     @property
     def ready(self) -> bool:
