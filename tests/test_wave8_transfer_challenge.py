@@ -1,240 +1,254 @@
-import pytest
+"""Tests for Wave 8 transfer challenge."""
 
-from ix_cognition_kernel.wave8_environment_protocol import EnvironmentActionResult
+from __future__ import annotations
+
+from ix_cognition_kernel.wave8_curriculum_frontier import (
+    CurriculumFrontier,
+    FrontierPressure,
+)
+from ix_cognition_kernel.wave8_environment_protocol import (
+    BoundedEnvironmentSpec,
+    EnvironmentActionResult,
+    EnvironmentObservation,
+)
 from ix_cognition_kernel.wave8_episode_runner import run_single_step_episode
 from ix_cognition_kernel.wave8_model_adapter import (
     DeterministicModelAdapter,
-    DeterministicModelPolicy,
+    ModelAdapterMode,
 )
 from ix_cognition_kernel.wave8_task_suite import (
-    TaskDifficulty,
-    TaskDisclosureLevel,
-    UnknownTaskSuite,
-    build_grid_transition_task,
-    build_grid_transition_template,
+    TaskDifficultyBand,
+    UnknownTaskInstance,
 )
 from ix_cognition_kernel.wave8_transfer_challenge import (
     TransferBand,
     TransferClaimDecision,
-    TransferTrialRecord,
     TransferTrialStatus,
-    build_transfer_trial_record,
+    build_transfer_trial,
     evaluate_transfer_challenge,
 )
 
 
-def _template():
-    return build_grid_transition_template(template_id="grid-template-1")
+def _environment() -> BoundedEnvironmentSpec:
+    return BoundedEnvironmentSpec(
+        environment_id="env-transfer",
+        name="Transfer Grid",
+        version="1.0",
+        supported_action_kinds=("move",),
+        observable_feature_ids=("agent:0,0", "goal:1,0", "agent:1,0", "goal-reached"),
+        terminal_feature_ids=("goal-reached",),
+        forbidden_action_patterns=("network",),
+    )
 
 
-def _task(task_id: str, difficulty: TaskDifficulty, operation_id: str):
-    disclosure = TaskDisclosureLevel.PARTIALLY_WITHHELD
-    if difficulty is TaskDifficulty.HIDDEN_VALIDATION:
-        disclosure = TaskDisclosureLevel.HIDDEN_GOAL
-    return build_grid_transition_task(
+def _observation(*, task_id: str) -> EnvironmentObservation:
+    return EnvironmentObservation(
+        observation_id=f"obs-{task_id}",
+        environment_id="env-transfer",
+        episode_id=f"episode-{task_id}",
+        visible_features=("agent:0,0", "goal:1,0"),
+        hidden_feature_count=2,
+    )
+
+
+def _task(task_id: str, band: TaskDifficultyBand) -> UnknownTaskInstance:
+    return UnknownTaskInstance(
         task_id=task_id,
-        template=_template(),
-        episode_id=f"{task_id}:episode",
-        start_state_id=f"{task_id}:state-0",
-        empty_direction="east",
-        expected_operation_id=operation_id,
-        difficulty=difficulty,
-        disclosure_level=disclosure,
+        environment_id="env-transfer",
+        difficulty_band=band,
+        initial_observation=_observation(task_id=task_id),
+        allowed_action_kinds=("move",),
+        expected_outcome_features=("goal-reached", "operation:move-east"),
+        novelty_factors=("novel-map",),
+        transfer_tags=("grid", "move-east"),
+        evidence_ids=(f"task-evidence-{task_id}",),
     )
 
 
-def _suite() -> UnknownTaskSuite:
-    return UnknownTaskSuite(
-        suite_id="suite-transfer",
-        purpose="Exercise seed, transfer, adversarial, and hidden validation.",
-        tasks=(
-            _task("task-seed", TaskDifficulty.SEED, "move-east"),
-            _task("task-near", TaskDifficulty.NEAR_TRANSFER, "move-east"),
-            _task("task-far", TaskDifficulty.FAR_TRANSFER, "move-east"),
-            _task("task-adversarial", TaskDifficulty.ADVERSARIAL, "move-east"),
-            _task("task-hidden", TaskDifficulty.HIDDEN_VALIDATION, "move-east"),
-        ),
-        evidence_ids=("suite-evidence-1",),
-    )
-
-
-def _adapter(operation_id: str = "move-east") -> DeterministicModelAdapter:
+def _adapter() -> DeterministicModelAdapter:
     return DeterministicModelAdapter(
-        adapter_id="deterministic-adapter-1",
-        policy=DeterministicModelPolicy(
-            policy_id="policy-1",
-            supported_environment_ids=("env-unused-by-deterministic-policy",),
-            operation_preferences=(operation_id,),
-            rationale_template="Use {operation_id} from {state_id}.",
-            expected_effect_template="{operation_id} should change the bounded state.",
-            evidence_ids=("policy-evidence-1",),
-            assumptions=("visible-state-is-current",),
-            uncertainty_ids=("uncertainty-grid-transition",),
-        ),
+        adapter_id="adapter-transfer",
+        mode=ModelAdapterMode.REPLAY_SCRIPT,
+        supported_action_kinds=("move",),
+        policy={
+            "agent:0,0|goal:1,0": {
+                "kind": "move",
+                "parameters": {"direction": "east"},
+                "confidence": 0.9,
+                "rationale": "Move east toward goal.",
+            }
+        },
     )
 
 
-def _result(task_id: str, *, measured: bool = True) -> EnvironmentActionResult:
-    return EnvironmentActionResult(
-        result_id=f"{task_id}:result",
-        action_id=f"{task_id}:action",
-        environment_id=f"{task_id}:environment",
-        episode_id=f"{task_id}:episode",
-        prior_state_id=f"{task_id}:state-0",
-        resulting_state_id=f"{task_id}:state-1",
-        outcome_summary="The bounded task produced the expected transition.",
-        score_delta=1.0,
-        evidence_ids=(f"{task_id}:result-evidence",),
-        measured=measured,
+def _passing_run(*, task: UnknownTaskInstance) -> object:
+    result = EnvironmentActionResult(
+        result_id=f"result-{task.task_id}",
+        action_id=f"action-{task.task_id}",
+        environment_id="env-transfer",
+        episode_id=task.initial_observation.episode_id,
+        next_features=("agent:1,0", "goal-reached"),
+        measured_reward=1.0,
+        terminal=True,
     )
-
-
-def _run_for_task(task, *, measured: bool = True, operation_id: str = "move-east"):
     return run_single_step_episode(
-        run_id=f"{task.task_id}:run",
-        step_id=f"{task.task_id}:step",
-        output_id=f"{task.task_id}:output",
-        draft_id=f"{task.task_id}:draft",
-        action_id=f"{task.task_id}:action",
-        frame_id=f"{task.task_id}:frame",
-        environment=task.environment,
+        run_id=f"run-{task.task_id}",
+        step_id=f"step-{task.task_id}",
+        output_id=f"output-{task.task_id}",
+        draft_id=f"draft-{task.task_id}",
+        action_id=f"action-{task.task_id}",
+        frame_id=f"frame-{task.task_id}",
+        environment=_environment(),
         observation=task.initial_observation,
-        adapter=_adapter(operation_id),
-        result=_result(task.task_id, measured=measured),
+        adapter=_adapter(),
+        result=result,
     )
 
 
-def _passing_trial(task) -> TransferTrialRecord:
-    return build_transfer_trial_record(
-        trial_id=f"{task.task_id}:trial",
+def _suite() -> CurriculumFrontier:
+    tasks = (
+        _task("task-near", TaskDifficultyBand.TRANSFER_NEAR),
+        _task("task-far", TaskDifficultyBand.TRANSFER_FAR),
+        _task("task-hidden", TaskDifficultyBand.HIDDEN),
+    )
+    return CurriculumFrontier(
+        frontier_id="frontier-transfer",
+        purpose="Exercise bounded transfer challenge.",
+        pressures=(
+            FrontierPressure(
+                pressure_id="pressure-transfer",
+                target_skill="move-east",
+                difficulty_band=TaskDifficultyBand.TRANSFER_NEAR,
+                transfer_tags=("grid",),
+                required_feature_ids=("goal-reached",),
+                forbidden_shortcuts=("memorized-start",),
+            ),
+        ),
+        tasks=tasks,
+        evidence_ids=("frontier-evidence-1",),
+    )
+
+
+def test_transfer_trial_passes_with_replayable_episode() -> None:
+    task = _task("task-near", TaskDifficultyBand.TRANSFER_NEAR)
+    trial = build_transfer_trial(
+        trial_id="trial-near",
         task=task,
-        run=_run_for_task(task),
-        observed_feature_ids=task.expected_outcome_features,
-        evidence_ids=(f"{task.task_id}:trial-evidence",),
+        band=TransferBand.NEAR,
+        episode_run=_passing_run(task=task),
     )
 
-
-def test_transfer_trial_records_band_status_and_feature_match() -> None:
-    task = _task("task-near", TaskDifficulty.NEAR_TRANSFER, "move-east")
-    trial = _passing_trial(task)
-
-    assert trial.band is TransferBand.NEAR
     assert trial.status is TransferTrialStatus.REPLAYABLE_PASS
-    assert trial.replayable_pass
-    assert trial.matched_expected_features == task.expected_outcome_features
-    assert trial.fingerprint() == trial.fingerprint()
-    assert len(trial.fingerprint()) == 64
+    assert trial.ready
+    assert trial.observed_feature_ids == ("agent:1,0", "goal-reached")
 
 
-def test_transfer_trial_records_replayable_fail_when_features_do_not_match() -> None:
-    task = _task("task-far", TaskDifficulty.FAR_TRANSFER, "move-east")
-    trial = build_transfer_trial_record(
-        trial_id="trial-fail",
-        task=task,
-        run=_run_for_task(task),
-        observed_feature_ids=("wrong-feature",),
-        evidence_ids=("trial-evidence-1",),
+def test_transfer_trial_needs_measured_result_when_episode_is_unmeasured() -> None:
+    task = _task("task-unmeasured", TaskDifficultyBand.TRANSFER_NEAR)
+    run = run_single_step_episode(
+        run_id="run-unmeasured",
+        step_id="step-unmeasured",
+        output_id="output-unmeasured",
+        draft_id="draft-unmeasured",
+        action_id="action-unmeasured",
+        frame_id="frame-unmeasured",
+        environment=_environment(),
+        observation=task.initial_observation,
+        adapter=_adapter(),
+        result=None,
     )
-
-    assert trial.status is TransferTrialStatus.REPLAYABLE_FAIL
-    assert not trial.replayable_pass
-
-
-def test_transfer_trial_records_unmeasured_result_status() -> None:
-    task = _task("task-far", TaskDifficulty.FAR_TRANSFER, "move-east")
-    trial = build_transfer_trial_record(
+    trial = build_transfer_trial(
         trial_id="trial-unmeasured",
         task=task,
-        run=_run_for_task(task, measured=False),
-        observed_feature_ids=task.expected_outcome_features,
-        evidence_ids=("trial-evidence-1",),
+        band=TransferBand.NEAR,
+        episode_run=run,
     )
 
     assert trial.status is TransferTrialStatus.NEEDS_MEASURED_RESULT
+    assert not trial.ready
+    assert "episode-run-not-replayable" in trial.findings
 
 
-def test_transfer_trial_records_blocked_run_status() -> None:
-    task = _task("task-far", TaskDifficulty.FAR_TRANSFER, "move-east")
-    trial = build_transfer_trial_record(
-        trial_id="trial-blocked",
-        task=task,
-        run=_run_for_task(task, operation_id="delete-host-file"),
-        observed_feature_ids=task.expected_outcome_features,
-        evidence_ids=("trial-evidence-1",),
-    )
-
-    assert trial.status is TransferTrialStatus.BLOCKED
-
-
-def test_transfer_challenge_demonstrates_only_with_all_required_bands() -> None:
+def test_transfer_report_demonstrates_transfer_with_required_bands() -> None:
     suite = _suite()
+    trials = tuple(
+        build_transfer_trial(
+            trial_id=f"trial-{task.task_id}",
+            task=task,
+            band=(
+                TransferBand.NEAR
+                if task.difficulty_band is TaskDifficultyBand.TRANSFER_NEAR
+                else TransferBand.FAR
+                if task.difficulty_band is TaskDifficultyBand.TRANSFER_FAR
+                else TransferBand.HIDDEN
+            ),
+            episode_run=_passing_run(task=task),
+        )
+        for task in suite.tasks
+    )
     report = evaluate_transfer_challenge(
         report_id="report-transfer",
         suite=suite,
-        trials=tuple(_passing_trial(task) for task in suite.tasks),
+        trials=trials,
     )
 
     assert report.decision is TransferClaimDecision.TRANSFER_DEMONSTRATED
-    assert report.ready
-    assert report.replayable_pass_count == 5
-    assert report.pass_count_for_band(TransferBand.HIDDEN) == 1
-    assert report.fingerprint() == report.fingerprint()
+    assert report.pass_count == 3
+    assert report.hidden_pass_count == 1
 
 
-def test_transfer_challenge_rejects_original_task_only_result() -> None:
+def test_transfer_report_needs_hidden_validation() -> None:
     suite = _suite()
-    seed_task = suite.tasks[0]
-    report = evaluate_transfer_challenge(
-        report_id="report-original-only",
-        suite=suite,
-        trials=(
-            _passing_trial(seed_task),
-            *(
-                build_transfer_trial_record(
-                    trial_id=f"{task.task_id}:trial",
-                    task=task,
-                    run=_run_for_task(task),
-                    observed_feature_ids=("wrong-feature",),
-                    evidence_ids=(f"{task.task_id}:trial-evidence",),
-                )
-                for task in suite.tasks[1:]
+    tasks = suite.tasks[:2]
+    trials = tuple(
+        build_transfer_trial(
+            trial_id=f"trial-{task.task_id}",
+            task=task,
+            band=(
+                TransferBand.NEAR
+                if task.difficulty_band is TaskDifficultyBand.TRANSFER_NEAR
+                else TransferBand.FAR
             ),
-        ),
+            episode_run=_passing_run(task=task),
+        )
+        for task in tasks
+    )
+    report = evaluate_transfer_challenge(
+        report_id="report-needs-hidden",
+        suite=suite,
+        trials=trials,
     )
 
     assert report.decision is TransferClaimDecision.NEEDS_HIDDEN_VALIDATION
-    assert not report.ready
-    assert "missing-hidden-validation-pass" in report.findings
+    assert "missing-required-band:hidden" in report.findings
 
 
-def test_transfer_challenge_blocks_missing_suite_task_trials() -> None:
+def test_transfer_report_blocks_with_failed_trial() -> None:
+    task = _task("task-unmeasured", TaskDifficultyBand.TRANSFER_NEAR)
+    run = run_single_step_episode(
+        run_id="run-unmeasured",
+        step_id="step-unmeasured",
+        output_id="output-unmeasured",
+        draft_id="draft-unmeasured",
+        action_id="action-unmeasured",
+        frame_id="frame-unmeasured",
+        environment=_environment(),
+        observation=task.initial_observation,
+        adapter=_adapter(),
+        result=None,
+    )
     suite = _suite()
+    trial = build_transfer_trial(
+        trial_id="trial-unmeasured",
+        task=task,
+        band=TransferBand.NEAR,
+        episode_run=run,
+    )
     report = evaluate_transfer_challenge(
-        report_id="report-missing",
+        report_id="report-blocked",
         suite=suite,
-        trials=(_passing_trial(suite.tasks[0]),),
+        trials=(trial,),
     )
 
     assert report.decision is TransferClaimDecision.BLOCKED
-    assert not report.ready
-    assert any(
-        finding.startswith("missing-suite-task-trials")
-        for finding in report.findings
-    )
-
-
-def test_transfer_challenge_report_rejects_duplicate_trial_ids() -> None:
-    suite = _suite()
-    trial = _passing_trial(suite.tasks[0])
-
-    with pytest.raises(ValueError, match="Duplicate trial_id"):
-        evaluate_transfer_challenge(
-            report_id="report-duplicate",
-            suite=UnknownTaskSuite(
-                suite_id="suite-one-task",
-                purpose="Duplicate trial id rejection.",
-                tasks=(suite.tasks[0],),
-                evidence_ids=("suite-evidence-duplicate",),
-            ),
-            trials=(trial, trial),
-        )
+    assert report.blocked_count == 1
