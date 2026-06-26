@@ -52,6 +52,7 @@ class EvidenceArtifactKind(StrEnum):
     RELEASE_MANIFEST = "release-manifest"
     NEGATIVE_CONTROL_REPORT = "negative-control-report"
     READINESS_SCORECARD = "readiness-scorecard"
+    EVIDENCE_INDEX = "evidence-index"
 
 
 class EvidenceIndexEntryStatus(StrEnum):
