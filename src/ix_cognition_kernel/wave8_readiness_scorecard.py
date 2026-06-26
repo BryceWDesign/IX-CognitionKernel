@@ -245,9 +245,11 @@ class Wave8ReadinessScorecard:
                 "Wave 8 readiness scorecards are missing dimensions: "
                 f"{','.join(missing)}"
             )
-        if self.decision is not Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF:
-            if not self.findings:
-                raise ValueError("Non-ready scorecards require findings.")
+        if (
+            self.decision is not Wave8ReadinessDecision.READY_FOR_REVIEW_HANDOFF
+            and not self.findings
+        ):
+            raise ValueError("Non-ready scorecards require findings.")
 
     @property
     def ready(self) -> bool:
