@@ -142,7 +142,9 @@ class WorldModelRule:
         object.__setattr__(
             self,
             "source_trial_ids",
-            _normalize_unique_text_tuple(self.source_trial_ids, label="source_trial_id"),
+            _normalize_unique_text_tuple(
+                self.source_trial_ids, label="source_trial_id"
+            ),
         )
         object.__setattr__(
             self,
@@ -418,9 +420,11 @@ class WorldRuleApplicationPlan:
             "schema_version",
             _require_non_empty(self.schema_version, "schema_version"),
         )
-        if self.decision is not WorldRuleApplicationDecision.APPLICATION_READY:
-            if not self.findings:
-                raise ValueError("Non-ready world-rule applications require findings.")
+        if (
+            self.decision is not WorldRuleApplicationDecision.APPLICATION_READY
+            and not self.findings
+        ):
+            raise ValueError("Non-ready world-rule applications require findings.")
 
     @property
     def ready(self) -> bool:
@@ -462,24 +466,34 @@ def derive_world_rule_from_trials(
     trial_tuple = tuple(trials)
     if not trial_tuple:
         raise ValueError("World-rule derivation requires transfer trials.")
-    antecedents = tuple(
-        feature
-        for trial in trial_tuple
-        for feature in trial.task.initial_observation.visible_features
+    antecedents = _dedupe_text_tuple(
+        (
+            feature
+            for trial in trial_tuple
+            for feature in trial.task.initial_observation.visible_features
+        ),
+        label="antecedent_feature",
     )
-    action_ids = tuple(
-        operation
-        for trial in trial_tuple
-        if (operation := _expected_operation_from_task(trial.task))
+    action_ids = _dedupe_text_tuple(
+        (
+            operation
+            for trial in trial_tuple
+            if (operation := _expected_operation_from_task(trial.task))
+        ),
+        label="action_id",
     )
-    expected_consequences = tuple(
-        feature for trial in trial_tuple for feature in trial.expected_feature_ids
+    expected_consequences = _dedupe_text_tuple(
+        (feature for trial in trial_tuple for feature in trial.expected_feature_ids),
+        label="expected_consequence",
     )
-    exception_features = tuple(
-        feature
-        for trial in trial_tuple
-        if trial.status is TransferTrialStatus.REPLAYABLE_FAIL
-        for feature in trial.observed_feature_ids
+    exception_features = _dedupe_text_tuple(
+        (
+            feature
+            for trial in trial_tuple
+            if trial.status is TransferTrialStatus.REPLAYABLE_FAIL
+            for feature in trial.observed_feature_ids
+        ),
+        label="exception_feature",
     )
     confidence = _confidence_from_trials(trial_tuple)
     combined_evidence = (
@@ -541,7 +555,9 @@ def build_world_model_update(
         decision = WorldModelUpdateDecision.REVOKE_CONTRADICTED_RULE
     elif "contradicting-trial-present" in findings:
         decision = WorldModelUpdateDecision.QUARANTINE_CONTRADICTION
-    elif "unmeasured-trial-present" in findings or "missing-supporting-trial" in findings:
+    elif (
+        "unmeasured-trial-present" in findings or "missing-supporting-trial" in findings
+    ):
         decision = WorldModelUpdateDecision.RECORD_HYPOTHESIS
     elif _has_transfer_support(trial_tuple):
         decision = WorldModelUpdateDecision.PROMOTE_TRANSFER_SUPPORTED_RULE
@@ -643,7 +659,11 @@ def _confidence_from_trials(
 
 
 def _has_transfer_support(trials: tuple[TransferTrialRecord, ...]) -> bool:
-    bands = {trial.band for trial in trials if trial.status is TransferTrialStatus.REPLAYABLE_PASS}
+    bands = {
+        trial.band
+        for trial in trials
+        if trial.status is TransferTrialStatus.REPLAYABLE_PASS
+    }
     return bool({TransferBand.NEAR, TransferBand.FAR, TransferBand.HIDDEN} & bands)
 
 
