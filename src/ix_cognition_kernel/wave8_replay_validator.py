@@ -272,7 +272,9 @@ def artifact_from_transfer_report(
         source_fingerprint=report.fingerprint(),
         status=status,
         evidence_ids=tuple(evidence_ids),
-        summary=f"Transfer report {report.report_id} decision {report.decision.value}.",
+        summary=(
+            f"Transfer report {report.report_id} decision {report.decision.value}."
+        ),
     )
 
 
@@ -377,7 +379,9 @@ def validate_replay_packet(
         for artifact in artifact_tuple
     ):
         findings.append("overclaim-artifact-present")
-    if any(artifact.status is ReplayArtifactStatus.BLOCKED for artifact in artifact_tuple):
+    if any(
+        artifact.status is ReplayArtifactStatus.BLOCKED for artifact in artifact_tuple
+    ):
         findings.append("blocked-artifact-present")
     if any(
         artifact.status is ReplayArtifactStatus.NEEDS_MEASURED_RESULT
