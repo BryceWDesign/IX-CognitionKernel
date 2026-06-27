@@ -1,355 +1,295 @@
-"""Tests for Wave 8 baseline comparison."""
-
-from __future__ import annotations
-
 import pytest
 
 from ix_cognition_kernel.wave8_baseline_comparison import (
     BaselineComparisonDecision,
-    BaselineMetric,
-    BaselineMetricDirection,
-    BaselineMetricRecord,
-    BaselineSystemRecord,
-    build_baseline_report,
-    build_metric_record,
+    BaselineImprovementDecision,
+    BaselineSystemKind,
+    build_baseline_outcome_record,
+    compare_baseline_pair,
+    evaluate_baseline_comparison,
 )
-from ix_cognition_kernel.wave8_curriculum_frontier import (
-    CurriculumFrontier,
-    FrontierPressure,
-)
-from ix_cognition_kernel.wave8_environment_protocol import (
-    ActionAssessment,
-    BoundedEnvironmentSpec,
-    EnvironmentAction,
-    EnvironmentActionResult,
-    EnvironmentObservation,
-    build_environment_replay_frame,
-)
+from ix_cognition_kernel.wave8_environment_protocol import EnvironmentActionResult
 from ix_cognition_kernel.wave8_episode_runner import run_single_step_episode
 from ix_cognition_kernel.wave8_model_adapter import (
     DeterministicModelAdapter,
-    ModelAdapterMode,
+    DeterministicModelPolicy,
 )
 from ix_cognition_kernel.wave8_task_suite import (
-    TaskDifficultyBand,
-    UnknownTaskInstance,
-)
-from ix_cognition_kernel.wave8_transfer_challenge import (
-    TransferBand,
-    build_transfer_trial,
-    evaluate_transfer_challenge,
+    TaskDifficulty,
+    TaskDisclosureLevel,
+    build_grid_transition_task,
+    build_grid_transition_template,
 )
 
 
-def _environment() -> BoundedEnvironmentSpec:
-    return BoundedEnvironmentSpec(
-        environment_id="env-baseline",
-        name="Baseline Grid",
-        version="1.0",
-        supported_action_kinds=("move",),
-        observable_feature_ids=("agent:0,0", "goal:1,0", "agent:1,0", "goal-reached"),
-        terminal_feature_ids=("goal-reached",),
-        forbidden_action_patterns=("delete-world",),
-    )
+def _template():
+    return build_grid_transition_template(template_id="grid-template-1")
 
 
-def _observation(
-    *,
-    observation_id: str = "obs-baseline",
-    episode_id: str = "episode-baseline",
-) -> EnvironmentObservation:
-    return EnvironmentObservation(
-        observation_id=observation_id,
-        environment_id="env-baseline",
-        episode_id=episode_id,
-        visible_features=("agent:0,0", "goal:1,0"),
-        hidden_feature_count=1,
-    )
-
-
-def _task(*, task_id: str, band: TaskDifficultyBand) -> UnknownTaskInstance:
-    return UnknownTaskInstance(
+def _task(task_id: str, difficulty: TaskDifficulty, operation_id: str = "move-east"):
+    disclosure = TaskDisclosureLevel.PARTIALLY_WITHHELD
+    if difficulty is TaskDifficulty.HIDDEN_VALIDATION:
+        disclosure = TaskDisclosureLevel.HIDDEN_GOAL
+    return build_grid_transition_task(
         task_id=task_id,
-        environment_id="env-baseline",
-        difficulty_band=band,
-        initial_observation=_observation(
-            observation_id=f"obs-{task_id}",
-            episode_id=f"episode-{task_id}",
-        ),
-        allowed_action_kinds=("move",),
-        expected_outcome_features=("goal-reached", "operation:move-east"),
-        novelty_factors=("new-start",),
-        transfer_tags=("grid-move", "spatial-transfer"),
-        evidence_ids=(f"evidence-{task_id}",),
+        template=_template(),
+        episode_id=f"{task_id}:episode",
+        start_state_id=f"{task_id}:state-0",
+        empty_direction="east",
+        expected_operation_id=operation_id,
+        difficulty=difficulty,
+        disclosure_level=disclosure,
     )
 
 
-def _adapter() -> DeterministicModelAdapter:
+def _adapter(operation_id: str = "move-east") -> DeterministicModelAdapter:
     return DeterministicModelAdapter(
-        adapter_id="adapter-baseline",
-        mode=ModelAdapterMode.REPLAY_SCRIPT,
-        supported_action_kinds=("move",),
-        policy={
-            "agent:0,0|goal:1,0": {
-                "kind": "move",
-                "parameters": {"direction": "east"},
-                "confidence": 0.88,
-                "rationale": "Move east toward the goal.",
-            }
-        },
+        adapter_id=f"adapter:{operation_id}",
+        policy=DeterministicModelPolicy(
+            policy_id=f"policy:{operation_id}",
+            supported_environment_ids=("env-unused",),
+            operation_preferences=(operation_id,),
+            rationale_template="Use {operation_id} from {state_id}.",
+            expected_effect_template="{operation_id} should change the bounded state.",
+            evidence_ids=(f"policy-evidence:{operation_id}",),
+            assumptions=("visible-state-is-current",),
+            uncertainty_ids=("uncertainty-grid-transition",),
+        ),
     )
 
 
-def _passing_action(
-    *,
-    action_id: str,
-    observation: EnvironmentObservation,
-) -> EnvironmentAction:
-    assessment = ActionAssessment(
-        action_id=action_id,
-        environment_id="env-baseline",
-        approved=True,
-        reasons=("allowed-action-kind",),
-        blocked_reasons=(),
-    )
-    return EnvironmentAction(
-        action_id=action_id,
-        environment_id="env-baseline",
-        episode_id=observation.episode_id,
-        kind="move",
-        parameters=(("direction", "east"),),
-        assessment=assessment,
-    )
-
-
-def _passing_result(
-    *,
-    result_id: str,
-    action: EnvironmentAction,
-) -> EnvironmentActionResult:
+def _result(task_id: str, *, measured: bool = True) -> EnvironmentActionResult:
     return EnvironmentActionResult(
-        result_id=result_id,
-        action_id=action.action_id,
-        environment_id="env-baseline",
-        episode_id=action.episode_id,
-        next_features=("agent:1,0", "goal-reached"),
-        measured_reward=1.0,
-        terminal=True,
+        result_id=f"{task_id}:result",
+        action_id=f"{task_id}:action",
+        environment_id=f"{task_id}:environment",
+        episode_id=f"{task_id}:episode",
+        prior_state_id=f"{task_id}:state-0",
+        resulting_state_id=f"{task_id}:state-1",
+        outcome_summary="The bounded task produced a transition.",
+        score_delta=1.0,
+        evidence_ids=(f"{task_id}:result-evidence",),
+        measured=measured,
     )
 
 
-def _replayable_run(*, run_id: str, task: UnknownTaskInstance) -> object:
-    observation = task.initial_observation
-    action = _passing_action(
-        action_id=f"action-{task.task_id}",
-        observation=observation,
-    )
-    result = _passing_result(
-        result_id=f"result-{task.task_id}",
-        action=action,
-    )
+def _run_for_task(task, *, operation_id: str = "move-east", measured: bool = True):
     return run_single_step_episode(
-        run_id=run_id,
-        step_id=f"step-{task.task_id}",
-        output_id=f"output-{task.task_id}",
-        draft_id=f"draft-{task.task_id}",
-        action_id=action.action_id,
-        frame_id=f"frame-{task.task_id}",
-        environment=_environment(),
-        observation=observation,
-        adapter=_adapter(),
-        result=result,
+        run_id=f"{task.task_id}:run:{operation_id}:{measured}",
+        step_id=f"{task.task_id}:step:{operation_id}:{measured}",
+        output_id=f"{task.task_id}:output:{operation_id}:{measured}",
+        draft_id=f"{task.task_id}:draft:{operation_id}:{measured}",
+        action_id=f"{task.task_id}:action",
+        frame_id=f"{task.task_id}:frame:{operation_id}:{measured}",
+        environment=task.environment,
+        observation=task.initial_observation,
+        adapter=_adapter(operation_id),
+        result=_result(task.task_id, measured=measured),
     )
 
 
-def _passing_transfer_report() -> object:
-    near = _task(task_id="task-near", band=TaskDifficultyBand.TRANSFER_NEAR)
-    far = _task(task_id="task-far", band=TaskDifficultyBand.TRANSFER_FAR)
-    hidden = _task(task_id="task-hidden", band=TaskDifficultyBand.HIDDEN)
-    trials = (
-        build_transfer_trial(
-            trial_id="trial-near",
-            task=near,
-            band=TransferBand.NEAR,
-            episode_run=_replayable_run(run_id="run-near", task=near),
-        ),
-        build_transfer_trial(
-            trial_id="trial-far",
-            task=far,
-            band=TransferBand.FAR,
-            episode_run=_replayable_run(run_id="run-far", task=far),
-        ),
-        build_transfer_trial(
-            trial_id="trial-hidden",
-            task=hidden,
-            band=TransferBand.HIDDEN,
-            episode_run=_replayable_run(run_id="run-hidden", task=hidden),
-        ),
-    )
-    return evaluate_transfer_challenge(
-        report_id="transfer-report-baseline",
-        suite=CurriculumFrontier(
-            frontier_id="frontier-baseline",
-            purpose="Baseline comparison transfer pressure.",
-            pressures=(
-                FrontierPressure(
-                    pressure_id="pressure-baseline",
-                    target_skill="move-east",
-                    difficulty_band=TaskDifficultyBand.TRANSFER_NEAR,
-                    transfer_tags=("grid-move",),
-                    required_feature_ids=("goal-reached",),
-                    forbidden_shortcuts=("memorized-start",),
-                ),
-            ),
-            tasks=(near, far, hidden),
-            evidence_ids=("frontier-evidence-1",),
-        ),
-        trials=trials,
+def _outcome(task, system_kind, observed, operation_id="move-east", measured=True):
+    return build_baseline_outcome_record(
+        outcome_id=f"{task.task_id}:{system_kind.value}:outcome",
+        system_kind=system_kind,
+        task=task,
+        run=_run_for_task(task, operation_id=operation_id, measured=measured),
+        observed_feature_ids=observed,
+        evidence_ids=(f"{task.task_id}:{system_kind.value}:evidence",),
     )
 
 
-def test_metric_record_scores_improvement_for_higher_is_better() -> None:
-    metric = build_metric_record(
-        metric_id="metric-transfer-rate",
-        metric=BaselineMetric.TRANSFER_SUCCESS_RATE,
-        direction=BaselineMetricDirection.HIGHER_IS_BETTER,
-        candidate_value=0.9,
-        baseline_value=0.5,
-        evidence_ids=("metric-evidence-1",),
+def test_baseline_outcome_scores_feature_matches() -> None:
+    task = _task("task-near", TaskDifficulty.NEAR_TRANSFER)
+    outcome = _outcome(
+        task,
+        BaselineSystemKind.COGNITION_KERNEL,
+        task.expected_outcome_features,
     )
 
-    assert metric.improved
-    assert metric.delta == pytest.approx(0.4)
-    assert len(metric.fingerprint()) == 64
+    assert outcome.score == 1.0
+    assert outcome.matched_feature_count == len(task.expected_outcome_features)
+    assert outcome.missed_feature_count == 0
+    assert outcome.fingerprint() == outcome.fingerprint()
+    assert len(outcome.fingerprint()) == 64
 
 
-def test_metric_record_scores_improvement_for_lower_is_better() -> None:
-    metric = build_metric_record(
-        metric_id="metric-failure-rate",
-        metric=BaselineMetric.FAILURE_RATE,
-        direction=BaselineMetricDirection.LOWER_IS_BETTER,
-        candidate_value=0.1,
-        baseline_value=0.4,
-        evidence_ids=("metric-evidence-1",),
+def test_compare_baseline_pair_detects_candidate_improvement() -> None:
+    task = _task("task-near", TaskDifficulty.NEAR_TRANSFER)
+    baseline = _outcome(
+        task,
+        BaselineSystemKind.MODEL_ALONE,
+        ("wrong-feature",),
+    )
+    candidate = _outcome(
+        task,
+        BaselineSystemKind.COGNITION_KERNEL,
+        task.expected_outcome_features,
     )
 
-    assert metric.improved
-    assert metric.delta == pytest.approx(0.3)
-
-
-def test_metric_record_rejects_invalid_numeric_values() -> None:
-    with pytest.raises(ValueError, match="candidate_value must be finite"):
-        build_metric_record(
-            metric_id="metric-invalid",
-            metric=BaselineMetric.REPLAYABLE_EPISODE_COUNT,
-            direction=BaselineMetricDirection.HIGHER_IS_BETTER,
-            candidate_value=float("nan"),
-            baseline_value=1.0,
-            evidence_ids=("metric-evidence-1",),
-        )
-
-
-def test_metric_record_rejects_empty_evidence() -> None:
-    with pytest.raises(ValueError, match="require evidence ids"):
-        build_metric_record(
-            metric_id="metric-no-evidence",
-            metric=BaselineMetric.REPLAYABLE_EPISODE_COUNT,
-            direction=BaselineMetric.HIGHER_IS_BETTER,
-            candidate_value=2.0,
-            baseline_value=1.0,
-            evidence_ids=(),
-        )
-
-
-def test_baseline_report_demonstrates_improvement() -> None:
-    report = _passing_transfer_report()
-    baseline = BaselineSystemRecord(
-        baseline_id="baseline-static",
-        name="Static prompt baseline",
-        version="0.1",
-        replayable_episode_count=1,
-        transfer_success_rate=0.2,
-        hidden_success_rate=0.1,
-        failure_rate=0.8,
-        evidence_ids=("baseline-evidence-1",),
-    )
-    candidate = BaselineSystemRecord(
-        baseline_id="candidate-wave8",
-        name="Wave 8 bounded learner",
-        version="0.1",
-        replayable_episode_count=3,
-        transfer_success_rate=1.0,
-        hidden_success_rate=1.0,
-        failure_rate=0.0,
-        evidence_ids=("candidate-evidence-1",),
-    )
-
-    baseline_report = build_baseline_report(
-        report_id="baseline-report-1",
-        transfer_report=report,
+    pair = compare_baseline_pair(
+        pair_id="pair-improved",
+        baseline=baseline,
         candidate=candidate,
+    )
+
+    assert pair.improved
+    assert pair.decision is BaselineImprovementDecision.CANDIDATE_IMPROVED
+    assert pair.score_delta == 1.0
+    assert pair.findings == ()
+
+
+def test_compare_baseline_pair_detects_candidate_tie_and_regression() -> None:
+    task = _task("task-near", TaskDifficulty.NEAR_TRANSFER)
+    baseline_pass = _outcome(
+        task,
+        BaselineSystemKind.MODEL_ALONE,
+        task.expected_outcome_features,
+    )
+    candidate_pass = _outcome(
+        task,
+        BaselineSystemKind.COGNITION_KERNEL,
+        task.expected_outcome_features,
+    )
+    candidate_fail = _outcome(
+        task,
+        BaselineSystemKind.COGNITION_KERNEL,
+        ("wrong-feature",),
+    )
+
+    tied_pair = compare_baseline_pair(
+        pair_id="pair-tie",
+        baseline=baseline_pass,
+        candidate=candidate_pass,
+    )
+    regressed_pair = compare_baseline_pair(
+        pair_id="pair-regressed",
+        baseline=baseline_pass,
+        candidate=candidate_fail,
+    )
+
+    assert tied_pair.decision is BaselineImprovementDecision.CANDIDATE_TIED_BASELINE
+    assert "candidate-tied-baseline" in tied_pair.findings
+    assert regressed_pair.decision is BaselineImprovementDecision.CANDIDATE_REGRESSED
+    assert "candidate-score-below-baseline" in regressed_pair.findings
+
+
+def test_compare_baseline_pair_requires_replayable_evidence() -> None:
+    task = _task("task-near", TaskDifficulty.NEAR_TRANSFER)
+    baseline = _outcome(
+        task,
+        BaselineSystemKind.MODEL_ALONE,
+        ("wrong-feature",),
+        measured=False,
+    )
+    candidate = _outcome(
+        task,
+        BaselineSystemKind.COGNITION_KERNEL,
+        task.expected_outcome_features,
+    )
+
+    pair = compare_baseline_pair(
+        pair_id="pair-unmeasured",
         baseline=baseline,
-        evidence_ids=("comparison-evidence-1",),
-    )
-
-    assert baseline_report.decision is BaselineComparisonDecision.IMPROVEMENT_DEMONSTRATED
-    assert baseline_report.improved_metric_count == 4
-    assert not baseline_report.regressed_metrics
-
-
-def test_baseline_report_detects_regression() -> None:
-    report = _passing_transfer_report()
-    baseline = BaselineSystemRecord(
-        baseline_id="baseline-strong",
-        name="Strong baseline",
-        version="1.0",
-        replayable_episode_count=5,
-        transfer_success_rate=1.0,
-        hidden_success_rate=1.0,
-        failure_rate=0.0,
-        evidence_ids=("baseline-evidence-1",),
-    )
-    candidate = BaselineSystemRecord(
-        baseline_id="candidate-weak",
-        name="Weak candidate",
-        version="0.1",
-        replayable_episode_count=1,
-        transfer_success_rate=0.2,
-        hidden_success_rate=0.1,
-        failure_rate=0.9,
-        evidence_ids=("candidate-evidence-1",),
-    )
-
-    baseline_report = build_baseline_report(
-        report_id="baseline-report-regression",
-        transfer_report=report,
         candidate=candidate,
-        baseline=baseline,
-        evidence_ids=("comparison-evidence-1",),
     )
 
-    assert baseline_report.decision is BaselineComparisonDecision.REGRESSION_DETECTED
-    assert baseline_report.regressed_metrics
-
-
-def test_baseline_report_needs_transfer_before_comparison() -> None:
-    baseline = BaselineSystemRecord(
-        baseline_id="baseline-static",
-        name="Static prompt baseline",
-        version="0.1",
-        replayable_episode_count=1,
-        transfer_success_rate=0.2,
-        hidden_success_rate=0.1,
-        failure_rate=0.8,
-        evidence_ids=("baseline-evidence-1",),
+    assert pair.decision is BaselineImprovementDecision.NEEDS_REPLAYABLE_EVIDENCE
+    assert any(
+        finding.startswith("baseline-not-replayable") for finding in pair.findings
     )
 
-    baseline_report = build_baseline_report(
-        report_id="baseline-report-blocked",
-        transfer_report=_passing_transfer_report(),
-        candidate=baseline,
-        baseline=baseline,
-        evidence_ids=("comparison-evidence-1",),
+
+def test_baseline_comparison_report_demonstrates_improvement_across_pairs() -> None:
+    first_task = _task("task-near", TaskDifficulty.NEAR_TRANSFER)
+    second_task = _task("task-far", TaskDifficulty.FAR_TRANSFER)
+    first_pair = compare_baseline_pair(
+        pair_id="pair-first",
+        baseline=_outcome(
+            first_task,
+            BaselineSystemKind.MODEL_ALONE,
+            ("wrong-feature",),
+        ),
+        candidate=_outcome(
+            first_task,
+            BaselineSystemKind.COGNITION_KERNEL,
+            first_task.expected_outcome_features,
+        ),
+    )
+    second_pair = compare_baseline_pair(
+        pair_id="pair-second",
+        baseline=_outcome(
+            second_task,
+            BaselineSystemKind.MODEL_ALONE,
+            ("wrong-feature",),
+        ),
+        candidate=_outcome(
+            second_task,
+            BaselineSystemKind.COGNITION_KERNEL,
+            second_task.expected_outcome_features,
+        ),
     )
 
-    assert baseline_report.decision is BaselineComparisonDecision.NO_IMPROVEMENT
+    report = evaluate_baseline_comparison(
+        report_id="report-improved",
+        purpose="Compare kernel-assisted task outcomes against model-alone outcomes.",
+        pairs=(first_pair, second_pair),
+    )
+
+    assert report.ready
+    assert report.decision is BaselineComparisonDecision.IMPROVEMENT_DEMONSTRATED
+    assert report.improved_pair_count == 2
+    assert report.findings == ()
+    assert report.fingerprint() == report.fingerprint()
+
+
+def test_baseline_comparison_report_detects_regression_and_small_sample() -> None:
+    task = _task("task-near", TaskDifficulty.NEAR_TRANSFER)
+    regressed_pair = compare_baseline_pair(
+        pair_id="pair-regressed",
+        baseline=_outcome(
+            task,
+            BaselineSystemKind.MODEL_ALONE,
+            task.expected_outcome_features,
+        ),
+        candidate=_outcome(
+            task,
+            BaselineSystemKind.COGNITION_KERNEL,
+            ("wrong-feature",),
+        ),
+    )
+
+    report = evaluate_baseline_comparison(
+        report_id="report-regressed",
+        purpose="Compare candidate against baseline without hiding regression.",
+        pairs=(regressed_pair,),
+    )
+
+    assert not report.ready
+    assert report.decision is BaselineComparisonDecision.REGRESSION_DETECTED
+    assert report.regression_pair_count == 1
+    assert "candidate-regression-present" in report.findings
+
+
+def test_baseline_report_rejects_overclaiming_purpose() -> None:
+    task = _task("task-near", TaskDifficulty.NEAR_TRANSFER)
+    pair = compare_baseline_pair(
+        pair_id="pair-first",
+        baseline=_outcome(
+            task,
+            BaselineSystemKind.MODEL_ALONE,
+            ("wrong-feature",),
+        ),
+        candidate=_outcome(
+            task,
+            BaselineSystemKind.COGNITION_KERNEL,
+            task.expected_outcome_features,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="blocked overclaiming"):
+        evaluate_baseline_comparison(
+            report_id="report-overclaim",
+            purpose="This proves AGI.",
+            pairs=(pair,),
+        )
