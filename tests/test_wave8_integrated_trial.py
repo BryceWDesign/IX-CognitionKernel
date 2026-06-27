@@ -1,124 +1,76 @@
-"""Integration tests for Wave 8 bounded cognition trial chain."""
+import pytest
 
-from __future__ import annotations
-
-from tests.test_wave8_transfer_challenge import _environment
-from tests.test_wave8_transfer_challenge import _passing_run as passing_run
-from tests.test_wave8_transfer_challenge import _suite
-from ix_cognition_kernel.wave8_baseline_comparison import (
-    BaselineSystemRecord,
-    build_baseline_report,
+from ix_cognition_kernel.wave8_integrated_trial import (
+    IntegratedWave8TrialResult,
+    build_integrated_wave8_trial,
 )
-from ix_cognition_kernel.wave8_replay_validator import (
-    artifact_from_baseline_report,
-    artifact_from_episode_run,
-    artifact_from_transfer_report,
-    validate_replay_packet,
-)
-from ix_cognition_kernel.wave8_skill_synthesis import (
-    create_skill_library_entry,
-    plan_skill_reuse,
-    synthesize_skill_candidate,
-    validate_skill_candidate,
-)
-from ix_cognition_kernel.wave8_transfer_challenge import (
-    TransferClaimDecision,
-    build_transfer_trial,
-    evaluate_transfer_challenge,
-)
+from ix_cognition_kernel.wave8_release_manifest import Wave8ReleaseDecision
 
 
-def test_wave8_integrated_trial_promotes_replayable_transfer_skill() -> None:
-    suite = _suite()
-    trials = tuple(
-        build_transfer_trial(
-            trial_id=f"trial-{task.task_id}",
-            task=task,
-            band=task.difficulty_band.value,
-            episode_run=passing_run(task=task),
+def test_integrated_wave8_trial_builds_ready_review_handoff_chain() -> None:
+    result = build_integrated_wave8_trial(
+        trial_id="integrated-trial-1",
+        human_authority_evidence_ids=("human-authority-evidence-1",),
+    )
+
+    assert result.ready
+    assert result.transfer_report.ready
+    assert result.skill_validation.ready
+    assert result.skill_entry.reusable
+    assert result.world_snapshot.active_rules
+    assert result.baseline_report.ready
+    assert result.replay_report.ready
+    assert result.external_review_packet.ready
+    assert result.release_manifest.ready
+    assert (
+        result.release_manifest.decision
+        is Wave8ReleaseDecision.READY_FOR_REVIEW_HANDOFF
+    )
+    assert len(result.runs) == result.suite.task_count
+    assert result.fingerprint() == result.fingerprint()
+    assert len(result.fingerprint()) == 64
+
+
+def test_integrated_wave8_trial_requires_human_authority_evidence() -> None:
+    with pytest.raises(ValueError, match="ready release manifest"):
+        build_integrated_wave8_trial(
+            trial_id="integrated-trial-no-human-authority",
+            human_authority_evidence_ids=(),
         )
-        for task in suite.tasks
-    )
-    transfer_report = evaluate_transfer_challenge(
-        report_id="integrated-transfer",
-        suite=suite,
-        trials=trials,
-    )
-    assert transfer_report.decision is TransferClaimDecision.TRANSFER_DEMONSTRATED
 
-    skill = synthesize_skill_candidate(
-        skill_id="skill-integrated",
-        name="Bounded grid move skill",
-        purpose="Reuse measured grid movement under bounded review.",
-        trials=trials,
-        evidence_ids=("skill-evidence",),
-    )
-    validation = validate_skill_candidate(
-        validation_id="validation-integrated",
-        candidate=skill,
-        transfer_report=transfer_report,
-    )
-    entry = create_skill_library_entry(
-        entry_id="entry-integrated",
-        validation=validation,
-        evidence_ids=("library-evidence",),
-    )
-    reuse_plan = plan_skill_reuse(
-        plan_id="reuse-integrated",
-        entry=entry,
-        task=suite.tasks[0],
+
+def test_integrated_wave8_trial_result_rejects_missing_run_coverage() -> None:
+    result = build_integrated_wave8_trial(
+        trial_id="integrated-trial-coverage",
+        human_authority_evidence_ids=("human-authority-evidence-1",),
     )
 
-    baseline = BaselineSystemRecord(
-        baseline_id="baseline-integrated",
-        name="Static baseline",
-        version="0.1",
-        replayable_episode_count=1,
-        transfer_success_rate=0.2,
-        hidden_success_rate=0.1,
-        failure_rate=0.8,
-        evidence_ids=("baseline-evidence",),
+    with pytest.raises(ValueError, match="must cover every suite task"):
+        IntegratedWave8TrialResult(
+            trial_id="integrated-trial-bad-coverage",
+            suite=result.suite,
+            task_validation_fingerprint=result.task_validation_fingerprint,
+            runs=result.runs[:-1],
+            transfer_report=result.transfer_report,
+            skill_validation=result.skill_validation,
+            skill_entry=result.skill_entry,
+            world_snapshot=result.world_snapshot,
+            baseline_report=result.baseline_report,
+            replay_report=result.replay_report,
+            external_review_packet=result.external_review_packet,
+            release_manifest=result.release_manifest,
+        )
+
+
+def test_integrated_wave8_trial_result_has_stable_payload_references() -> None:
+    first = build_integrated_wave8_trial(
+        trial_id="integrated-trial-stable",
+        human_authority_evidence_ids=("human-authority-evidence-1",),
     )
-    candidate = BaselineSystemRecord(
-        baseline_id="candidate-integrated",
-        name="Wave 8 candidate",
-        version="0.1",
-        replayable_episode_count=3,
-        transfer_success_rate=1.0,
-        hidden_success_rate=1.0,
-        failure_rate=0.0,
-        evidence_ids=("candidate-evidence",),
-    )
-    baseline_report = build_baseline_report(
-        report_id="baseline-integrated",
-        transfer_report=transfer_report,
-        candidate=candidate,
-        baseline=baseline,
-        evidence_ids=("baseline-report-evidence",),
-    )
-    replay_report = validate_replay_packet(
-        report_id="replay-integrated",
-        purpose="Validate bounded replay chain for review.",
-        artifacts=(
-            artifact_from_episode_run(
-                artifact_id="artifact-episode",
-                run=passing_run(task=suite.tasks[0]),
-                evidence_ids=("episode-evidence",),
-            ),
-            artifact_from_transfer_report(
-                artifact_id="artifact-transfer",
-                report=transfer_report,
-                evidence_ids=("transfer-evidence",),
-            ),
-            artifact_from_baseline_report(
-                artifact_id="artifact-baseline",
-                report=baseline_report,
-                evidence_ids=("baseline-evidence",),
-            ),
-        ),
+    second = build_integrated_wave8_trial(
+        trial_id="integrated-trial-stable",
+        human_authority_evidence_ids=("human-authority-evidence-1",),
     )
 
-    assert validation.ready
-    assert reuse_plan.ready
-    assert replay_report.replayable_artifact_count == 3
-    assert _environment().environment_id == "env-transfer"
+    assert first.fingerprint() == second.fingerprint()
+    assert first.canonical_payload() == second.canonical_payload()
