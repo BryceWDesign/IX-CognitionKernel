@@ -328,7 +328,9 @@ def _matches_for_request(
         entries = tuple(entry for entry in entries if entry.kind in requested_kinds)
     elif request.mode is ReviewQueryMode.BY_STATUS:
         requested_statuses = set(request.statuses)
-        entries = tuple(entry for entry in entries if entry.status in requested_statuses)
+        entries = tuple(
+            entry for entry in entries if entry.status in requested_statuses
+        )
     elif request.mode is ReviewQueryMode.BY_TEXT:
         entries = tuple(
             entry for entry in entries if _entry_matches_text_terms(entry, request)
