@@ -178,7 +178,9 @@ def test_build_model_action_draft_creates_bounded_action_when_ready() -> None:
 def test_build_model_action_draft_fails_closed_without_proposal() -> None:
     environment = _environment()
     observation = _observation()
-    output = _adapter(operation_preferences=("write-outside-boundary",)).generate_output(
+    output = _adapter(
+        operation_preferences=("write-outside-boundary",)
+    ).generate_output(
         output_id="model-output-1",
         environment=environment,
         observation=observation,
