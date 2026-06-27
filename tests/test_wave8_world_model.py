@@ -1,240 +1,338 @@
-"""Tests for Wave 8 world model."""
-
-from __future__ import annotations
-
 import pytest
 
-from ix_cognition_kernel.wave8_environment_protocol import (
-    BoundedEnvironmentSpec,
-    EnvironmentActionResult,
-    EnvironmentObservation,
-)
-from ix_cognition_kernel.wave8_episode_runner import BoundedEpisodeRun
+from ix_cognition_kernel.wave8_environment_protocol import EnvironmentActionResult
 from ix_cognition_kernel.wave8_episode_runner import run_single_step_episode
 from ix_cognition_kernel.wave8_model_adapter import (
     DeterministicModelAdapter,
-    ModelAdapterMode,
+    DeterministicModelPolicy,
+)
+from ix_cognition_kernel.wave8_task_suite import (
+    TaskDifficulty,
+    TaskDisclosureLevel,
+    TaskFamily,
+    build_grid_transition_task,
+    build_grid_transition_template,
+)
+from ix_cognition_kernel.wave8_transfer_challenge import (
+    build_transfer_trial_record,
 )
 from ix_cognition_kernel.wave8_world_model import (
-    RevisionDecision,
-    WorldModelDecision,
-    WorldModelRevision,
     WorldModelRule,
-    WorldModelRuleStatus,
-    WorldModelSnapshot,
-    derive_rule_from_episode,
-    revise_world_model,
+    WorldModelUpdateDecision,
+    WorldRuleApplicationDecision,
+    WorldRuleConfidence,
+    WorldRuleKind,
+    build_world_model_snapshot,
+    build_world_model_update,
+    derive_world_rule_from_trials,
+    plan_world_rule_application,
 )
 
 
-def _environment() -> BoundedEnvironmentSpec:
-    return BoundedEnvironmentSpec(
-        environment_id="env-world",
-        name="World Model Grid",
-        version="1.0",
-        supported_action_kinds=("move",),
-        observable_feature_ids=("agent:0,0", "goal:1,0", "agent:1,0", "goal-reached"),
-        terminal_feature_ids=("goal-reached",),
-        forbidden_action_patterns=("network",),
+def _template():
+    return build_grid_transition_template(template_id="grid-template-1")
+
+
+def _task(task_id: str, difficulty: TaskDifficulty, operation_id: str = "move-east"):
+    disclosure = TaskDisclosureLevel.PARTIALLY_WITHHELD
+    if difficulty is TaskDifficulty.HIDDEN_VALIDATION:
+        disclosure = TaskDisclosureLevel.HIDDEN_GOAL
+    return build_grid_transition_task(
+        task_id=task_id,
+        template=_template(),
+        episode_id=f"{task_id}:episode",
+        start_state_id=f"{task_id}:state-0",
+        empty_direction="east",
+        expected_operation_id=operation_id,
+        difficulty=difficulty,
+        disclosure_level=disclosure,
     )
 
 
-def _observation(
-    *,
-    observation_id: str = "obs-world",
-    episode_id: str = "episode-world",
-) -> EnvironmentObservation:
-    return EnvironmentObservation(
-        observation_id=observation_id,
-        environment_id="env-world",
-        episode_id=episode_id,
-        visible_features=("agent:0,0", "goal:1,0"),
-        hidden_feature_count=1,
-    )
-
-
-def _adapter() -> DeterministicModelAdapter:
+def _adapter(operation_id: str = "move-east") -> DeterministicModelAdapter:
     return DeterministicModelAdapter(
-        adapter_id="adapter-world",
-        mode=ModelAdapterMode.REPLAY_SCRIPT,
-        supported_action_kinds=("move",),
-        policy={
-            "agent:0,0|goal:1,0": {
-                "kind": "move",
-                "parameters": {"direction": "east"},
-                "confidence": 0.9,
-                "rationale": "Move east toward goal.",
-            }
-        },
+        adapter_id="deterministic-adapter-1",
+        policy=DeterministicModelPolicy(
+            policy_id="policy-1",
+            supported_environment_ids=("env-unused",),
+            operation_preferences=(operation_id,),
+            rationale_template="Use {operation_id} from {state_id}.",
+            expected_effect_template="{operation_id} should change the bounded state.",
+            evidence_ids=("policy-evidence-1",),
+            assumptions=("visible-state-is-current",),
+            uncertainty_ids=("uncertainty-grid-transition",),
+        ),
     )
 
 
-def _result(
-    *,
-    result_id: str = "result-world",
-    action_id: str = "action-world",
-    episode_id: str = "episode-world",
-) -> EnvironmentActionResult:
+def _result(task_id: str, *, measured: bool = True) -> EnvironmentActionResult:
     return EnvironmentActionResult(
-        result_id=result_id,
-        action_id=action_id,
-        environment_id="env-world",
-        episode_id=episode_id,
-        next_features=("agent:1,0", "goal-reached"),
-        measured_reward=1.0,
-        terminal=True,
+        result_id=f"{task_id}:result",
+        action_id=f"{task_id}:action",
+        environment_id=f"{task_id}:environment",
+        episode_id=f"{task_id}:episode",
+        prior_state_id=f"{task_id}:state-0",
+        resulting_state_id=f"{task_id}:state-1",
+        outcome_summary="The bounded task produced a transition.",
+        score_delta=1.0,
+        evidence_ids=(f"{task_id}:result-evidence",),
+        measured=measured,
     )
 
 
-def _run() -> BoundedEpisodeRun:
+def _run_for_task(task, *, operation_id: str = "move-east"):
     return run_single_step_episode(
-        run_id="run-world",
-        step_id="step-world",
-        output_id="output-world",
-        draft_id="draft-world",
-        action_id="action-world",
-        frame_id="frame-world",
-        environment=_environment(),
-        observation=_observation(),
-        adapter=_adapter(),
-        result=_result(),
+        run_id=f"{task.task_id}:run",
+        step_id=f"{task.task_id}:step",
+        output_id=f"{task.task_id}:output",
+        draft_id=f"{task.task_id}:draft",
+        action_id=f"{task.task_id}:action",
+        frame_id=f"{task.task_id}:frame",
+        environment=task.environment,
+        observation=task.initial_observation,
+        adapter=_adapter(operation_id),
+        result=_result(task.task_id),
     )
 
 
-def test_derive_rule_from_episode_run() -> None:
-    rule = derive_rule_from_episode(
-        rule_id="rule-move-east",
-        episode_run=_run(),
-        evidence_ids=("rule-evidence-1",),
+def _passing_trial(task):
+    return build_transfer_trial_record(
+        trial_id=f"{task.task_id}:trial",
+        task=task,
+        run=_run_for_task(task),
+        observed_feature_ids=task.expected_outcome_features,
+        evidence_ids=(f"{task.task_id}:trial-evidence",),
     )
 
-    assert rule.status is WorldModelRuleStatus.ACTIVE
-    assert rule.precondition_features == ("agent:0,0", "goal:1,0")
-    assert rule.effect_features == ("agent:1,0", "goal-reached")
-    assert rule.confidence == pytest.approx(1.0)
+
+def _failing_trial(task):
+    return build_transfer_trial_record(
+        trial_id=f"{task.task_id}:trial",
+        task=task,
+        run=_run_for_task(task),
+        observed_feature_ids=("wrong-feature",),
+        evidence_ids=(f"{task.task_id}:trial-evidence",),
+    )
+
+
+def test_derive_world_rule_promotes_transfer_supported_confidence() -> None:
+    seed = _task("task-seed", TaskDifficulty.SEED)
+    far = _task("task-far", TaskDifficulty.FAR_TRANSFER)
+    hidden = _task("task-hidden", TaskDifficulty.HIDDEN_VALIDATION)
+    rule = derive_world_rule_from_trials(
+        rule_id="rule-grid-east-transition",
+        statement=(
+            "Visible east-empty grid states support a bounded move-east transition."
+        ),
+        family=TaskFamily.GRID_ABSTRACTION,
+        trials=(_passing_trial(seed), _passing_trial(far), _passing_trial(hidden)),
+        evidence_ids=("world-rule-evidence-1",),
+    )
+
+    assert rule.confidence is WorldRuleConfidence.TRANSFER_SUPPORTED
+    assert rule.transfer_supported
+    assert "move-east" in rule.action_ids
+    assert rule.fingerprint() == rule.fingerprint()
     assert len(rule.fingerprint()) == 64
 
 
-def test_derive_rule_from_unmeasured_episode_is_blocked() -> None:
-    run = run_single_step_episode(
-        run_id="run-unmeasured",
-        step_id="step-unmeasured",
-        output_id="output-unmeasured",
-        draft_id="draft-unmeasured",
-        action_id="action-unmeasured",
-        frame_id="frame-unmeasured",
-        environment=_environment(),
-        observation=_observation(),
-        adapter=_adapter(),
-        result=None,
-    )
-    rule = derive_rule_from_episode(
-        rule_id="rule-unmeasured",
-        episode_run=run,
-        evidence_ids=("rule-evidence-1",),
-    )
-
-    assert rule.status is WorldModelRuleStatus.BLOCKED
-    assert "episode-not-replayable" in rule.findings
-
-
-def test_world_model_snapshot_reports_active_rules() -> None:
-    rule = derive_rule_from_episode(
-        rule_id="rule-move-east",
-        episode_run=_run(),
-        evidence_ids=("rule-evidence-1",),
-    )
-    snapshot = WorldModelSnapshot(
-        snapshot_id="snapshot-1",
-        environment_id="env-world",
-        rules=(rule,),
-        evidence_ids=("snapshot-evidence-1",),
-    )
-
-    assert snapshot.decision is WorldModelDecision.READY_FOR_TRANSFER
-    assert snapshot.active_rules == (rule,)
-
-
-def test_world_model_snapshot_needs_rules() -> None:
-    snapshot = WorldModelSnapshot(
-        snapshot_id="snapshot-empty",
-        environment_id="env-world",
-        rules=(),
-        evidence_ids=("snapshot-evidence-1",),
-    )
-
-    assert snapshot.decision is WorldModelDecision.NEEDS_RULES
-    assert "no-active-rules" in snapshot.findings
-
-
-def test_revise_world_model_adds_rule() -> None:
-    rule = derive_rule_from_episode(
-        rule_id="rule-move-east",
-        episode_run=_run(),
-        evidence_ids=("rule-evidence-1",),
-    )
-    snapshot = WorldModelSnapshot(
-        snapshot_id="snapshot-before",
-        environment_id="env-world",
-        rules=(),
-        evidence_ids=("snapshot-before-evidence",),
-    )
-    revision = revise_world_model(
-        revision_id="revision-add",
-        snapshot=snapshot,
-        candidate_rules=(rule,),
-        evidence_ids=("revision-evidence-1",),
-    )
-
-    assert revision.decision is RevisionDecision.REVISED
-    assert revision.after.active_rules == (rule,)
-
-
-def test_revise_world_model_rejects_contradicting_rule() -> None:
-    rule = derive_rule_from_episode(
-        rule_id="rule-move-east",
-        episode_run=_run(),
-        evidence_ids=("rule-evidence-1",),
-    )
-    contradictory = WorldModelRule(
-        rule_id="rule-contradict",
-        environment_id="env-world",
-        action_kind="move",
-        precondition_features=rule.precondition_features,
-        effect_features=("agent:0,0",),
-        confidence=0.9,
-        status=WorldModelRuleStatus.ACTIVE,
-        evidence_ids=("rule-evidence-2",),
-    )
-    snapshot = WorldModelSnapshot(
-        snapshot_id="snapshot-before",
-        environment_id="env-world",
-        rules=(rule,),
-        evidence_ids=("snapshot-before-evidence",),
-    )
-    revision = revise_world_model(
-        revision_id="revision-contradiction",
-        snapshot=snapshot,
-        candidate_rules=(contradictory,),
-        evidence_ids=("revision-evidence-1",),
-    )
-
-    assert revision.decision is RevisionDecision.REJECTED_CONTRADICTION
-    assert any(
-        finding.startswith("contradiction:")
-        for finding in revision.findings
-    )
-
-
-def test_world_model_rule_rejects_overclaiming_effect() -> None:
+def test_world_rule_rejects_overclaiming_statement() -> None:
     with pytest.raises(ValueError, match="blocked overclaiming"):
         WorldModelRule(
             rule_id="rule-overclaim",
-            environment_id="env-world",
-            action_kind="move",
-            precondition_features=("agent:0,0",),
-            effect_features=("certifies AGI",),
-            confidence=0.5,
-            status=WorldModelRuleStatus.ACTIVE,
-            evidence_ids=("rule-evidence-1",),
+            family=TaskFamily.GRID_ABSTRACTION,
+            kind=WorldRuleKind.TRANSITION,
+            statement="This proves AGI.",
+            antecedent_features=("east-cell-empty",),
+            action_ids=("move-east",),
+            expected_consequences=("operation:move-east",),
+            exception_features=(),
+            source_trial_ids=("trial-1",),
+            evidence_ids=("evidence-1",),
+        )
+
+
+def test_world_model_update_quarantines_contradicting_trials() -> None:
+    seed = _task("task-seed", TaskDifficulty.SEED)
+    far = _task("task-far", TaskDifficulty.FAR_TRANSFER)
+    rule = derive_world_rule_from_trials(
+        rule_id="rule-grid-east-transition",
+        statement=(
+            "Visible east-empty grid states may support a bounded move-east transition."
+        ),
+        family=TaskFamily.GRID_ABSTRACTION,
+        trials=(_passing_trial(seed), _failing_trial(far)),
+        evidence_ids=("world-rule-evidence-1",),
+    )
+    update = build_world_model_update(
+        update_id="update-contradiction",
+        rule=rule,
+        trials=(_passing_trial(seed), _failing_trial(far)),
+    )
+
+    assert rule.confidence is WorldRuleConfidence.CONTRADICTED
+    assert update.decision is WorldModelUpdateDecision.QUARANTINE_CONTRADICTION
+    assert "contradicting-trial-present" in update.findings
+    assert update.contradicting_trial_ids == ("task-far:trial",)
+
+
+def test_world_model_update_promotes_transfer_supported_rule() -> None:
+    seed = _task("task-seed", TaskDifficulty.SEED)
+    far = _task("task-far", TaskDifficulty.FAR_TRANSFER)
+    rule = derive_world_rule_from_trials(
+        rule_id="rule-grid-east-transition",
+        statement=(
+            "Visible east-empty grid states support a bounded move-east transition."
+        ),
+        family=TaskFamily.GRID_ABSTRACTION,
+        trials=(_passing_trial(seed), _passing_trial(far)),
+        evidence_ids=("world-rule-evidence-1",),
+    )
+    update = build_world_model_update(
+        update_id="update-promote",
+        rule=rule,
+        trials=(_passing_trial(seed), _passing_trial(far)),
+    )
+
+    assert update.promoted
+    assert update.decision is WorldModelUpdateDecision.PROMOTE_TRANSFER_SUPPORTED_RULE
+    assert update.findings == ()
+
+
+def test_world_model_snapshot_tracks_active_and_transfer_supported_rules() -> None:
+    seed = _task("task-seed", TaskDifficulty.SEED)
+    far = _task("task-far", TaskDifficulty.FAR_TRANSFER)
+    rule = derive_world_rule_from_trials(
+        rule_id="rule-grid-east-transition",
+        statement=(
+            "Visible east-empty grid states support a bounded move-east transition."
+        ),
+        family=TaskFamily.GRID_ABSTRACTION,
+        trials=(_passing_trial(seed), _passing_trial(far)),
+        evidence_ids=("world-rule-evidence-1",),
+    )
+    update = build_world_model_update(
+        update_id="update-promote",
+        rule=rule,
+        trials=(_passing_trial(seed), _passing_trial(far)),
+    )
+    snapshot = build_world_model_snapshot(
+        snapshot_id="snapshot-1",
+        purpose="Store bounded grid transition rules for future replay.",
+        updates=(update,),
+        evidence_ids=("snapshot-evidence-1",),
+    )
+
+    assert snapshot.active_rules == (rule,)
+    assert snapshot.transfer_supported_rule_count == 1
+    assert snapshot.fingerprint() == snapshot.fingerprint()
+
+
+def test_world_rule_application_requires_action_and_feature_alignment() -> None:
+    seed = _task("task-seed", TaskDifficulty.SEED)
+    far = _task("task-far", TaskDifficulty.FAR_TRANSFER)
+    rule = derive_world_rule_from_trials(
+        rule_id="rule-grid-east-transition",
+        statement=(
+            "Visible east-empty grid states support a bounded move-east transition."
+        ),
+        family=TaskFamily.GRID_ABSTRACTION,
+        trials=(_passing_trial(seed), _passing_trial(far)),
+        evidence_ids=("world-rule-evidence-1",),
+    )
+    aligned_plan = plan_world_rule_application(
+        plan_id="plan-aligned",
+        rule=rule,
+        task=_task("task-new", TaskDifficulty.NEAR_TRANSFER),
+    )
+    mismatched_action_plan = plan_world_rule_application(
+        plan_id="plan-action-mismatch",
+        rule=rule,
+        task=_task("task-west", TaskDifficulty.NEAR_TRANSFER, operation_id="move-west"),
+    )
+
+    assert aligned_plan.ready
+    assert aligned_plan.decision is WorldRuleApplicationDecision.APPLICATION_READY
+    assert "move-east" in aligned_plan.matched_actions
+    assert not mismatched_action_plan.ready
+    assert (
+        mismatched_action_plan.decision
+        is WorldRuleApplicationDecision.NEEDS_ACTION_ALIGNMENT
+    )
+
+
+def test_world_rule_application_blocks_contradicted_or_revoked_rules() -> None:
+    task = _task("task-new", TaskDifficulty.NEAR_TRANSFER)
+    contradicted = WorldModelRule(
+        rule_id="rule-contradicted",
+        family=TaskFamily.GRID_ABSTRACTION,
+        kind=WorldRuleKind.TRANSITION,
+        statement="Visible east-empty grid states may support move-east.",
+        antecedent_features=("east-cell-empty",),
+        action_ids=("move-east",),
+        expected_consequences=("operation:move-east",),
+        exception_features=("wrong-feature",),
+        source_trial_ids=("trial-1",),
+        evidence_ids=("evidence-1",),
+        confidence=WorldRuleConfidence.CONTRADICTED,
+    )
+    revoked = WorldModelRule(
+        rule_id="rule-revoked",
+        family=TaskFamily.GRID_ABSTRACTION,
+        kind=WorldRuleKind.TRANSITION,
+        statement="Visible east-empty grid states may support move-east.",
+        antecedent_features=("east-cell-empty",),
+        action_ids=("move-east",),
+        expected_consequences=("operation:move-east",),
+        exception_features=("blocked-trial",),
+        source_trial_ids=("trial-1",),
+        evidence_ids=("evidence-1",),
+        confidence=WorldRuleConfidence.REVOKED,
+    )
+
+    contradicted_plan = plan_world_rule_application(
+        plan_id="plan-contradicted",
+        rule=contradicted,
+        task=task,
+    )
+    revoked_plan = plan_world_rule_application(
+        plan_id="plan-revoked",
+        rule=revoked,
+        task=task,
+    )
+
+    assert (
+        contradicted_plan.decision is WorldRuleApplicationDecision.BLOCKED_CONTRADICTED
+    )
+    assert revoked_plan.decision is WorldRuleApplicationDecision.BLOCKED_REVOKED
+
+
+def test_snapshot_rejects_duplicate_rule_ids() -> None:
+    seed = _task("task-seed", TaskDifficulty.SEED)
+    rule = derive_world_rule_from_trials(
+        rule_id="rule-grid-east-transition",
+        statement=(
+            "Visible east-empty grid states support a bounded move-east transition."
+        ),
+        family=TaskFamily.GRID_ABSTRACTION,
+        trials=(_passing_trial(seed),),
+        evidence_ids=("world-rule-evidence-1",),
+    )
+    first_update = build_world_model_update(
+        update_id="update-hypothesis-1",
+        rule=rule,
+        trials=(_passing_trial(seed),),
+    )
+    second_update = build_world_model_update(
+        update_id="update-hypothesis-2",
+        rule=rule,
+        trials=(_passing_trial(seed),),
+    )
+
+    with pytest.raises(ValueError, match="Duplicate rule_id"):
+        build_world_model_snapshot(
+            snapshot_id="snapshot-duplicate",
+            purpose="Duplicate rules should fail.",
+            updates=(first_update, second_update),
+            evidence_ids=("snapshot-evidence-1",),
         )
