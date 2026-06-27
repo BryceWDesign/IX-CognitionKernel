@@ -258,7 +258,7 @@ def build_review_query_request(
         mode=mode,
         artifact_kinds=tuple(artifact_kinds),
         statuses=tuple(statuses),
-        text_terms=(normalized_text_terms or normalized_search_terms),
+        text_terms=normalized_text_terms or normalized_search_terms,
         parent_entry_ids=tuple(parent_entry_ids),
         allow_blocked_index=allow_blocked_index or not require_ready_index,
         evidence_ids=tuple(evidence_ids),
@@ -328,9 +328,7 @@ def _matches_for_request(
         entries = tuple(entry for entry in entries if entry.kind in requested_kinds)
     elif request.mode is ReviewQueryMode.BY_STATUS:
         requested_statuses = set(request.statuses)
-        entries = tuple(
-            entry for entry in entries if entry.status in requested_statuses
-        )
+        entries = tuple(entry for entry in entries if entry.status in requested_statuses)
     elif request.mode is ReviewQueryMode.BY_TEXT:
         entries = tuple(
             entry for entry in entries if _entry_matches_text_terms(entry, request)
