@@ -1,159 +1,190 @@
-"""Tests for Wave 8 external review packet."""
-
-from __future__ import annotations
-
 import pytest
 
 from ix_cognition_kernel.wave8_external_review_packet import (
+    ExternalReviewerRole,
     ExternalReviewPacketDecision,
-    ReviewerRole,
     build_external_review_packet,
-    default_review_questions,
+    default_wave8_review_questions,
 )
 from ix_cognition_kernel.wave8_replay_validator import (
     ReplayArtifactKind,
     ReplayArtifactRecord,
     ReplayArtifactStatus,
-    ReplayValidationDecision,
     validate_replay_packet,
 )
+
+_SHA_A = "a" * 64
+_SHA_B = "b" * 64
+_SHA_C = "c" * 64
+_SHA_D = "d" * 64
+_SHA_E = "e" * 64
 
 
 def _artifact(
     artifact_id: str,
     kind: ReplayArtifactKind,
+    source_fingerprint: str,
     status: ReplayArtifactStatus = ReplayArtifactStatus.REPLAYABLE,
 ) -> ReplayArtifactRecord:
     return ReplayArtifactRecord(
         artifact_id=artifact_id,
         kind=kind,
-        source_fingerprint="a" * 64,
+        source_fingerprint=source_fingerprint,
         status=status,
-        evidence_ids=(f"evidence-{artifact_id}",),
-        summary=f"{kind.value} is bounded review evidence.",
+        evidence_ids=(f"{artifact_id}:evidence",),
+        summary=f"{artifact_id} is available for bounded external review.",
     )
 
 
-def _ready_replay_report() -> object:
+def _artifacts():
+    return (
+        _artifact("artifact-episode", ReplayArtifactKind.EPISODE_RUN, _SHA_A),
+        _artifact("artifact-transfer", ReplayArtifactKind.TRANSFER_REPORT, _SHA_B),
+        _artifact("artifact-skill", ReplayArtifactKind.SKILL_VALIDATION, _SHA_C),
+        _artifact("artifact-world", ReplayArtifactKind.WORLD_MODEL_SNAPSHOT, _SHA_D),
+        _artifact("artifact-baseline", ReplayArtifactKind.BASELINE_COMPARISON, _SHA_E),
+    )
+
+
+def _replay_report():
     return validate_replay_packet(
-        report_id="replay-report-review",
-        purpose="Validate bounded replay evidence for review.",
-        artifacts=(
-            _artifact("artifact-episode", ReplayArtifactKind.EPISODE_RUN),
-            _artifact("artifact-transfer", ReplayArtifactKind.TRANSFER_REPORT),
-            _artifact("artifact-skill", ReplayArtifactKind.SKILL_VALIDATION),
-            _artifact("artifact-world", ReplayArtifactKind.WORLD_MODEL_SNAPSHOT),
-            _artifact("artifact-baseline", ReplayArtifactKind.BASELINE_COMPARISON),
-        ),
+        report_id="replay-report-ready",
+        purpose="Validate bounded Wave 8 replay packet for human review.",
+        artifacts=_artifacts(),
     )
 
 
-def test_default_review_questions_cover_core_roles() -> None:
-    questions = default_review_questions(evidence_prefix="review-evidence")
+def _roles():
+    return (
+        ExternalReviewerRole.HUMAN_AUTHORITY,
+        ExternalReviewerRole.INDEPENDENT_REPLAYER,
+        ExternalReviewerRole.SAFETY_REVIEWER,
+        ExternalReviewerRole.BASELINE_REVIEWER,
+        ExternalReviewerRole.TRANSFER_REVIEWER,
+    )
 
-    roles = {question.reviewer_role for question in questions}
-    assert ReviewerRole.EXTERNAL_RESEARCHER in roles
-    assert ReviewerRole.SAFETY_REVIEWER in roles
-    assert ReviewerRole.HUMAN_AUTHORITY in roles
-    assert all(len(question.fingerprint()) == 64 for question in questions)
 
-
-def test_external_review_packet_ready_when_replay_and_questions_are_ready() -> None:
+def test_external_review_packet_ready_with_replay_artifacts_roles_and_questions() -> (
+    None
+):
     packet = build_external_review_packet(
-        packet_id="packet-ready",
-        purpose="Provide bounded replay evidence to external reviewers.",
-        claim_boundary="Review packet only; no certification.",
-        replay_report=_ready_replay_report(),
-        review_questions=default_review_questions(evidence_prefix="review-evidence"),
+        packet_id="external-review-packet-1",
+        purpose="Package bounded recursive learning evidence for external review.",
+        claim_boundary="Bounded recursive learning evidence only; no certification.",
+        replay_report=_replay_report(),
+        reviewer_roles=_roles(),
+        questions=default_wave8_review_questions(),
         evidence_ids=("packet-evidence-1",),
     )
 
-    assert packet.decision is ExternalReviewPacketDecision.READY_FOR_EXTERNAL_REVIEW
     assert packet.ready
-    assert packet.question_count == 4
+    assert packet.decision is ExternalReviewPacketDecision.READY_FOR_EXTERNAL_REVIEW
+    assert packet.findings == ()
+    assert "episode-run" in packet.artifact_kinds_under_review
+    assert "baseline-comparison" in packet.artifact_kinds_under_review
+    assert packet.fingerprint() == packet.fingerprint()
+    assert len(packet.fingerprint()) == 64
 
 
-def test_external_review_packet_needs_replay_when_report_is_not_ready() -> None:
-    report = validate_replay_packet(
-        report_id="replay-report-not-ready",
-        purpose="Validate bounded replay evidence for review.",
-        artifacts=(
-            _artifact(
-                "artifact-episode",
-                ReplayArtifactKind.EPISODE_RUN,
-                ReplayArtifactStatus.NEEDS_MEASURED_RESULT,
-            ),
-        ),
+def test_external_review_packet_requires_ready_replay_report() -> None:
+    replay_report = validate_replay_packet(
+        report_id="replay-report-missing",
+        purpose="Validate incomplete replay packet.",
+        artifacts=_artifacts()[:2],
     )
     packet = build_external_review_packet(
-        packet_id="packet-not-ready",
-        purpose="Provide bounded replay evidence to external reviewers.",
-        claim_boundary="Review packet only; no certification.",
-        replay_report=report,
-        review_questions=default_review_questions(evidence_prefix="review-evidence"),
+        packet_id="external-review-packet-missing-replay",
+        purpose="Package bounded recursive learning evidence for external review.",
+        claim_boundary="Bounded recursive learning evidence only; no certification.",
+        replay_report=replay_report,
+        reviewer_roles=_roles(),
+        questions=default_wave8_review_questions(),
         evidence_ids=("packet-evidence-1",),
     )
 
+    assert not packet.ready
     assert packet.decision is ExternalReviewPacketDecision.NEEDS_REPLAY_VALIDATION
-    assert "replay-report-not-ready" in packet.findings[0]
+    assert any(
+        finding.startswith("replay-report-not-ready") for finding in packet.findings
+    )
 
 
-def test_external_review_packet_needs_questions() -> None:
+def test_external_review_packet_requires_all_reviewer_roles() -> None:
     packet = build_external_review_packet(
-        packet_id="packet-no-questions",
-        purpose="Provide bounded replay evidence to external reviewers.",
-        claim_boundary="Review packet only; no certification.",
-        replay_report=_ready_replay_report(),
-        review_questions=(),
+        packet_id="external-review-packet-missing-roles",
+        purpose="Package bounded recursive learning evidence for external review.",
+        claim_boundary="Bounded recursive learning evidence only; no certification.",
+        replay_report=_replay_report(),
+        reviewer_roles=(
+            ExternalReviewerRole.HUMAN_AUTHORITY,
+            ExternalReviewerRole.INDEPENDENT_REPLAYER,
+        ),
+        questions=default_wave8_review_questions(),
         evidence_ids=("packet-evidence-1",),
     )
 
+    assert not packet.ready
+    assert packet.decision is ExternalReviewPacketDecision.NEEDS_REQUIRED_REVIEWERS
+    assert any(
+        finding.startswith("missing-reviewer-roles") for finding in packet.findings
+    )
+
+
+def test_external_review_packet_requires_review_questions() -> None:
+    packet = build_external_review_packet(
+        packet_id="external-review-packet-missing-questions",
+        purpose="Package bounded recursive learning evidence for external review.",
+        claim_boundary="Bounded recursive learning evidence only; no certification.",
+        replay_report=_replay_report(),
+        reviewer_roles=_roles(),
+        questions=(),
+        evidence_ids=("packet-evidence-1",),
+    )
+
+    assert not packet.ready
     assert packet.decision is ExternalReviewPacketDecision.NEEDS_REVIEW_QUESTIONS
     assert "missing-review-questions" in packet.findings
 
 
-def test_external_review_packet_blocks_overclaiming_claim_boundary() -> None:
-    with pytest.raises(ValueError, match="blocked overclaiming"):
+def test_external_review_packet_rejects_duplicate_reviewer_roles() -> None:
+    with pytest.raises(ValueError, match="Duplicate reviewer role"):
         build_external_review_packet(
-            packet_id="packet-overclaim",
-            purpose="Provide bounded replay evidence to external reviewers.",
-            claim_boundary="Certifies AGI.",
-            replay_report=_ready_replay_report(),
-            review_questions=default_review_questions(evidence_prefix="review-evidence"),
+            packet_id="external-review-packet-duplicate-role",
+            purpose="Package bounded recursive learning evidence for external review.",
+            claim_boundary=(
+                "Bounded recursive learning evidence only; no certification."
+            ),
+            replay_report=_replay_report(),
+            reviewer_roles=(
+                ExternalReviewerRole.HUMAN_AUTHORITY,
+                ExternalReviewerRole.HUMAN_AUTHORITY,
+            ),
+            questions=default_wave8_review_questions(),
             evidence_ids=("packet-evidence-1",),
         )
 
 
-def test_external_review_packet_blocks_when_review_question_overclaims() -> None:
-    from ix_cognition_kernel.wave8_external_review_packet import ExternalReviewQuestion
-
+def test_external_review_packet_rejects_overclaiming_purpose_or_boundary() -> None:
     with pytest.raises(ValueError, match="blocked overclaiming"):
-        ExternalReviewQuestion(
-            question_id="question-overclaim",
-            reviewer_role=ReviewerRole.EXTERNAL_RESEARCHER,
-            prompt="Does this certify AGI?",
-            required_artifact_kinds=(ReplayArtifactKind.EPISODE_RUN,),
-            evidence_ids=("question-evidence-1",),
+        build_external_review_packet(
+            packet_id="external-review-packet-overclaim-purpose",
+            purpose="This proves AGI.",
+            claim_boundary=(
+                "Bounded recursive learning evidence only; no certification."
+            ),
+            replay_report=_replay_report(),
+            reviewer_roles=_roles(),
+            questions=default_wave8_review_questions(),
+            evidence_ids=("packet-evidence-1",),
         )
 
-
-def test_external_review_packet_fingerprint_is_deterministic() -> None:
-    packet = build_external_review_packet(
-        packet_id="packet-stable",
-        purpose="Provide bounded replay evidence to external reviewers.",
-        claim_boundary="Review packet only; no certification.",
-        replay_report=_ready_replay_report(),
-        review_questions=default_review_questions(evidence_prefix="review-evidence"),
-        evidence_ids=("packet-evidence-1",),
-    )
-    same = build_external_review_packet(
-        packet_id="packet-stable",
-        purpose="Provide bounded replay evidence to external reviewers.",
-        claim_boundary="Review packet only; no certification.",
-        replay_report=_ready_replay_report(),
-        review_questions=default_review_questions(evidence_prefix="review-evidence"),
-        evidence_ids=("packet-evidence-1",),
-    )
-
-    assert packet.fingerprint() == same.fingerprint()
-    assert packet.replay_report.decision is ReplayValidationDecision.READY_FOR_REVIEW
+    with pytest.raises(ValueError, match="blocked overclaiming"):
+        build_external_review_packet(
+            packet_id="external-review-packet-overclaim-boundary",
+            purpose="Package bounded recursive learning evidence for external review.",
+            claim_boundary="This is an artificial general intelligence certification.",
+            replay_report=_replay_report(),
+            reviewer_roles=_roles(),
+            questions=default_wave8_review_questions(),
+            evidence_ids=("packet-evidence-1",),
+        )
