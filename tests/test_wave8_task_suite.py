@@ -1,141 +1,195 @@
-"""Tests for Wave 8 unknown task suite."""
-
-from __future__ import annotations
-
 import pytest
 
-from ix_cognition_kernel.wave8_environment_protocol import EnvironmentObservation
+from ix_cognition_kernel.wave8_environment_protocol import (
+    BoundedEnvironmentSpec,
+    EnvironmentKind,
+    EnvironmentObservation,
+)
 from ix_cognition_kernel.wave8_task_suite import (
-    TaskDifficultyBand,
-    UnknownTaskDecision,
+    TaskDifficulty,
+    TaskDisclosureLevel,
+    TaskSuiteValidationDecision,
     UnknownTaskInstance,
     UnknownTaskSuite,
-    build_unknown_task_suite,
+    build_grid_transition_task,
+    build_grid_transition_template,
+    validate_unknown_task_suite,
 )
 
 
-def _observation() -> EnvironmentObservation:
-    return EnvironmentObservation(
-        observation_id="obs-task",
-        environment_id="env-grid",
-        episode_id="episode-task",
-        visible_features=("agent:0,0", "goal:1,0"),
-        hidden_feature_count=3,
+def _template():
+    return build_grid_transition_template(template_id="grid-template-1")
+
+
+def _seed_task():
+    return build_grid_transition_task(
+        task_id="task-seed",
+        template=_template(),
+        episode_id="episode-seed",
+        start_state_id="state-0-0",
+        empty_direction="east",
+        expected_operation_id="move-east",
+        difficulty=TaskDifficulty.SEED,
+        disclosure_level=TaskDisclosureLevel.PARTIALLY_WITHHELD,
     )
 
 
-def _task(
-    task_id: str,
-    band: TaskDifficultyBand,
-    novelty: tuple[str, ...] = ("new-map",),
-) -> UnknownTaskInstance:
-    return UnknownTaskInstance(
-        task_id=task_id,
-        environment_id="env-grid",
-        difficulty_band=band,
-        initial_observation=_observation(),
-        allowed_action_kinds=("move", "inspect"),
-        expected_outcome_features=("goal-reached",),
-        novelty_factors=novelty,
-        transfer_tags=("grid-world", "pathfinding"),
-        evidence_ids=(f"evidence-{task_id}",),
+def _transfer_task():
+    return build_grid_transition_task(
+        task_id="task-transfer",
+        template=_template(),
+        episode_id="episode-transfer",
+        start_state_id="state-1-0",
+        empty_direction="west",
+        expected_operation_id="move-west",
+        difficulty=TaskDifficulty.NEAR_TRANSFER,
+        disclosure_level=TaskDisclosureLevel.PARTIALLY_WITHHELD,
     )
 
 
-def test_unknown_task_instance_is_deterministic_and_replayable() -> None:
-    task = _task("task-1", TaskDifficultyBand.TRANSFER_NEAR)
+def _hidden_task():
+    return build_grid_transition_task(
+        task_id="task-hidden",
+        template=_template(),
+        episode_id="episode-hidden",
+        start_state_id="state-2-0",
+        empty_direction="east",
+        expected_operation_id="move-east",
+        difficulty=TaskDifficulty.HIDDEN_VALIDATION,
+        disclosure_level=TaskDisclosureLevel.HIDDEN_GOAL,
+    )
 
-    assert task.decision is UnknownTaskDecision.READY_FOR_TRIAL
-    assert len(task.fingerprint()) == 64
+
+def test_grid_transition_template_is_deterministic() -> None:
+    template = _template()
+
+    assert template.family.value == "grid-abstraction"
+    assert template.fingerprint() == template.fingerprint()
+    assert len(template.fingerprint()) == 64
+    assert "move-east" in template.allowed_action_space_ids
 
 
-def test_unknown_task_instance_requires_novelty() -> None:
-    task = _task("task-no-novelty", TaskDifficultyBand.TRANSFER_NEAR, novelty=())
+def test_grid_transition_task_binds_environment_and_measured_observation() -> None:
+    task = _seed_task()
 
-    assert task.decision is UnknownTaskDecision.NEEDS_NOVELTY
+    assert task.environment.environment_id == "task-seed:environment"
+    assert task.initial_observation.environment_id == task.environment.environment_id
+    assert task.initial_observation.measured
+    assert task.withheld_features
+    assert not task.is_transfer_pressure
+    assert task.fingerprint() == task.fingerprint()
 
 
-def test_unknown_task_instance_rejects_overclaiming_expected_outcome() -> None:
-    with pytest.raises(ValueError, match="blocked overclaiming"):
+def test_hidden_validation_task_counts_as_hidden_and_transfer_pressure() -> None:
+    task = _hidden_task()
+
+    assert task.is_transfer_pressure
+    assert task.is_hidden_validation
+    assert task.environment.hidden_goal
+    assert task.disclosure_level is TaskDisclosureLevel.HIDDEN_GOAL
+
+
+def test_task_instance_rejects_unmeasured_initial_observation() -> None:
+    template = _template()
+    environment = BoundedEnvironmentSpec(
+        environment_id="env-bad",
+        kind=EnvironmentKind.GRID_ABSTRACTION,
+        objective=template.objective,
+        observation_channels=("grid-visible-state",),
+        action_space_ids=template.allowed_action_space_ids,
+        scoring_rules=template.scoring_rules,
+        reset_evidence_ids=("reset-evidence-1",),
+    )
+    observation = EnvironmentObservation(
+        observation_id="obs-bad",
+        environment_id="env-bad",
+        episode_id="episode-bad",
+        state_id="state-bad",
+        channel_id="grid-visible-state",
+        summary="Unmeasured observation.",
+        visible_features=("state-bad",),
+        evidence_ids=("obs-evidence-1",),
+        measured=False,
+    )
+
+    with pytest.raises(ValueError, match="require measured observations"):
         UnknownTaskInstance(
-            task_id="task-overclaim",
-            environment_id="env-grid",
-            difficulty_band=TaskDifficultyBand.TRANSFER_NEAR,
-            initial_observation=_observation(),
-            allowed_action_kinds=("move",),
-            expected_outcome_features=("certifies AGI",),
-            novelty_factors=("new-map",),
-            transfer_tags=("grid-world",),
-            evidence_ids=("task-evidence",),
+            task_id="task-bad",
+            template=template,
+            environment=environment,
+            initial_observation=observation,
+            expected_outcome_features=("operation:move-east",),
+            withheld_features=("expected-operation:move-east",),
+            transfer_tags=("family:grid-abstraction",),
+            evidence_ids=("task-evidence-1",),
         )
 
 
-def test_unknown_task_suite_ready_with_required_bands() -> None:
-    suite = build_unknown_task_suite(
+def test_task_instance_rejects_fully_visible_task_with_withheld_features() -> None:
+    task = _seed_task()
+
+    with pytest.raises(ValueError, match="Fully visible tasks must not include"):
+        UnknownTaskInstance(
+            task_id="task-visible-bad",
+            template=task.template,
+            environment=task.environment,
+            initial_observation=task.initial_observation,
+            expected_outcome_features=task.expected_outcome_features,
+            withheld_features=("should-not-be-withheld",),
+            transfer_tags=task.transfer_tags,
+            evidence_ids=("task-evidence-visible",),
+            disclosure_level=TaskDisclosureLevel.FULLY_VISIBLE,
+        )
+
+
+def test_unknown_task_suite_validates_transfer_and_hidden_pressure() -> None:
+    seed_only_suite = UnknownTaskSuite(
+        suite_id="suite-seed-only",
+        purpose="Seed-only suite should not make transfer claims.",
+        tasks=(_seed_task(),),
+        evidence_ids=("suite-evidence-1",),
+    )
+    transfer_only_suite = UnknownTaskSuite(
+        suite_id="suite-transfer-only",
+        purpose="Transfer-only suite still needs hidden validation.",
+        tasks=(_seed_task(), _transfer_task()),
+        evidence_ids=("suite-evidence-2",),
+    )
+    ready_suite = UnknownTaskSuite(
         suite_id="suite-ready",
-        purpose="Exercise bounded transfer without overclaiming.",
-        tasks=(
-            _task("task-near", TaskDifficultyBand.TRANSFER_NEAR),
-            _task("task-far", TaskDifficultyBand.TRANSFER_FAR),
-            _task("task-hidden", TaskDifficultyBand.HIDDEN),
-        ),
-        required_bands=(
-            TaskDifficultyBand.TRANSFER_NEAR,
-            TaskDifficultyBand.TRANSFER_FAR,
-            TaskDifficultyBand.HIDDEN,
-        ),
-        evidence_ids=("suite-evidence",),
+        purpose="Suite contains seed, transfer, and hidden validation pressure.",
+        tasks=(_seed_task(), _transfer_task(), _hidden_task()),
+        evidence_ids=("suite-evidence-3",),
     )
 
-    assert suite.decision is UnknownTaskDecision.READY_FOR_TRIAL
-    assert suite.ready_task_count == 3
-    assert len(suite.fingerprint()) == 64
-
-
-def test_unknown_task_suite_requires_band_coverage() -> None:
-    suite = build_unknown_task_suite(
-        suite_id="suite-missing-band",
-        purpose="Exercise bounded transfer without overclaiming.",
-        tasks=(_task("task-near", TaskDifficultyBand.TRANSFER_NEAR),),
-        required_bands=(
-            TaskDifficultyBand.TRANSFER_NEAR,
-            TaskDifficultyBand.TRANSFER_FAR,
-        ),
-        evidence_ids=("suite-evidence",),
+    seed_report = validate_unknown_task_suite(
+        report_id="report-seed-only",
+        suite=seed_only_suite,
+    )
+    transfer_report = validate_unknown_task_suite(
+        report_id="report-transfer-only",
+        suite=transfer_only_suite,
+    )
+    ready_report = validate_unknown_task_suite(
+        report_id="report-ready",
+        suite=ready_suite,
     )
 
-    assert suite.decision is UnknownTaskDecision.NEEDS_BAND_COVERAGE
-    assert "missing-required-band:transfer-far" in suite.findings
-
-
-def test_unknown_task_suite_blocks_shortcut_overlap() -> None:
-    task = _task(
-        "task-shortcut",
-        TaskDifficultyBand.TRANSFER_NEAR,
-        novelty=("memorized-start",),
+    assert seed_report.decision is TaskSuiteValidationDecision.NEEDS_TRANSFER_PRESSURE
+    assert (
+        transfer_report.decision is TaskSuiteValidationDecision.NEEDS_HIDDEN_VALIDATION
     )
-    suite = build_unknown_task_suite(
-        suite_id="suite-shortcut",
-        purpose="Exercise bounded transfer without overclaiming.",
-        tasks=(task,),
-        required_bands=(TaskDifficultyBand.TRANSFER_NEAR,),
-        forbidden_shortcuts=("memorized-start",),
-        evidence_ids=("suite-evidence",),
-    )
-
-    assert suite.decision is UnknownTaskDecision.BLOCKED_SHORTCUT
-    assert "shortcut-overlap:task-shortcut:memorized-start" in suite.findings
+    assert ready_report.decision is TaskSuiteValidationDecision.READY_FOR_EPISODES
+    assert ready_report.ready
 
 
-def test_unknown_task_suite_rejects_duplicate_task_id() -> None:
+def test_unknown_task_suite_rejects_duplicate_task_ids() -> None:
+    task = _seed_task()
+
     with pytest.raises(ValueError, match="Duplicate task_id"):
-        build_unknown_task_suite(
+        UnknownTaskSuite(
             suite_id="suite-duplicate",
-            purpose="Exercise bounded transfer without overclaiming.",
-            tasks=(
-                _task("task-same", TaskDifficultyBand.TRANSFER_NEAR),
-                _task("task-same", TaskDifficultyBand.TRANSFER_FAR),
-            ),
-            required_bands=(TaskDifficultyBand.TRANSFER_NEAR,),
-            evidence_ids=("suite-evidence",),
+            purpose="Duplicate task ids should fail.",
+            tasks=(task, task),
+            evidence_ids=("suite-evidence-1",),
         )
